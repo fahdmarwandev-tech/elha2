@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>جامع الحق | الصرح الإيماني المبارك</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'ArefRuqaa';
+      src: url('fonts/ArefRuqaa-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: #f1f6f2;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(200, 225, 206, 0.6) 0%, transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(205, 230, 212, 0.6) 0%, transparent 45%),
+        radial-gradient(circle at 85% 15%, rgba(215, 235, 220, 0.4) 0%, transparent 40%),
+        radial-gradient(circle at 15% 85%, rgba(210, 232, 215, 0.5) 0%, transparent 40%);
+      font-family: 'Tajawal', 'Cairo', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 60px;
+      overflow-x: hidden;
+    }
+
+    /* Floating Browser Mockup Window */
+    .browser-window {
+      width: 100%;
+      max-width: 1480px;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 
+        0 25px 60px -15px rgba(25, 45, 32, 0.12),
+        0 10px 25px -5px rgba(25, 45, 32, 0.06),
+        0 0 1px 1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Browser Header / Chrome Bar */
+    .browser-header {
+      height: 56px;
+      background: #ffffff;
+      border-bottom: 1px solid #edf0f2;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      position: relative;
+      direction: ltr;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 9px;
+      direction: ltr;
+    }
+
+    .dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .url-bar {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f4f6f8;
+      border: 1px solid #e5e9ec;
+      border-radius: 20px;
+      padding: 6px 22px;
+      font-size: 13px;
+      color: #556575;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      direction: ltr;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 500;
+    }
+
+    .url-bar .lock-icon {
+      font-size: 11px;
+      color: #718096;
+    }
+
+    /* Webpage Content */
+    .webpage-body {
+      padding: 24px 56px 60px 56px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      direction: rtl;
+    }
+
+    /* Navigation Bar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 24px 0;
+    }
+
+    .brand-logo {
+      font-family: 'ArefRuqaa', serif;
+      font-size: 34px;
+      font-weight: bold;
+      color: #0f172a;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #475569;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .nav-cta-btn {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+    }
+
+    .nav-cta-btn:hover {
+      background: #1e293b;
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section (2 Columns) */
+    .hero-container {
+      direction: ltr;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 56px;
+      align-items: center;
+      padding: 10px 0 20px 0;
+    }
+
+    /* Hero Right: Typography & Call to Actions */
+    .hero-content {
+      direction: rtl;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .eyebrow-badge {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      color: #92400e;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 6px 0;
+    }
+
+    .hero-main-title {
+      font-family: 'ArefRuqaa', serif;
+      font-size: 82px;
+      font-weight: bold;
+      color: #0f172a;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .hero-sub-title {
+      font-family: 'Cairo', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      color: #1e293b;
+      line-height: 1.3;
+    }
+
+    .hero-description {
+      font-size: 18px;
+      line-height: 1.8;
+      color: #475569;
+      max-width: 580px;
+      font-weight: 400;
+    }
+
+    .hero-action-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-top: 6px;
+    }
+
+    .primary-btn {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 16px 36px;
+      border-radius: 35px;
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+    }
+
+    .primary-btn:hover {
+      background: #1e293b;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.28);
+    }
+
+    .secondary-btn {
+      background: #f8fafc;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      padding: 16px 28px;
+      border-radius: 35px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .secondary-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    /* Key Activities / Badges (Social proof counterpart) */
+    .activities-section {
+      margin-top: 20px;
+      padding-top: 24px;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .activities-label {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .activities-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .activity-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .activity-chip span.icon {
+      font-size: 16px;
+    }
+
+    /* Hero Left: Modern Rounded Picture Card */
+    .hero-visual-column {
+      position: relative;
+    }
+
+    .card-container {
+      position: relative;
+      border-radius: 32px;
+      overflow: hidden;
+      aspect-ratio: 16 / 13;
+      box-shadow: 
+        0 25px 50px -12px rgba(15, 23, 42, 0.22),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+      background: #0f172a;
+    }
+
+    .card-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 30%;
+      display: block;
+      transition: transform 0.6s ease;
+    }
+
+    /* Subtle gradient overlay at bottom of photo */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.05) 0%,
+        rgba(0, 0, 0, 0.0) 50%,
+        rgba(10, 15, 25, 0.35) 100%
+      );
+      pointer-events: none;
+    }
+
+    /* Floating Script Badge (matching Modern Elegant Effective in reference) */
+    .floating-script-badge {
+      position: absolute;
+      top: 28px;
+      right: 28px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 10px 22px;
+      border-radius: 30px;
+      color: #fef3c7;
+      font-family: 'ArefRuqaa', serif;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Floating Prayer Widget (matching circular avatar + badge in reference) */
+    .floating-prayer-widget {
+      position: absolute;
+      bottom: -22px;
+      left: 24px;
+      background: #ffffff;
+      padding: 14px 22px;
+      border-radius: 22px;
+      box-shadow: 
+        0 20px 35px -8px rgba(15, 23, 42, 0.16),
+        0 0 1px 1px rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 10;
+      border: 1px solid #f1f5f9;
+    }
+
+    .prayer-indicator {
+      width: 12px;
+      height: 12px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .prayer-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .prayer-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .prayer-time {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .floating-action-badge {
+      width: 44px;
+      height: 44px;
+      background: #f43f5e;
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 8px 18px rgba(244, 63, 94, 0.35);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .floating-action-badge:hover {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mockup Window -->
+  <div class="browser-window">
+    
+    <!-- Browser Header -->
+    <div class="browser-header">
+      <div class="window-dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="url-bar">
+        <span class="lock-icon">🔒</span>
+        <span>alhaqq-mosque.org</span>
+      </div>
+    </div>
+
+    <!-- Webpage Body -->
+    <div class="webpage-body">
+      
+      <!-- Navbar -->
+      <nav class="navbar">
+        <a href="#" class="brand-logo">جامع الحق</a>
+
+        <ul class="nav-links">
+          <li><a href="#" class="active">الرئيسية</a></li>
+          <li><a href="#">عن الجامع</a></li>
+          <li><a href="#">مواقيت الصلاة</a></li>
+          <li><a href="#">البرامج والأنشطة</a></li>
+          <li><a href="#">خطب الجمعة</a></li>
+          <li><a href="#">تواصل معنا</a></li>
+        </ul>
+
+        <a href="#visit" class="nav-cta-btn">
+          <span>زيارة الجامع</span>
+          <span style="font-size: 18px; line-height: 1;">←</span>
+        </a>
+      </nav>
+
+      <!-- Hero Section -->
+      <div class="hero-container">
+        
+        <!-- Right Column: Text & Content -->
+        <div class="hero-content">
+          
+          <div class="eyebrow-badge">
+            <span>✨</span>
+            <span>صـرح إيـمـانـي ومـنـارة مـجـتـمـعـيـة</span>
+          </div>
+
+          <div class="hero-title-group">
+            <h1 class="hero-main-title">جامع الحق</h1>
+            <h2 class="hero-sub-title">منارة الهدى والسكينة</h2>
+          </div>
+
+          <p class="hero-description">
+            صرح إسلامي مبارك يجمع بين عراقة العمارة الإسلامية وروحانية الرسالة الخالدة، يوفر بيئة إيمانية عامرة بالسكينة وحلقات الذكر والقرآن الكريم ومبادرات الخير المجتمعية الهادفة.
+          </p>
+
+          <div class="hero-action-row">
+            <a href="#programs" class="primary-btn">
+              <span>استكشف برامج الجامع</span>
+              <span style="font-size: 19px; line-height: 1;">←</span>
+            </a>
+            <a href="#prayer-times" class="secondary-btn">
+              <span>جدول مواقيت الصلاة</span>
+            </a>
+          </div>
+
+          <!-- Bottom Highlights (Social Proof counterpart) -->
+          <div class="activities-section">
+            <div class="activities-label">أبرز ركائز وخدمات الجامع المبارك</div>
+            <div class="activities-grid">
+              <div class="activity-chip">
+                <span class="icon">🕌</span>
+                <span>٥ صلوات جماعة يومياً</span>
+              </div>
+              <div class="activity-chip">
+                <span class="icon">📖</span>
+                <span>حلقات تحفيظ القرآن</span>
+              </div>
+              <div class="activity-chip">
+                <span class="icon">📚</span>
+                <span>مكتبة إسلامية عامرة</span>
+              </div>
+              <div class="activity-chip">
+                <span class="icon">🤝</span>
+                <span>مبادرات مجتمعية وخيرية</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Left Column: Modern Mosque Picture Card -->
+        <div class="hero-visual-column">
+          
+          <div class="card-container">
+            <img src="public/masjid_modern_light.png" alt="جامع الحق">
+            <div class="card-overlay"></div>
+            
+            <!-- Floating Script Badge -->
+            <div class="floating-script-badge">
+              سكينة • وقار • إيمان
+            </div>
+          </div>
+
+          <!-- Floating Prayer Widget -->
+          <div class="floating-prayer-widget">
+            <div class="prayer-indicator"></div>
+            <div class="prayer-info">
+              <span class="prayer-name">الأذان القادم: صلاة الفجر (04:45 ص)</span>
+              <span class="prayer-time">متبقي ٠٣:٢٠ ساعة  •  أبواب الجامع مفتوحة</span>
+            </div>
+            <div class="floating-action-badge" title="جدول الصلوات">+</div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

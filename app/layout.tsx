@@ -1,34 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-heading",
-  weight: ["400", "600", "700", "800"],
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#0a0a0a",
+  themeColor: "#f1f6f2",
 };
 
 export const metadata: Metadata = {
-  title: "Dar Monasbat | Welcome",
-  description: "Dar Monasbat - Premium Events & Hospitality Experience.",
+  title: "جامع الحق | الصرح الإيماني والمنارة المجتمعية",
+  description: "الموقع الرسمي لجامع الحق - صرح إيماني ومجتمعي يجمع بين أصالة العمارة الإسلامية وروحانية الرسالة الخالدة ومواقيت الصلاة.",
 };
 
 export default function RootLayout({
@@ -37,13 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#0a0a0a] text-[#ededed]">
-        <Navbar />
+    <html lang="ar" dir="rtl" className="h-full antialiased">
+      <body className="min-h-full flex flex-col bg-[#f1f6f2] text-[#0f172a]">
         <div className="flex-1 flex flex-col">
           {children}
         </div>
-        <Footer />
       </body>
     </html>
   );
