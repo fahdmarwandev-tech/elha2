@@ -126,15 +126,7 @@ export default function Home() {
 
           {/* Mobile Top App Bar */}
           <header className="relative z-20 flex items-center justify-between px-3.5 pt-3.5 pb-2">
-            {/* Mosque Branding Pill (Top Left in RTL) */}
-            <div className="flex items-center gap-2 bg-[#fdfbf7]/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-[#ede3d2]/80">
-              <MosqueDomeIcon className="w-5 h-5 text-[#9a702e]" />
-              <span className="font-aref text-lg font-bold text-[#2e1d08] pt-0.5">
-                جامع الحق
-              </span>
-            </div>
-
-            {/* Quick Actions (Search & Menu Buttons) */}
+            {/* Quick Actions (Search & Menu Buttons - renders on right in RTL) */}
             <div className="flex items-center gap-2">
               <button
                 aria-label="بحث"
@@ -149,6 +141,14 @@ export default function Home() {
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
+            </div>
+
+            {/* Mosque Branding Pill (renders on left in RTL) */}
+            <div className="flex items-center gap-2 bg-[#fdfbf7]/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-[#ede3d2]/80">
+              <MosqueDomeIcon className="w-5 h-5 text-[#9a702e]" />
+              <span className="font-aref text-lg font-bold text-[#2e1d08] pt-0.5">
+                جامع الحق
+              </span>
             </div>
           </header>
 
@@ -180,34 +180,34 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* Main Hero Content (Right-aligned text block matching reference) */}
-          <div className="relative z-10 flex flex-col justify-center items-end text-right px-4 pt-10 pb-6 my-auto">
+          {/* Main Hero Content (Strictly Right-Aligned over the light zone) */}
+          <div className="relative z-10 flex flex-col justify-center items-start text-right pr-4 pl-2 pt-8 pb-6 my-auto w-full">
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="w-[62%] sm:w-[56%] flex flex-col items-start text-right gap-3"
+              className="w-[56%] sm:w-[50%] mr-0 ml-auto flex flex-col items-start text-right gap-3"
             >
               {/* Eyebrow with gold accent line */}
-              <div className="flex items-center gap-2 text-[#8e682d] font-bold text-xs sm:text-sm">
-                <span>مرحبـاً بكم في</span>
+              <div className="flex items-center gap-2 text-[#8e682d] font-bold text-xs sm:text-sm self-start">
                 <span className="w-8 h-[2px] bg-[#a97831]" />
+                <span>مرحبـاً بكم في</span>
               </div>
 
               {/* Main Mosque Name */}
-              <h1 className="font-aref text-[42px] sm:text-5xl font-black text-[#14251f] tracking-tight leading-[1.05]">
+              <h1 className="font-aref text-[40px] sm:text-5xl font-black text-[#14251f] tracking-tight leading-[1.05] text-right w-full">
                 جامع الحق
               </h1>
 
               {/* Subheading */}
-              <h2 className="text-[20px] sm:text-[22px] font-bold text-[#986c28] leading-[1.35]">
+              <h2 className="text-[19px] sm:text-[22px] font-bold text-[#986c28] leading-[1.35] text-right w-full">
                 بيتٌ منّ بيوت الله ...
                 <br />
                 يجمّعنا عليِ الخير
               </h2>
 
               {/* Description */}
-              <p className="text-[12.5px] sm:text-[13.5px] text-[#47534c] leading-[1.7] font-medium">
+              <p className="text-[12px] sm:text-[13.5px] text-[#47534c] leading-[1.7] font-medium text-right w-full">
                 مكان للعبادة، والعلم، والمجتمع،
                 <br />
                 حيث تلتقي القلوب على الإيمان،
@@ -220,26 +220,26 @@ export default function Home() {
               {/* CTA Button */}
               <a
                 href="#prayer-times-mobile"
-                className="mt-1 inline-flex items-center gap-3 bg-[#13221b] text-white px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-[#13221b]/20 active:scale-95 transition hover:bg-[#1f372c]"
+                className="mt-1 self-start inline-flex items-center gap-2.5 bg-[#13221b] text-white px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-[#13221b]/20 active:scale-95 transition hover:bg-[#1f372c]"
               >
-                <ArrowLeft className="w-4 h-4 text-[#e2b866]" />
                 <span>اكتشف المزيد</span>
+                <ArrowLeft className="w-4 h-4 text-[#e2b866]" />
               </a>
             </motion.div>
           </div>
 
           {/* Mobile Bottom Features Bar (3 columns with dividers) */}
           <div className="relative z-10 w-full grid grid-cols-3 border-t border-[#d8c5aa]/60 pt-3 pb-5 px-1 bg-gradient-to-t from-[#fdfbf7]/80 to-transparent">
-            {/* Column 1 (مجتمع متعاون) */}
+            {/* Column 1 (صدقة جارية - renders on right in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
               <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
-                <Users className="w-5 h-5" />
+                <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold text-[#14251f]">مجتمع متعاون</span>
-              <span className="text-[10px] text-[#71695f]">معاً نصنع الأثر</span>
+              <span className="text-xs font-bold text-[#14251f]">صدقة جارية</span>
+              <span className="text-[10px] text-[#71695f]">لأجر مستدام</span>
             </div>
 
-            {/* Column 2 (علم ونور) with vertical dividers */}
+            {/* Column 2 (علم ونور - renders in center) with vertical dividers */}
             <div className="flex flex-col items-center text-center px-1 border-r border-l border-[#d8c5aa]/60">
               <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
                 <BookOpen className="w-5 h-5" />
@@ -248,13 +248,13 @@ export default function Home() {
               <span className="text-[10px] text-[#71695f]">لبناء جيل واعٍ</span>
             </div>
 
-            {/* Column 3 (صدقة جارية) */}
+            {/* Column 3 (مجتمع متعاون - renders on left in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
               <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
-                <HeartHandshake className="w-5 h-5" />
+                <Users className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold text-[#14251f]">صدقة جارية</span>
-              <span className="text-[10px] text-[#71695f]">لأجر مستدام</span>
+              <span className="text-xs font-bold text-[#14251f]">مجتمع متعاون</span>
+              <span className="text-[10px] text-[#71695f]">معاً نصنع الأثر</span>
             </div>
           </div>
         </section>
