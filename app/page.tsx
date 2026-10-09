@@ -9,12 +9,14 @@ import {
   MapPin,
   Menu,
   Phone,
+  Play,
+  RotateCcw,
   Search,
   Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function MosqueDomeIcon({ className = "w-6 h-6" }: { className?: string }) {
   return (
@@ -37,50 +39,47 @@ function MosqueDomeIcon({ className = "w-6 h-6" }: { className?: string }) {
   );
 }
 
-function IslamicPatternOverlay() {
-  return (
-    <div className="absolute top-0 right-0 w-[70%] h-full pointer-events-none opacity-[0.06] select-none overflow-hidden">
-      <svg
-        className="w-full h-full text-[#8e682d]"
-        xmlns="http://www.w3.org/2000/svg"
-        width="100%"
-        height="100%"
-      >
-        <defs>
-          <pattern
-            id="islamic-star-pattern"
-            width="60"
-            height="60"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M30 0 L36 18 L54 18 L39 29 L45 47 L30 36 L15 47 L21 29 L6 18 L24 18 Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.8"
-            />
-            <circle cx="30" cy="30" r="18" fill="none" stroke="currentColor" strokeWidth="0.6" />
-            <rect
-              x="19.4"
-              y="19.4"
-              width="21.2"
-              height="21.2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.6"
-              transform="rotate(45 30 30)"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#islamic-star-pattern)" />
-      </svg>
-    </div>
-  );
-}
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState("الرئيسية");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Cinematic Intro Video states
+  const [isPlayingIntro, setIsPlayingIntro] = useState(true);
+  const [introVisible, setIntroVisible] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleVideoEnd = () => {
+    setIsPlayingIntro(false);
+    setTimeout(() => {
+      setIntroVisible(false);
+    }, 700);
+  };
+
+  const handleSkipIntro = () => {
+    setIsPlayingIntro(false);
+    setIntroVisible(false);
+  };
+
+  const handleReplayIntro = () => {
+    setIntroVisible(true);
+    setIsPlayingIntro(true);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  // Autoplay fallback in case browser policy pauses video without interaction
+  useEffect(() => {
+    if (videoRef.current) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // If browser blocked autoplay, still allow skip or user can click to play
+        });
+      }
+    }
+  }, []);
 
   const prayerTimes = [
     { name: "الفجر", time: "04:45 ص", isNext: true },
@@ -103,50 +102,98 @@ export default function Home() {
   return (
     <>
       {/* =========================================================================
-          MOBILE VIEW (< 1024px / block lg:hidden)
-          Matches exact design from reference image:
-          - Uses /masjid_mobile_bg.jpg (vertical portrait reference photo)
-          - Badge header on top left with Mosque Arch & جامع الحق in Aref Ruqaa
-          - Search & Dark Bronze hamburger buttons on top right
-          - Right-aligned text block: مرحباً بكم في —, جامع الحق, بيتٌ من بيوت الله ..., 4-line description
-          - Dark pill button: اكتشف المزيد ←
-          - Bottom 3-column features: صدقة جارية, علمٌ ونور, مجتمع متعاون
+          CINEMATIC INTRO VIDEO OVERLAY
+          Plays the earth-to-mosque zoom intro on site load, then transitions
+          seamlessly into the landing page using the video's exact last frame.
           ========================================================================= */}
-      <div className="block lg:hidden min-h-screen bg-[#faf7f2] relative overflow-x-hidden text-right">
+      {introVisible && (
+        <div
+          className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-700 ease-out ${
+            isPlayingIntro ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={handleVideoEnd}
+            className="w-full h-full object-cover"
+          >
+            <source src="/landing_intro.mp4" type="video/mp4" />
+            <source src="/download%20(1).mp4" type="video/mp4" />
+          </video>
+
+          {/* Top Overlay Controls: Skip Button */}
+          <div className="absolute top-5 left-5 z-20 flex items-center gap-3">
+            <button
+              onClick={handleSkipIntro}
+              className="px-4 py-2 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 shadow-xl active:scale-95"
+            >
+              <span>تخطي المقدمة</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-300" />
+            </button>
+          </div>
+
+          {/* Subtle Mosque Watermark Branding during Intro */}
+          <div className="absolute bottom-6 right-6 z-20 pointer-events-none flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/15">
+            <MosqueDomeIcon className="w-5 h-5 text-amber-300" />
+            <span className="font-aref text-base font-bold text-white tracking-wide">
+              جامع الحق
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MOBILE VIEW (< 1024px / block lg:hidden)
+          Uses the video's exact last frame as the background landing page.
+          Right-aligned Arabic typography with luxury glassmorphic details.
+          ========================================================================= */}
+      <div className="block lg:hidden min-h-screen bg-[#0e1713] relative overflow-x-hidden text-right">
         {/* Full-bleed Mobile Hero Container */}
         <section className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden">
-          {/* Mosque background with natural fade to cream on the right */}
+          {/* Mosque background is the exact last frame of the video */}
           <div
-            className="absolute inset-0 z-0 bg-cover bg-left"
-            style={{ backgroundImage: "url('/masjid_mobile_bg.jpg')" }}
+            className="absolute inset-0 z-0 bg-cover bg-[position:32%_center]"
+            style={{ backgroundImage: "url('/landing_last_frame.jpg')" }}
           />
 
-          {/* Islamic Star Pattern Overlay on the light right zone */}
-          <IslamicPatternOverlay />
+          {/* Ambient gradient overlay ensuring perfect text contrast */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/90 via-black/45 to-black/35 pointer-events-none" />
 
           {/* Mobile Top App Bar */}
           <header className="relative z-20 flex items-center justify-between px-3.5 pt-3.5 pb-2">
-            {/* Quick Actions (Search & Menu Buttons - renders on right in RTL) */}
+            {/* Quick Actions (Search, Replay & Menu Buttons - renders on right in RTL) */}
             <div className="flex items-center gap-2">
               <button
                 aria-label="بحث"
-                className="w-10 h-10 rounded-full bg-[#f6ede1]/90 backdrop-blur-md border border-[#ede3d2]/70 flex items-center justify-center text-[#74521b] shadow-sm active:scale-95 transition"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-amber-200 shadow-sm active:scale-95 transition hover:bg-black/60"
               >
                 <Search className="w-4 h-4" />
               </button>
               <button
+                aria-label="إعادة المقدمة"
+                onClick={handleReplayIntro}
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-amber-200 shadow-sm active:scale-95 transition hover:bg-black/60"
+                title="إعادة تشغيل المقدمة"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
                 aria-label="القائمة"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="w-10 h-10 rounded-full bg-[#6e5019] text-white flex items-center justify-center shadow-md active:scale-95 transition"
+                className="w-10 h-10 rounded-full bg-[#8f6b28] text-white flex items-center justify-center shadow-md active:scale-95 transition hover:bg-[#7a591e]"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
 
             {/* Mosque Branding Pill (renders on left in RTL) */}
-            <div className="flex items-center gap-2 bg-[#fdfbf7]/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-[#ede3d2]/80">
-              <MosqueDomeIcon className="w-5 h-5 text-[#9a702e]" />
-              <span className="font-aref text-lg font-bold text-[#2e1d08] pt-0.5">
+            <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-amber-400/30">
+              <MosqueDomeIcon className="w-5 h-5 text-amber-300" />
+              <span className="font-aref text-lg font-bold text-white pt-0.5">
                 جامع الحق
               </span>
             </div>
@@ -157,7 +204,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute top-16 left-3 right-3 z-30 bg-[#fdfbf7]/95 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-[#ecdac2]"
+              className="absolute top-16 left-3 right-3 z-30 bg-[#121c17]/95 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-amber-500/25"
             >
               <div className="grid grid-cols-2 gap-2">
                 {navLinks.map((item) => (
@@ -169,8 +216,8 @@ export default function Home() {
                     }}
                     className={`rounded-xl px-3 py-2.5 text-xs font-bold transition text-right ${
                       activeTab === item
-                        ? "bg-[#f1e5d3] text-[#8e5c1b]"
-                        : "text-slate-700 hover:bg-[#f4eee3]"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"
+                        : "text-slate-200 hover:bg-white/10"
                     }`}
                   >
                     {item}
@@ -180,34 +227,34 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* Main Hero Content (Strictly Right-Aligned over the light zone) */}
+          {/* Main Hero Content (Strictly Right-Aligned over the sunset marble courtyard) */}
           <div className="relative z-10 flex flex-col justify-center items-start text-right pr-4 pl-2 pt-8 pb-6 my-auto w-full">
             <motion.div
               initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="w-[56%] sm:w-[50%] mr-0 ml-auto flex flex-col items-start text-right gap-3"
+              className="w-[60%] sm:w-[52%] mr-0 ml-auto flex flex-col items-start text-right gap-3"
             >
               {/* Eyebrow with gold accent line */}
-              <div className="flex items-center gap-2 text-[#8e682d] font-bold text-xs sm:text-sm self-start">
-                <span className="w-8 h-[2px] bg-[#a97831]" />
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm self-start">
+                <span className="w-8 h-[2px] bg-amber-400" />
                 <span>مرحبـاً بكم في</span>
               </div>
 
               {/* Main Mosque Name */}
-              <h1 className="font-aref text-[40px] sm:text-5xl font-black text-[#14251f] tracking-tight leading-[1.05] text-right w-full">
+              <h1 className="font-aref text-[42px] sm:text-5xl font-black text-white tracking-tight leading-[1.05] text-right w-full drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
                 جامع الحق
               </h1>
 
               {/* Subheading */}
-              <h2 className="text-[19px] sm:text-[22px] font-bold text-[#986c28] leading-[1.35] text-right w-full">
+              <h2 className="text-[20px] sm:text-[22px] font-bold text-amber-200 leading-[1.35] text-right w-full drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
                 بيتٌ منّ بيوت الله ...
                 <br />
                 يجمّعنا عليِ الخير
               </h2>
 
               {/* Description */}
-              <p className="text-[12px] sm:text-[13.5px] text-[#47534c] leading-[1.7] font-medium text-right w-full">
+              <p className="text-[12.5px] sm:text-[13.5px] text-slate-200 leading-[1.7] font-medium text-right w-full drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                 مكان للعبادة، والعلم، والمجتمع،
                 <br />
                 حيث تلتقي القلوب على الإيمان،
@@ -218,55 +265,57 @@ export default function Home() {
               </p>
 
               {/* CTA Button */}
-              <a
-                href="#prayer-times-mobile"
-                className="mt-1 self-start inline-flex items-center gap-2.5 bg-[#13221b] text-white px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-[#13221b]/20 active:scale-95 transition hover:bg-[#1f372c]"
-              >
-                <span>اكتشف المزيد</span>
-                <ArrowLeft className="w-4 h-4 text-[#e2b866]" />
-              </a>
+              <div className="flex flex-wrap items-center gap-2 mt-1 self-start">
+                <a
+                  href="#prayer-times-mobile"
+                  className="inline-flex items-center gap-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition hover:brightness-110"
+                >
+                  <span>اكتشف المزيد</span>
+                  <ArrowLeft className="w-4 h-4 text-slate-950" />
+                </a>
+              </div>
             </motion.div>
           </div>
 
           {/* Mobile Bottom Features Bar (3 columns with dividers) */}
-          <div className="relative z-10 w-full grid grid-cols-3 border-t border-[#d8c5aa]/60 pt-3 pb-5 px-1 bg-gradient-to-t from-[#fdfbf7]/80 to-transparent">
+          <div className="relative z-10 w-full grid grid-cols-3 border-t border-white/15 pt-3 pb-5 px-1 bg-gradient-to-t from-black/85 to-transparent">
             {/* Column 1 (صدقة جارية - renders on right in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
-              <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-amber-400/30 flex items-center justify-center text-amber-300 mb-1.5 shadow-sm">
                 <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold text-[#14251f]">صدقة جارية</span>
-              <span className="text-[10px] text-[#71695f]">لأجر مستدام</span>
+              <span className="text-xs font-bold text-white">صدقة جارية</span>
+              <span className="text-[10px] text-slate-300">لأجر مستدام</span>
             </div>
 
             {/* Column 2 (علم ونور - renders in center) with vertical dividers */}
-            <div className="flex flex-col items-center text-center px-1 border-r border-l border-[#d8c5aa]/60">
-              <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
+            <div className="flex flex-col items-center text-center px-1 border-r border-l border-white/15">
+              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-amber-400/30 flex items-center justify-center text-amber-300 mb-1.5 shadow-sm">
                 <BookOpen className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold text-[#14251f]">علمٌ ونور</span>
-              <span className="text-[10px] text-[#71695f]">لبناء جيل واعٍ</span>
+              <span className="text-xs font-bold text-white">علمٌ ونور</span>
+              <span className="text-[10px] text-slate-300">لبناء جيل واعٍ</span>
             </div>
 
             {/* Column 3 (مجتمع متعاون - renders on left in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
-              <div className="w-11 h-11 rounded-full bg-[#f5ede0] flex items-center justify-center text-[#9a702e] mb-1.5 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-amber-400/30 flex items-center justify-center text-amber-300 mb-1.5 shadow-sm">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold text-[#14251f]">مجتمع متعاون</span>
-              <span className="text-[10px] text-[#71695f]">معاً نصنع الأثر</span>
+              <span className="text-xs font-bold text-white">مجتمع متعاون</span>
+              <span className="text-[10px] text-slate-300">معاً نصنع الأثر</span>
             </div>
           </div>
         </section>
 
         {/* Mobile Prayer Times Strip */}
-        <section id="prayer-times-mobile" className="border-t border-[#ede3d2] bg-[#fbf8f1] px-4 py-8">
+        <section id="prayer-times-mobile" className="border-t border-white/10 bg-[#121c17] px-4 py-8">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">مواقيت الصلاة لليوم</h3>
-              <p className="text-xs text-slate-500">حسب التوقيت المحلي لجامع الحق</p>
+              <h3 className="text-lg font-extrabold text-white">مواقيت الصلاة لليوم</h3>
+              <p className="text-xs text-slate-400">حسب التوقيت المحلي لجامع الحق</p>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-full">
+            <span className="text-[11px] font-bold px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full">
               ● محدث الآن
             </span>
           </div>
@@ -277,14 +326,14 @@ export default function Home() {
                 key={i}
                 className={`p-3 rounded-2xl border text-center transition-all ${
                   prayer.isNext
-                    ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/15"
-                    : "bg-white/80 text-slate-800 border-slate-200/60"
+                    ? "bg-amber-500/20 text-white border-amber-400/50 shadow-lg shadow-amber-500/10"
+                    : "bg-black/30 text-slate-200 border-white/10"
                 }`}
               >
-                <span className={`text-[11px] font-semibold block mb-0.5 ${prayer.isNext ? "text-amber-300" : "text-slate-500"}`}>
+                <span className={`text-[11px] font-semibold block mb-0.5 ${prayer.isNext ? "text-amber-300" : "text-slate-400"}`}>
                   {prayer.name}
                 </span>
-                <span className="text-base font-bold font-mono tracking-tight block">
+                <span className="text-base font-bold font-mono tracking-tight block text-white">
                   {prayer.time}
                 </span>
                 {prayer.isNext && (
@@ -298,15 +347,15 @@ export default function Home() {
         </section>
 
         {/* Mobile Footer */}
-        <footer className="border-t border-[#ede3d2] bg-[#fbf8f1] py-6 px-4 text-center text-xs text-slate-500 flex flex-col gap-2">
+        <footer className="border-t border-white/10 bg-[#0e1713] py-6 px-4 text-center text-xs text-slate-400 flex flex-col gap-2">
           <span>© جميع الحقوق محفوظة لجامع الحق — صرح الإيمان والسكينة.</span>
           <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
+              <MapPin className="w-3 h-3 text-amber-400" />
               المملكة العربية السعودية
             </span>
             <span className="flex items-center gap-1">
-              <Phone className="w-3 h-3" />
+              <Phone className="w-3 h-3 text-amber-400" />
               للتواصل والاستفسار
             </span>
           </div>
@@ -315,30 +364,29 @@ export default function Home() {
 
       {/* =========================================================================
           DESKTOP / LAPTOP VIEW (>= 1024px / hidden lg:flex)
-          Exact laptop layout preserved with floating browser card, daylight image,
-          full header navigation, and desktop hero section.
+          Uses the video's exact last frame as the landing page hero background.
+          Matches high-end architectural luxury styling with prayer times & replay.
           ========================================================================= */}
-      <main className="hidden lg:flex min-h-screen bg-[#f4f0e8] relative flex-col justify-center items-center py-8 px-6 lg:px-10 overflow-x-hidden">
+      <main className="hidden lg:flex min-h-screen bg-[#0e1713] relative flex-col justify-center items-center py-8 px-6 lg:px-10 overflow-x-hidden">
         {/* Soft warm tones around the page */}
-        <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-[#eadfcf]/45 rounded-full blur-[130px] pointer-events-none -mr-40 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#f1e6d7]/60 rounded-full blur-[140px] pointer-events-none -ml-40 -mb-20" />
-        <div className="absolute top-1/2 left-1/4 w-[450px] h-[450px] bg-[#eee2d2]/40 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-amber-600/10 rounded-full blur-[130px] pointer-events-none -mr-40 -mt-20" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none -ml-40 -mb-20" />
 
         {/* Main site shell */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="w-full max-w-[1560px] bg-[#fbf8f1] rounded-[32px] shadow-[0_25px_60px_-15px_rgba(20,40,28,0.12),0_10px_25px_-5px_rgba(20,40,28,0.06)] border border-[#e9e2d6] overflow-hidden flex flex-col relative z-10"
+          className="w-full max-w-[1560px] bg-[#14211b] rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col relative z-10"
         >
           {/* Webpage Content */}
-          <div className="bg-[#fbf8f1] flex flex-col gap-0">
+          <div className="bg-[#14211b] flex flex-col gap-0">
             {/* Desktop Navigation Bar */}
-            <nav className="flex min-h-[100px] items-center justify-between gap-3 border-b border-[#eee7db] px-8 lg:px-12">
+            <nav className="flex min-h-[100px] items-center justify-between gap-3 border-b border-white/10 px-8 lg:px-12 bg-black/25 backdrop-blur-md">
               {/* Logo in Aref Ruqaa Bold */}
               <Link href="/" className="group flex items-center gap-2">
-                <Landmark className="h-7 w-7 shrink-0 text-[#b77a24]" />
-                <span className="font-aref text-3xl font-bold text-[#4a3218] transition-colors group-hover:text-amber-700">
+                <Landmark className="h-7 w-7 shrink-0 text-amber-400" />
+                <span className="font-aref text-3xl font-bold text-white transition-colors group-hover:text-amber-300">
                   جامع الحق
                 </span>
               </Link>
@@ -350,8 +398,8 @@ export default function Home() {
                     onClick={() => setActiveTab(item)}
                     className={`relative py-2 text-sm font-semibold transition-colors ${
                       activeTab === item
-                        ? "font-bold text-[#99651f] after:absolute after:inset-x-0 after:-bottom-[30px] after:h-0.5 after:bg-[#b77a24]"
-                        : "text-slate-600 hover:text-[#99651f]"
+                        ? "font-bold text-amber-300 after:absolute after:inset-x-0 after:-bottom-[30px] after:h-0.5 after:bg-amber-400"
+                        : "text-slate-300 hover:text-amber-300"
                     }`}
                   >
                     {item}
@@ -361,14 +409,23 @@ export default function Home() {
 
               <div className="flex items-center gap-3">
                 <button
+                  onClick={handleReplayIntro}
+                  aria-label="إعادة المقدمة"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 px-4 py-2.5 text-xs font-bold text-amber-200 border border-white/15 transition active:scale-95"
+                  title="إعادة تشغيل المقدمة السينمائية"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>المقدمة</span>
+                </button>
+                <button
                   aria-label="بحث"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f4eee3] text-[#8e5c1b] transition hover:bg-[#eee2cf]"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-amber-200 transition hover:bg-white/20 border border-white/15"
                 >
                   <Search className="h-5 w-5" />
                 </button>
                 <a
                   href="#prayer-times"
-                  className="items-center gap-2 rounded-full bg-[#17241f] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#263b32] inline-flex"
+                  className="items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm font-bold text-slate-950 transition hover:brightness-110 inline-flex shadow-lg shadow-amber-500/20 active:scale-95"
                 >
                   تبرع الآن
                   <ArrowLeft className="h-4 w-4" />
@@ -376,47 +433,63 @@ export default function Home() {
               </div>
             </nav>
 
-            {/* Desktop Hero */}
-            <section className="relative isolate min-h-[800px] overflow-hidden bg-[#fbf8f1]">
+            {/* Desktop Hero using the video's last frame as background */}
+            <section className="relative isolate min-h-[820px] overflow-hidden bg-black">
+              {/* Background image is the exact last frame of the video */}
               <picture className="absolute inset-0 -z-20">
                 <img
-                  src="/golden-hour-mosque-cream-fade.png?v=2"
-                  alt=""
+                  src="/landing_last_frame.jpg"
+                  alt="جامع الحق"
                   aria-hidden="true"
                   className="h-full w-full object-cover object-center"
                 />
               </picture>
-              <div className="relative z-10 ml-auto flex min-h-[800px] w-[51%] flex-col justify-center px-10 py-20">
+
+              {/* Soft atmospheric gradient ensuring high readability on the right side */}
+              <div className="absolute inset-0 -z-10 bg-gradient-to-l from-black/75 via-black/40 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-44 -z-10 bg-gradient-to-t from-[#14211b] via-[#14211b]/70 to-transparent pointer-events-none" />
+
+              <div className="relative z-10 ml-auto flex min-h-[820px] w-[53%] flex-col justify-center px-10 py-20">
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.6 }}
                   className="flex flex-col items-start gap-5 text-right"
                 >
-                  <div className="flex items-center gap-4 text-lg font-semibold text-[#a66b20]">
-                    <span className="h-px w-16 bg-[#c58b37]" />
+                  <div className="flex items-center gap-4 text-lg font-semibold text-amber-300">
+                    <span className="h-px w-16 bg-amber-400" />
                     <span>مرحبًا بكم في</span>
                   </div>
 
-                  <h1 className="font-aref text-7xl font-bold leading-[1.2] tracking-tight text-[#14251f]">
+                  <h1 className="font-aref text-7xl font-bold leading-[1.2] tracking-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.7)]">
                     جامع الحق
                   </h1>
-                  <h2 className="text-3xl font-bold leading-relaxed text-[#9b6828]">
+                  <h2 className="text-3xl font-bold leading-relaxed text-amber-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
                     بيت من بيوت الله ... يجمعنا على الخير
                   </h2>
-                  <p className="text-base leading-8 text-slate-600">
+                  <p className="text-base leading-8 text-slate-100 max-w-xl drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
                     مكان للعبادة، والعلم، والمجتمع، حيث تلتقي القلوب على الإيمان، وتُبنى العلاقات على الخير، وتزدهر حياتنا بقيم الإسلام.
                   </p>
 
-                  <a
-                    href="#prayer-times"
-                    className="inline-flex min-h-14 items-center gap-3 rounded-full bg-[#14251f] px-5 text-base font-bold text-white shadow-lg shadow-[#14251f]/15 transition hover:bg-[#203b30]"
-                  >
-                    <ArrowLeft className="h-5 w-5 text-amber-300" />
-                    <span>اكتشف المزيد</span>
-                  </a>
+                  <div className="flex items-center gap-4 mt-1">
+                    <a
+                      href="#prayer-times"
+                      className="inline-flex min-h-14 items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-7 text-base font-bold text-slate-950 shadow-xl shadow-amber-500/25 transition hover:brightness-110 active:scale-95"
+                    >
+                      <span>اكتشف المزيد</span>
+                      <ArrowLeft className="h-5 w-5 text-slate-950" />
+                    </a>
 
-                  <div className="mt-3 grid w-full grid-cols-3 border-t border-[#d9c9aa]/70 pt-6">
+                    <button
+                      onClick={handleReplayIntro}
+                      className="inline-flex min-h-14 items-center gap-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md px-6 text-sm font-semibold text-white border border-white/20 transition active:scale-95"
+                    >
+                      <Play className="h-4 w-4 text-amber-400 fill-amber-400" />
+                      <span>مشاهدة المقدمة السينمائية</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid w-full grid-cols-3 border-t border-white/20 pt-6">
                     {[
                       { icon: HeartHandshake, title: "صدقة جارية", detail: "لأجر مستدام" },
                       { icon: BookOpen, title: "علم ونور", detail: "لبناء جيل واعٍ" },
@@ -424,14 +497,14 @@ export default function Home() {
                     ].map((item) => (
                       <div
                         key={item.title}
-                        className="flex min-w-0 flex-col items-center gap-2 border-l border-[#d9c9aa]/70 px-1 text-center last:border-l-0 lg:flex-row lg:text-right"
+                        className="flex min-w-0 flex-col items-center gap-2 border-l border-white/15 px-2 text-center last:border-l-0 lg:flex-row lg:text-right"
                       >
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f3ecdf] text-[#b47a26]">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-amber-400/30 text-amber-300">
                           <item.icon className="h-6 w-6" />
                         </span>
-                        <span className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-[#26352f]">{item.title}</span>
-                          <span className="text-[10px] text-slate-500">{item.detail}</span>
+                        <span className="flex flex-col gap-0.5">
+                          <span className="text-xs font-bold text-white">{item.title}</span>
+                          <span className="text-[10px] text-slate-300">{item.detail}</span>
                         </span>
                       </div>
                     ))}
@@ -441,13 +514,13 @@ export default function Home() {
             </section>
 
             {/* Desktop Interactive Prayer Times Strip */}
-            <div id="prayer-times" className="mt-0 border-t border-[#eee7db] px-8 py-10">
+            <div id="prayer-times" className="mt-0 border-t border-white/10 px-8 py-10 bg-[#121c17]">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-xl font-extrabold text-slate-900">مواقيت الصلاة لليوم</h3>
-                  <p className="text-xs text-slate-500">حسب التوقيت المحلي لجامع الحق</p>
+                  <h3 className="text-xl font-extrabold text-white">مواقيت الصلاة لليوم</h3>
+                  <p className="text-xs text-slate-400">حسب التوقيت المحلي لجامع الحق</p>
                 </div>
-                <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-full">
+                <span className="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full">
                   ● محدث مباشرة
                 </span>
               </div>
@@ -458,18 +531,18 @@ export default function Home() {
                     key={i}
                     className={`p-4 rounded-2xl border text-center transition-all ${
                       prayer.isNext
-                        ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/15 scale-105"
-                        : "bg-slate-50/80 text-slate-800 border-slate-200/60 hover:bg-slate-100"
+                        ? "bg-amber-500/20 text-white border-amber-400/50 shadow-lg shadow-amber-500/10 scale-105"
+                        : "bg-black/30 text-slate-200 border-white/10 hover:bg-black/45"
                     }`}
                   >
                     <span
                       className={`text-xs font-semibold block mb-1 ${
-                        prayer.isNext ? "text-amber-300" : "text-slate-500"
+                        prayer.isNext ? "text-amber-300" : "text-slate-400"
                       }`}
                     >
                       {prayer.name}
                     </span>
-                    <span className="text-lg font-bold font-mono tracking-tight block">
+                    <span className="text-lg font-bold font-mono tracking-tight block text-white">
                       {prayer.time}
                     </span>
                     {prayer.isNext && (
@@ -485,15 +558,15 @@ export default function Home() {
         </motion.div>
 
         {/* Desktop Footer Info */}
-        <footer className="w-full max-w-[1560px] mt-5 flex items-center justify-between gap-3 text-right text-xs text-slate-500 px-3">
+        <footer className="w-full max-w-[1560px] mt-5 flex items-center justify-between gap-3 text-right text-xs text-slate-400 px-3">
           <span>© جميع الحقوق محفوظة لجامع الحق — صرح الإيمان والسكينة.</span>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <MapPin className="w-3.5 h-3.5 text-amber-400" />
               <span>المملكة العربية السعودية</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
+              <Phone className="w-3.5 h-3.5 text-amber-400" />
               <span>للتواصل والاستفسار</span>
             </span>
           </div>
