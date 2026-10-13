@@ -75,18 +75,6 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-3">
-              {showReplay && onReplay && (
-                <button
-                  onClick={onReplay}
-                  aria-label="إعادة المقدمة"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black/40 hover:bg-black/60 px-3.5 py-2 text-xs font-bold text-amber-200 border border-white/15 transition active:scale-95"
-                  title="إعادة تشغيل فيديو المقدمة"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span>المقدمة</span>
-                </button>
-              )}
-
               <button
                 onClick={() => openCalendarFor("katbketab")}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 px-5 py-2 text-xs font-black text-slate-950 transition shadow-lg shadow-amber-500/20 active:scale-95"
@@ -96,17 +84,17 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
               </button>
             </div>
 
-            {/* Mobile Navigation - The 3 links on top directly, NO 3-bars sidebar */}
-            <nav className="md:hidden flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-2xl border border-white/10 text-xs font-bold">
+            {/* Mobile Navigation - The 3 links on top directly, Frameless like laptop view */}
+            <nav className="md:hidden flex items-center gap-4 text-xs font-semibold">
               {navLinks.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`px-2.5 py-1.5 rounded-xl transition whitespace-nowrap ${
+                    className={`transition whitespace-nowrap ${
                       isActive
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"
+                        ? "text-amber-300 font-bold"
                         : "text-slate-200 hover:text-amber-300"
                     }`}
                   >
