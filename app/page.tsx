@@ -313,13 +313,13 @@ export default function Home() {
 
               {/* CTA Button */}
               <div className="flex flex-wrap items-center gap-2 mt-1 self-start">
-                <a
-                  href="#prayer-times-mobile"
-                  className="inline-flex items-center gap-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition hover:brightness-110"
+                <button
+                  onClick={() => openCalendarFor("katbketab")}
+                  className="inline-flex items-center gap-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-6 py-3 rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition hover:brightness-110 cursor-pointer"
                 >
-                  <span>اكتشف المزيد</span>
+                  <span>احجز قاعة</span>
                   <ArrowLeft className="w-4 h-4 text-slate-950" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -587,13 +587,13 @@ export default function Home() {
 
               {/* CTA Button */}
               <div className="flex items-center gap-4 mt-2">
-                <a
-                  href="#prayer-times"
-                  className="inline-flex min-h-14 items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-8 text-base font-bold text-slate-950 shadow-xl shadow-amber-500/25 transition hover:brightness-110 active:scale-95"
+                <button
+                  onClick={() => openCalendarFor("katbketab")}
+                  className="inline-flex min-h-14 items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-8 text-base font-bold text-slate-950 shadow-xl shadow-amber-500/25 transition hover:brightness-110 active:scale-95 cursor-pointer"
                 >
-                  <span>اكتشف المزيد</span>
+                  <span>احجز قاعة</span>
                   <ArrowLeft className="h-5 w-5 text-slate-950" />
-                </a>
+                </button>
               </div>
 
               {/* 3 Bottom Feature Badges */}
