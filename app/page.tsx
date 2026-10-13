@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
+  Calendar,
   HeartHandshake,
   Landmark,
   MapPin,
@@ -12,10 +13,12 @@ import {
   RotateCcw,
   Search,
   Users,
+  Video,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import QuickBookingModal from "@/components/QuickBookingModal";
 
 function MosqueDomeIcon({ className = "w-6 h-6" }: { className?: string }) {
   return (
@@ -42,9 +45,17 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("الرئيسية");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [bookingModalType, setBookingModalType] = useState<"3aza" | "katbketab">("katbketab");
 
   const desktopVideoRef = useRef<HTMLVideoElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
+
+  const openCalendarFor = (type: "3aza" | "katbketab") => {
+    setBookingModalType(type);
+    setCalendarModalOpen(true);
+    setMobileMenuOpen(false);
+  };
 
   // When video reaches its end, it pauses on the last frame and text fades in
   const handleVideoEnded = () => {
@@ -106,15 +117,6 @@ export default function Home() {
     { name: "العشاء", time: "07:40 م", isNext: false },
   ];
 
-  const navLinks = [
-    "الرئيسية",
-    "عن المسجد",
-    "مواقيت الصلاة",
-    "الأنشطة والفعاليات",
-    "التبرع",
-    "اتصل بنا",
-  ];
-
   return (
     <>
       {/* =========================================================================
@@ -137,8 +139,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/landing_mobile.mp4" type="video/mp4" />
-              <source src="/WhatsApp%20Video%202026-10-10%20at%204.37.38%20PM.mp4" type="video/mp4" />
+              <source src="/mobileview.mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -166,18 +167,20 @@ export default function Home() {
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
-            {/* Quick Actions (Search, Replay & Menu Buttons - renders on right in RTL) */}
+            {/* Quick Actions (Booking pill, Replay & Menu Buttons) */}
             <div className="flex items-center gap-2">
               <button
-                aria-label="بحث"
-                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-amber-200 shadow-sm active:scale-95 transition hover:bg-black/60"
+                aria-label="حجز موعد"
+                onClick={() => openCalendarFor("katbketab")}
+                className="px-3 py-1.5 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/40 flex items-center gap-1.5 text-amber-300 text-xs font-bold shadow-sm active:scale-95 transition hover:bg-amber-500/30"
               >
-                <Search className="w-4 h-4" />
+                <Calendar className="w-3.5 h-3.5" />
+                <span>حجز موعد</span>
               </button>
               <button
                 aria-label="إعادة المقدمة"
                 onClick={handleReplay}
-                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-amber-200 shadow-sm active:scale-95 transition hover:bg-black/60"
+                className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-amber-200 shadow-sm active:scale-95 transition hover:bg-black/60"
                 title="إعادة تشغيل المقدمة"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -185,19 +188,19 @@ export default function Home() {
               <button
                 aria-label="القائمة"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="w-10 h-10 rounded-full bg-[#8f6b28] text-white flex items-center justify-center shadow-md active:scale-95 transition hover:bg-[#7a591e]"
+                className="w-9 h-9 rounded-full bg-[#8f6b28] text-white flex items-center justify-center shadow-md active:scale-95 transition hover:bg-[#7a591e]"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
 
             {/* Mosque Branding Pill (renders on left in RTL) */}
-            <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-amber-400/30">
+            <Link href="/" className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-amber-400/30">
               <MosqueDomeIcon className="w-5 h-5 text-amber-300" />
               <span className="font-aref text-lg font-bold text-white pt-0.5">
                 جامع الحق
               </span>
-            </div>
+            </Link>
           </header>
 
           {/* Mobile Dropdown Menu Drawer */}
@@ -205,25 +208,69 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute top-16 left-3 right-3 z-30 bg-[#121c17]/95 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-amber-500/25"
+              className="absolute top-16 left-3 right-3 z-30 bg-[#121c17]/95 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-amber-500/25 space-y-3"
             >
-              <div className="grid grid-cols-2 gap-2">
-                {navLinks.map((item) => (
+              {/* Quick Occasion Reservation Buttons */}
+              <div className="bg-black/40 border border-white/10 rounded-xl p-2.5">
+                <span className="block text-[11px] font-bold text-amber-300 mb-2 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  <span>حجز دار المناسبات (مع التقويم المباشر):</span>
+                </span>
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    key={item}
-                    onClick={() => {
-                      setActiveTab(item);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`rounded-xl px-3 py-2.5 text-xs font-bold transition text-right ${
-                      activeTab === item
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"
-                        : "text-slate-200 hover:bg-white/10"
-                    }`}
+                    onClick={() => openCalendarFor("3aza")}
+                    className="py-2 px-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-right transition"
                   >
-                    {item}
+                    <span className="block text-xs font-bold text-white">🕊️ حجز عزاء</span>
+                    <span className="block text-[10px] text-slate-400">تقويم المواعيد والقاعات</span>
                   </button>
-                ))}
+                  <button
+                    onClick={() => openCalendarFor("katbketab")}
+                    className="py-2 px-2.5 rounded-lg bg-amber-500/15 border border-amber-400/30 hover:bg-amber-500/25 text-right transition"
+                  >
+                    <span className="block text-xs font-bold text-amber-300">💍 كتب كتاب</span>
+                    <span className="block text-[10px] text-slate-300">عقد قران واحتفال</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Links */}
+              <div className="space-y-1">
+                <Link
+                  href="/booking"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                    <span>صفحة حجز المناسبات والتقويم</span>
+                  </span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
+                    متاح
+                  </span>
+                </Link>
+
+                <Link
+                  href="/videos"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Video className="w-3.5 h-3.5 text-amber-400" />
+                    <span>مكتبة الفيديوهات والمرئيات</span>
+                  </span>
+                  <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    فيديوهات المسجد
+                  </span>
+                </Link>
+
+                <a
+                  href="#prayer-times-mobile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block rounded-xl px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                >
+                  مواقيت الصلاة لليوم
+                </a>
               </div>
             </motion.div>
           )}
@@ -387,8 +434,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/landing_intro.mp4" type="video/mp4" />
-              <source src="/download%20(1).mp4" type="video/mp4" />
+              <source src="/laptopview.mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -434,21 +480,51 @@ export default function Home() {
               </span>
             </Link>
 
-            {/* Nav links */}
-            <nav className="flex items-center gap-8">
-              {navLinks.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setActiveTab(item)}
-                  className={`relative py-2 text-sm font-semibold transition-colors ${
-                    activeTab === item
-                      ? "font-bold text-amber-300 after:absolute after:inset-x-0 after:-bottom-[26px] after:h-0.5 after:bg-amber-400"
-                      : "text-slate-200 hover:text-amber-300"
-                  }`}
+            {/* Desktop Nav links */}
+            <nav className="flex items-center gap-7">
+              <Link
+                href="/"
+                className="py-2 text-sm font-bold text-amber-300 transition-colors"
+              >
+                الرئيسية
+              </Link>
+
+              {/* Booking Nav item with 3aza & Katbketab indicators */}
+              <div className="relative group">
+                <Link
+                  href="/booking"
+                  className="flex items-center gap-2 py-2 text-sm font-semibold text-slate-200 hover:text-amber-300 transition-colors"
                 >
-                  {item}
-                </button>
-              ))}
+                  <Calendar className="w-4 h-4 text-amber-400" />
+                  <span>حجز مناسبة</span>
+                  <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    عزاء وكتب كتاب
+                  </span>
+                </Link>
+              </div>
+
+              {/* Videos Page Link */}
+              <Link
+                href="/videos"
+                className="flex items-center gap-1.5 py-2 text-sm font-semibold text-slate-200 hover:text-amber-300 transition-colors"
+              >
+                <Video className="w-4 h-4 text-amber-400" />
+                <span>الفيديوهات</span>
+              </Link>
+
+              <a
+                href="#prayer-times"
+                className="py-2 text-sm font-semibold text-slate-200 hover:text-amber-300 transition-colors"
+              >
+                مواقيت الصلاة
+              </a>
+
+              <a
+                href="#about"
+                className="py-2 text-sm font-semibold text-slate-200 hover:text-amber-300 transition-colors"
+              >
+                عن المسجد والدار
+              </a>
             </nav>
 
             {/* Header Actions */}
@@ -462,19 +538,22 @@ export default function Home() {
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>المقدمة</span>
               </button>
+
               <button
                 aria-label="بحث"
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-amber-200 transition hover:bg-black/60 backdrop-blur-md border border-white/15"
               >
                 <Search className="h-5 w-5" />
               </button>
-              <a
-                href="#prayer-times"
-                className="items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm font-bold text-slate-950 transition hover:brightness-110 inline-flex shadow-lg shadow-amber-500/20 active:scale-95"
+
+              {/* Direct Booking with Calendar Modal button */}
+              <button
+                onClick={() => openCalendarFor("katbketab")}
+                className="items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-black text-slate-950 transition hover:brightness-110 inline-flex shadow-lg shadow-amber-500/20 active:scale-95"
               >
-                تبرع الآن
-                <ArrowLeft className="h-4 w-4" />
-              </a>
+                <Calendar className="h-4 w-4" />
+                <span>احجز مناسبتك (التقويم)</span>
+              </button>
             </div>
           </header>
 
@@ -542,6 +621,135 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Dar Monasbat & Videos Showcase Section (Full Width Desktop) */}
+        <section id="monasbat-section" className="w-full border-t border-white/10 bg-[#090f0c] px-8 lg:px-16 py-16">
+          <div className="max-w-[1560px] mx-auto space-y-12">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 text-right">
+              <div>
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-400/30 mb-2">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  <span>دار المناسبات الإسلامية • جامع الحق</span>
+                </span>
+                <h3 className="text-3xl font-extrabold font-aref text-white">
+                  حجز قاعات المناسبات (عزاء وكتب كتاب)
+                </h3>
+                <p className="text-sm text-slate-300 mt-1 max-w-2xl">
+                  قاعات فسيحة ومجهزة بأحدث الأنظمة الصوتية والمرئية، مع إمكانية استعراض التقويم المباشر وحجز موعدك فورياً.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/booking"
+                  className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-bold transition flex items-center gap-2"
+                >
+                  <span>جدول الحجوزات الكامل</span>
+                  <ArrowLeft className="w-4 h-4 text-amber-400" />
+                </Link>
+                <Link
+                  href="/videos"
+                  className="px-6 py-3 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 text-xs font-bold transition flex items-center gap-2"
+                >
+                  <Video className="w-4 h-4 text-amber-400" />
+                  <span>معرض الفيديوهات</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* 3 Interactive Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Card 1: Katb Ketab */}
+              <div className="bg-[#0e1713] border border-amber-500/25 rounded-3xl p-6 flex flex-col justify-between hover:border-amber-400/60 transition group shadow-lg">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 mb-4 text-2xl group-hover:scale-110 transition-transform">
+                    💍
+                  </div>
+                  <h4 className="text-xl font-bold font-aref text-white mb-2 group-hover:text-amber-300 transition-colors">
+                    حجز كتب كتاب (عقد القران)
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                    أجواء مباركة وفخامة تليق بيومكم السعيد، مع قاعات مجهزة بكافة متطلبات الإشهار، ضيافة راقية، وتوثيق مرئي.
+                  </p>
+                  <ul className="text-[11px] text-slate-400 space-y-1.5 mb-6">
+                    <li>• اختيار القاعة المناسبة حسب عدد الضيوف</li>
+                    <li>• تقويم مواعيد تفاعلي لاختيار اليوم والفترة</li>
+                    <li>• خدمات صوتية وشاشات عرض ونظام ضيافة</li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => openCalendarFor("katbketab")}
+                  className="w-full py-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-xs transition shadow-md flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>احجز موعد كتب الكتاب (التقويم)</span>
+                </button>
+              </div>
+
+              {/* Card 2: 3aza */}
+              <div className="bg-[#0e1713] border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-amber-400/60 transition group shadow-lg">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-black/50 border border-white/15 flex items-center justify-center text-white mb-4 text-2xl group-hover:scale-110 transition-transform">
+                    🕊️
+                  </div>
+                  <h4 className="text-xl font-bold font-aref text-white mb-2 group-hover:text-amber-300 transition-colors">
+                    حجز عزاء (دار التعازي)
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                    مجالس تأبين وعزاء تراعي الوقار والسكينة، قاعات مستقلة للرجال وأخرى للسيدات، مع تلاوات خاشعة لكبار القراء.
+                  </p>
+                  <ul className="text-[11px] text-slate-400 space-y-1.5 mb-6">
+                    <li>• قاعات كبرى ووسطى تسع حتى 500 معزٍ</li>
+                    <li>• طاقم ضيافة متميز وخدمة فندقية</li>
+                    <li>• توفير قراء معتمدين ونظام صوتي عالي النقاء</li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => openCalendarFor("3aza")}
+                  className="w-full py-3 rounded-full bg-[#8f6b28] hover:bg-[#7a591e] text-white font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>احجز موعد العزاء (التقويم)</span>
+                </button>
+              </div>
+
+              {/* Card 3: Videos Showcase */}
+              <div className="bg-gradient-to-b from-[#121c17] to-[#0a110e] border border-amber-500/30 rounded-3xl p-6 flex flex-col justify-between hover:border-amber-400 transition group shadow-lg">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mb-4 group-hover:scale-110 transition-transform">
+                    <Video className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <h4 className="text-xl font-bold font-aref text-white mb-2 group-hover:text-amber-300 transition-colors">
+                    مكتبة الفيديوهات والمرئيات
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                    شاهد مقاطع الفيديو التوثيقية لجامع الحق، وجولات مصورة في قاعات دار المناسبات، وتلاوات قرآنية مسجلة بجودة عالية.
+                  </p>
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-white/10">
+                    <img
+                      src="/landing_last_frame.jpg"
+                      alt="معرض الفيديوهات"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-amber-400 text-black flex items-center justify-center font-bold">
+                        ▶
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href="/videos"
+                  className="w-full py-3 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-2 text-center"
+                >
+                  <Video className="w-4 h-4 text-amber-400" />
+                  <span>استعراض جميع الفيديوهات المتاحة</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Desktop Interactive Prayer Times Strip (Full Width) */}
         <section id="prayer-times" className="w-full border-t border-white/10 bg-[#0d1612] px-8 lg:px-16 py-14">
           <div className="max-w-[1560px] mx-auto">
@@ -603,6 +811,13 @@ export default function Home() {
           </div>
         </footer>
       </main>
+
+      {/* Quick Booking Modal with Calendar */}
+      <QuickBookingModal
+        isOpen={calendarModalOpen}
+        onClose={() => setCalendarModalOpen(false)}
+        initialType={bookingModalType}
+      />
     </>
   );
 }
