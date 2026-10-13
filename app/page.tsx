@@ -139,7 +139,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/mobileview.mp4" type="video/mp4" />
+              <source src="/1012(1).mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -434,7 +434,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/laptopview.mp4" type="video/mp4" />
+              <source src="/1014.mp4" type="video/mp4" />
             </video>
           </div>
 
