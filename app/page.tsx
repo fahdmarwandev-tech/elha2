@@ -49,6 +49,8 @@ export default function Home() {
   const [bookingModalType, setBookingModalType] = useState<"3aza" | "katbketab">("katbketab");
   const [scrollY, setScrollY] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoLoadedRef = useRef(false);
 
   const desktopVideoRef = useRef<HTMLVideoElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
@@ -56,6 +58,22 @@ export default function Home() {
   const openCalendarFor = (type: "3aza" | "katbketab") => {
     setBookingModalType(type);
     setCalendarModalOpen(true);
+  };
+
+  const startVideoPlayback = () => {
+    if (videoLoadedRef.current) return;
+    videoLoadedRef.current = true;
+    setVideoLoaded(true);
+    if (desktopVideoRef.current) {
+      desktopVideoRef.current.play().catch(() => {});
+    }
+    if (mobileVideoRef.current) {
+      mobileVideoRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleVideoCanPlay = () => {
+    startVideoPlayback();
   };
 
   // When video reaches its end, it pauses on the last frame and text fades in
@@ -70,6 +88,7 @@ export default function Home() {
   };
 
   const handleSkip = () => {
+    startVideoPlayback();
     if (desktopVideoRef.current) {
       desktopVideoRef.current.currentTime = desktopVideoRef.current.duration || 3.3;
       desktopVideoRef.current.pause();
@@ -128,20 +147,26 @@ export default function Home() {
   // Header extras (logo & left actions) fade out gently as scroll begins
   const headerExtrasOpacity = Math.max(0, 1 - scrollFactor * 2.5);
 
-  // Autoplay fallback: if browser blocks autoplay or delays, fade in text gracefully
+  // Playback initialization: waits for video to load or uses safety timeout
   useEffect(() => {
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.play().catch(() => {});
+    const desktopReady = desktopVideoRef.current && desktopVideoRef.current.readyState >= 3;
+    const mobileReady = mobileVideoRef.current && mobileVideoRef.current.readyState >= 3;
+    if (desktopReady || mobileReady) {
+      startVideoPlayback();
     }
-    if (mobileVideoRef.current) {
-      mobileVideoRef.current.play().catch(() => {});
-    }
+
+    const loadTimer = setTimeout(() => {
+      startVideoPlayback();
+    }, 2800);
 
     const fallbackTimer = setTimeout(() => {
       setVideoEnded(true);
-    }, 4500);
+    }, 6000);
 
-    return () => clearTimeout(fallbackTimer);
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   const prayerTimes = [
@@ -167,16 +192,31 @@ export default function Home() {
           <div className="absolute inset-0 z-0 overflow-hidden">
             <video
               ref={mobileVideoRef}
-              autoPlay
               muted
               playsInline
               preload="auto"
-              poster="/mobile_last_frame.jpg"
+              poster="/mobile_first_frame.jpg"
+              onCanPlayThrough={handleVideoCanPlay}
+              onLoadedData={handleVideoCanPlay}
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
               <source src="/1012(1).mp4" type="video/mp4" />
             </video>
+
+            {/* Blurry zoomed first-frame preview overlay while full video is loading */}
+            <div
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-1000 ease-out ${
+                videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
+              }`}
+            >
+              <img
+                src="/mobile_first_frame.jpg"
+                alt=""
+                className="h-full w-full object-cover object-center scale-135 filter blur-2xl"
+              />
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
           </div>
 
           {/* Gradient strictly on the right side behind text, leaving the left side and minaret clear and bright */}
@@ -404,16 +444,31 @@ export default function Home() {
           <div className="absolute inset-0 z-0 overflow-hidden">
             <video
               ref={desktopVideoRef}
-              autoPlay
               muted
               playsInline
               preload="auto"
-              poster="/landing_last_frame.jpg"
+              poster="/landing_first_frame.jpg"
+              onCanPlayThrough={handleVideoCanPlay}
+              onLoadedData={handleVideoCanPlay}
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
               <source src="/1014.mp4" type="video/mp4" />
             </video>
+
+            {/* Blurry zoomed first-frame preview overlay while full video is loading */}
+            <div
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-1000 ease-out ${
+                videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
+              }`}
+            >
+              <img
+                src="/landing_first_frame.jpg"
+                alt=""
+                className="h-full w-full object-cover object-center scale-135 filter blur-2xl"
+              />
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
           </div>
 
           {/* Gradient strictly on the right side behind text, leaving the mosque, minarets, sky, and courtyard completely bright and clear */}
