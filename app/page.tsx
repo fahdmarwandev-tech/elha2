@@ -60,20 +60,21 @@ export default function Home() {
     setCalendarModalOpen(true);
   };
 
-  const startVideoPlayback = () => {
-    if (videoLoadedRef.current) return;
+  const handleVideoPlaying = () => {
     videoLoadedRef.current = true;
     setVideoLoaded(true);
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.play().catch(() => {});
-    }
-    if (mobileVideoRef.current) {
-      mobileVideoRef.current.play().catch(() => {});
-    }
   };
 
-  const handleVideoCanPlay = () => {
-    startVideoPlayback();
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.currentTime > 0.05 && !videoLoadedRef.current) {
+      videoLoadedRef.current = true;
+      setVideoLoaded(true);
+    }
+    // The text fades in strictly when the video finishes playing (reaches end)
+    if (video.duration && video.currentTime >= video.duration - 0.12) {
+      handleVideoEnded();
+    }
   };
 
   // When video reaches its end, it pauses on the last frame and text fades in
@@ -88,7 +89,8 @@ export default function Home() {
   };
 
   const handleSkip = () => {
-    startVideoPlayback();
+    videoLoadedRef.current = true;
+    setVideoLoaded(true);
     if (desktopVideoRef.current) {
       desktopVideoRef.current.currentTime = desktopVideoRef.current.duration || 3.3;
       desktopVideoRef.current.pause();
@@ -147,26 +149,14 @@ export default function Home() {
   // Header extras (logo & left actions) fade out gently as scroll begins
   const headerExtrasOpacity = Math.max(0, 1 - scrollFactor * 2.5);
 
-  // Playback initialization: waits for video to load or uses safety timeout
+  // Proactively start playing video on mount
   useEffect(() => {
-    const desktopReady = desktopVideoRef.current && desktopVideoRef.current.readyState >= 3;
-    const mobileReady = mobileVideoRef.current && mobileVideoRef.current.readyState >= 3;
-    if (desktopReady || mobileReady) {
-      startVideoPlayback();
+    if (desktopVideoRef.current) {
+      desktopVideoRef.current.play().catch(() => {});
     }
-
-    const loadTimer = setTimeout(() => {
-      startVideoPlayback();
-    }, 2800);
-
-    const fallbackTimer = setTimeout(() => {
-      setVideoEnded(true);
-    }, 6000);
-
-    return () => {
-      clearTimeout(loadTimer);
-      clearTimeout(fallbackTimer);
-    };
+    if (mobileVideoRef.current) {
+      mobileVideoRef.current.play().catch(() => {});
+    }
   }, []);
 
   const prayerTimes = [
@@ -192,30 +182,30 @@ export default function Home() {
           <div className="absolute inset-0 z-0 overflow-hidden">
             <video
               ref={mobileVideoRef}
+              autoPlay
               muted
               playsInline
               preload="auto"
               poster="/mobile_first_frame.jpg"
-              onCanPlayThrough={handleVideoCanPlay}
-              onLoadedData={handleVideoCanPlay}
+              onPlaying={handleVideoPlaying}
+              onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
               <source src="/1012(1).mp4" type="video/mp4" />
             </video>
 
-            {/* Blurry zoomed first-frame preview overlay while full video is loading */}
+            {/* Subtle soft-blur first-frame preview overlay while video is buffering */}
             <div
-              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-1000 ease-out ${
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-700 ease-out ${
                 videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
               }`}
             >
               <img
                 src="/mobile_first_frame.jpg"
                 alt=""
-                className="h-full w-full object-cover object-center scale-135 filter blur-2xl"
+                className="h-full w-full object-cover object-center scale-105 filter blur-[5px]"
               />
-              <div className="absolute inset-0 bg-black/20" />
             </div>
           </div>
 
@@ -444,30 +434,30 @@ export default function Home() {
           <div className="absolute inset-0 z-0 overflow-hidden">
             <video
               ref={desktopVideoRef}
+              autoPlay
               muted
               playsInline
               preload="auto"
               poster="/landing_first_frame.jpg"
-              onCanPlayThrough={handleVideoCanPlay}
-              onLoadedData={handleVideoCanPlay}
+              onPlaying={handleVideoPlaying}
+              onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
               <source src="/1014.mp4" type="video/mp4" />
             </video>
 
-            {/* Blurry zoomed first-frame preview overlay while full video is loading */}
+            {/* Subtle soft-blur first-frame preview overlay while video is buffering */}
             <div
-              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-1000 ease-out ${
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-700 ease-out ${
                 videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
               }`}
             >
               <img
                 src="/landing_first_frame.jpg"
                 alt=""
-                className="h-full w-full object-cover object-center scale-135 filter blur-2xl"
+                className="h-full w-full object-cover object-center scale-105 filter blur-[5px]"
               />
-              <div className="absolute inset-0 bg-black/20" />
             </div>
           </div>
 
