@@ -146,109 +146,90 @@ export default function BookingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070c09] text-white flex flex-col font-sans text-right selection:bg-amber-400 selection:text-black">
+    <div className="min-h-screen bg-[#0B1220] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#C49A6C] selection:text-[#0B1220]">
       <Navbar />
 
-      {/* Hero Banner */}
-      <section className="relative py-12 lg:py-16 bg-gradient-to-b from-[#0d1612] via-[#090f0c] to-[#070c09] border-b border-white/10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-xs font-bold mb-4">
-            <CalendarIcon className="w-4 h-4 text-amber-400" />
-            <span>نظام الحجز الإلكتروني لدار المناسبات بجامع الحق</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-extrabold font-aref text-white tracking-tight mb-4 drop-shadow-md">
-            حجز قاعات المناسبات (عزاء وكتب كتاب)
-          </h1>
-
-          <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            نسعد باستقبال مناسباتكم المباركة ومجالسكم في قاعات دار المناسبات المجهزة بأحدث الوسائل
-            والأنظمة الصوتية، مع إمكانية استعراض التقويم وحجز موعدك فورياً.
-          </p>
-
-          {/* Toggle Occasion Type */}
-          <div className="max-w-md mx-auto grid grid-cols-2 gap-3 mt-8 p-1.5 bg-black/60 border border-white/15 rounded-2xl shadow-xl">
-            <button
-              onClick={() => setBookingType("katbketab")}
-              className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
-                bookingType === "katbketab"
-                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/25 scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span>💍 حجز كتب كتاب</span>
-              <span className="text-[10px] hidden sm:inline">(عقد قران)</span>
-            </button>
-            <button
-              onClick={() => setBookingType("3aza")}
-              className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
-                bookingType === "3aza"
-                  ? "bg-[#8f6b28] text-white font-black shadow-lg shadow-amber-900/30 border border-amber-400/30 scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span>🕊️ حجز عزاء</span>
-              <span className="text-[10px] hidden sm:inline">(دار التعازي)</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Main Reservation Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+        {/* Toggle Occasion Type */}
+        <div className="max-w-md mx-auto grid grid-cols-2 gap-3 mb-8 p-1.5 bg-[#152132] border border-[#22334A] rounded-2xl shadow-sm">
+          <button
+            onClick={() => setBookingType("katbketab")}
+            className={`py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
+              bookingType === "katbketab"
+                ? "bg-[#C49A6C] text-[#0B1220] font-black shadow-[0_0_15px_rgba(196,154,108,0.3)] scale-[1.02]"
+                : "text-[#8A9BB3] hover:text-[#FAF7F0] hover:bg-[#182436]"
+            }`}
+          >
+            <span>💍 حجز كتب كتاب</span>
+            <span className="text-[10px] hidden sm:inline">(عقد قران)</span>
+          </button>
+          <button
+            onClick={() => setBookingType("3aza")}
+            className={`py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
+              bookingType === "3aza"
+                ? "bg-[#C49A6C] text-[#0B1220] font-black shadow-[0_0_15px_rgba(196,154,108,0.3)] scale-[1.02]"
+                : "text-[#8A9BB3] hover:text-[#FAF7F0] hover:bg-[#182436]"
+            }`}
+          >
+            <span>🕊️ حجز عزاء</span>
+            <span className="text-[10px] hidden sm:inline">(دار التعازي)</span>
+          </button>
+        </div>
+
         {isSubmitted ? (
           /* Confirmation State */
-          <div className="max-w-2xl mx-auto bg-[#0d1612] border border-amber-400/40 rounded-3xl p-6 sm:p-10 text-center shadow-2xl">
-            <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10" />
+          <div className="max-w-2xl mx-auto bg-[#152132] border border-[#C49A6C]/40 rounded-3xl p-6 sm:p-10 text-center shadow-2xl">
+            <div className="w-20 h-20 rounded-full bg-[#182436] border-2 border-[#C49A6C] text-[#C49A6C] flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-[#C49A6C]" />
             </div>
 
-            <span className="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-400/30">
+            <span className="text-xs font-bold px-3 py-1 bg-[#182436] text-[#C49A6C] rounded-full border border-[#C49A6C]/40">
               تم تسجيل طلب الحجز بنجاح
             </span>
 
-            <h2 className="text-2xl sm:text-3xl font-black font-aref text-white mt-4 mb-2">
+            <h2 className="text-2xl sm:text-3xl font-black font-aref text-[#FAF7F0] mt-4 mb-2">
               {bookingType === "katbketab"
                 ? "بارك الله لكما وبارك عليكما وجمع بينكما في خير"
                 : "عظم الله أجركم ورحم ميتكم وألهمكم الصبر والسلوان"}
             </h2>
 
-            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
+            <p className="text-[#8A9BB3] text-xs sm:text-sm leading-relaxed mb-6">
               تم تثبيت طلبك في جدول حجوزات دار المناسبات بجامع الحق. كود الحجز المرجعي:
-              <span className="block text-2xl font-mono font-bold text-amber-300 mt-2">
+              <span className="block text-2xl font-mono font-bold text-[#C49A6C] mt-2">
                 {reservationCode}
               </span>
             </p>
 
             {/* Summary Details */}
-            <div className="bg-black/50 border border-white/10 rounded-2xl p-5 text-right text-xs space-y-3 mb-8">
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">نوع المناسبة:</span>
-                <span className="font-bold text-amber-300">
+            <div className="bg-[#111A29] border border-[#22334A] rounded-2xl p-5 text-right text-xs space-y-3 mb-8">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">نوع المناسبة:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {bookingType === "katbketab" ? "عقد قران (كتب كتاب)" : "مجلس عزاء وتأبين"}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">التاريخ المحدد:</span>
-                <span className="font-bold text-white">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">التاريخ المحدد:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   اليوم {selectedDay} من {currentMonth.name}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">الفترة والقاعة:</span>
-                <span className="font-bold text-white">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">الفترة والقاعة:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {timeSlots.find((s) => s.id === selectedSlot)?.title} • {selectedHall}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">صاحب الحجز:</span>
-                <span className="font-bold text-white">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">صاحب الحجز:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {fullName} ({phone})
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">الخدمات الإضافية:</span>
-                <span className="font-bold text-amber-300">
+                <span className="text-[#8A9BB3]">الخدمات الإضافية:</span>
+                <span className="font-bold text-[#C49A6C]">
                   {selectedServices.length > 0
                     ? `${selectedServices.length} خدمات مضافة`
                     : "بدون خدمات إضافية"}
@@ -265,14 +246,14 @@ export default function BookingPage() {
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition"
+                className="w-full py-3.5 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
               >
                 <Send className="w-4 h-4" />
                 تأكيد عبر واتساب إدارة المسجد
               </a>
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#FAF7F0] border border-[#22334A] font-bold text-xs transition"
               >
                 تعديل أو حجز جديد
               </button>
@@ -280,34 +261,34 @@ export default function BookingPage() {
           </div>
         ) : (
           /* Main Interactive Reservation Steps */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column: Calendar & Time Slots */}
             <div className="lg:col-span-7 space-y-6">
               {/* Step 1: Calendar Widget */}
-              <div className="bg-[#0d1612] border border-amber-500/25 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-[#152132] border border-[#22334A] rounded-[28px] p-5 sm:p-6 shadow-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold font-aref text-white flex items-center gap-2">
-                      <CalendarIcon className="w-5 h-5 text-amber-400" />
+                    <h2 className="text-lg sm:text-xl font-bold font-aref text-[#C49A6C] flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-[#C49A6C]" />
                       <span>1. اختر تاريخ المناسبة من التقويم</span>
                     </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      الأيام الخضراء متاحة للحجز الفوري
+                    <p className="text-xs text-[#C49A6C]/80 mt-0.5">
+                      الأيام المتاحة مؤشرة باللون الذهبي والكراميل للحجز الفوري
                     </p>
                   </div>
 
                   {/* Month controls */}
-                  <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-1">
+                  <div className="flex items-center gap-2 bg-[#182436] border border-[#2A3C54] rounded-xl px-2 py-1 self-start sm:self-auto">
                     <button
                       type="button"
                       onClick={() => setCurrentMonthIndex((prev) => Math.max(0, prev - 1))}
                       disabled={currentMonthIndex === 0}
-                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-slate-300 transition"
+                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-[#FAF7F0] transition"
                       title="الشهر السابق"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-bold text-amber-300 px-2 font-aref">
+                    <span className="text-xs font-bold text-[#FAF7F0] px-2 font-aref">
                       {currentMonth.name}
                     </span>
                     <button
@@ -316,7 +297,7 @@ export default function BookingPage() {
                         setCurrentMonthIndex((prev) => Math.min(months.length - 1, prev + 1))
                       }
                       disabled={currentMonthIndex === months.length - 1}
-                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-slate-300 transition"
+                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-[#FAF7F0] transition"
                       title="الشهر التالي"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -325,7 +306,7 @@ export default function BookingPage() {
                 </div>
 
                 {/* Weekday names */}
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2 py-1.5 border-b border-white/5">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#8A9BB3] mb-2 py-1.5 border-b border-[#22334A]">
                   <span>الأحد</span>
                   <span>الإثنين</span>
                   <span>الثلاثاء</span>
@@ -355,20 +336,20 @@ export default function BookingPage() {
                         onClick={() => setSelectedDay(day)}
                         className={`h-10 sm:h-12 rounded-2xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center relative ${
                           isSelected
-                            ? "bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-400/30 scale-105"
+                            ? "bg-[#C49A6C] text-[#0B1220] font-black shadow-[0_0_20px_rgba(196,154,108,0.5)] scale-105"
                             : isBooked
-                            ? "bg-white/5 text-slate-600 cursor-not-allowed line-through opacity-60"
+                            ? "bg-[#233246] text-[#64748B] cursor-not-allowed line-through opacity-70"
                             : isPartiallyBooked
-                            ? "bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25"
-                            : "bg-black/40 text-slate-200 border border-white/10 hover:border-amber-400/50 hover:bg-white/10"
+                            ? "bg-[#7D5E3B]/70 text-white border border-[#C49A6C]/80 hover:bg-[#7D5E3B]"
+                            : "bg-[#182436] text-[#FAF7F0] border border-[#263954] hover:border-[#C49A6C]"
                         }`}
                       >
                         <span>{day}</span>
                         {isPartiallyBooked && !isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C49A6C] absolute bottom-1.5" />
                         )}
                         {!isBooked && !isPartiallyBooked && !isSelected && (
-                          <span className="w-1 h-1 rounded-full bg-emerald-400/70 absolute bottom-1.5" />
+                          <span className="w-1 h-1 rounded-full bg-[#FAF7F0]/80 absolute bottom-1.5" />
                         )}
                       </button>
                     );
@@ -376,30 +357,30 @@ export default function BookingPage() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex flex-wrap items-center justify-center gap-4 mt-5 pt-3 border-t border-white/10 text-[11px] text-slate-300">
+                <div className="flex flex-wrap items-center justify-center gap-4 mt-5 pt-3 border-t border-[#22334A] text-[11px] text-[#8A9BB3]">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#C49A6C]" />
                     المحدد ({selectedDay} {currentMonth.name})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#FAF7F0]" />
                     متاح للحجز
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#C49A6C]" />
                     متاح جزئياً
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#9E2A38]" />
                     محجوز بالكامل
                   </span>
                 </div>
               </div>
 
               {/* Step 2: Time Slots */}
-              <div className="bg-[#0d1612] border border-amber-500/25 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <h2 className="text-lg sm:text-xl font-bold font-aref text-white flex items-center gap-2 mb-3">
-                  <Clock className="w-5 h-5 text-amber-400" />
+              <div className="bg-[#152132] border border-[#22334A] rounded-[28px] p-5 sm:p-6 shadow-2xl">
+                <h2 className="text-lg sm:text-xl font-bold font-aref text-[#C49A6C] flex items-center gap-2 mb-3">
+                  <Clock className="w-5 h-5 text-[#C49A6C]" />
                   <span>2. اختر الفترة الزمنية المناسبة</span>
                 </h2>
 
@@ -413,17 +394,17 @@ export default function BookingPage() {
                         onClick={() => setSelectedSlot(slot.id)}
                         className={`p-4 rounded-2xl border text-right transition ${
                           isSelected
-                            ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-md shadow-amber-500/10"
-                            : "bg-black/40 border-white/10 text-slate-300 hover:bg-white/5"
+                            ? "bg-[#182436] border-[#C49A6C] text-[#FAF7F0] font-bold shadow-md ring-1 ring-[#C49A6C]"
+                            : "bg-[#111A29] border-[#22334A] text-[#8A9BB3] hover:bg-[#182436] hover:text-[#FAF7F0]"
                         }`}
                       >
-                        <span className="block text-sm font-bold text-white mb-1">
+                        <span className="block text-sm font-bold text-[#FAF7F0] mb-1">
                           {slot.title}
                         </span>
-                        <span className="block text-[11px] text-amber-300 font-mono mb-1">
+                        <span className="block text-[11px] text-[#C49A6C] font-mono mb-1">
                           {slot.time}
                         </span>
-                        <span className="block text-[10px] text-slate-400">{slot.desc}</span>
+                        <span className="block text-[10px] text-[#8A9BB3]">{slot.desc}</span>
                       </button>
                     );
                   })}
@@ -431,9 +412,9 @@ export default function BookingPage() {
               </div>
 
               {/* Step 3: Halls Available */}
-              <div className="bg-[#0d1612] border border-amber-500/25 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <h2 className="text-lg sm:text-xl font-bold font-aref text-white flex items-center gap-2 mb-3">
-                  <Building2 className="w-5 h-5 text-amber-400" />
+              <div className="bg-[#152132] border border-[#22334A] rounded-[28px] p-5 sm:p-6 shadow-2xl">
+                <h2 className="text-lg sm:text-xl font-bold font-aref text-[#C49A6C] flex items-center gap-2 mb-3">
+                  <Building2 className="w-5 h-5 text-[#C49A6C]" />
                   <span>3. اختيار قاعة المناسبات</span>
                 </h2>
 
@@ -446,33 +427,33 @@ export default function BookingPage() {
                         onClick={() => setSelectedHall(hall.id)}
                         className={`p-4 rounded-2xl border cursor-pointer transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
                           isSelected
-                            ? "bg-amber-500/15 border-amber-400 shadow-lg shadow-amber-500/10"
-                            : "bg-black/40 border-white/10 hover:border-white/20"
+                            ? "bg-[#182436] border-[#C49A6C] shadow-lg ring-1 ring-[#C49A6C]"
+                            : "bg-[#111A29] border-[#22334A] hover:border-[#C49A6C]/40"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                              isSelected ? "border-amber-400 bg-amber-400" : "border-slate-500"
+                              isSelected ? "border-[#C49A6C] bg-[#C49A6C]" : "border-[#22334A]"
                             }`}
                           >
-                            {isSelected && <span className="w-2 h-2 rounded-full bg-black" />}
+                            {isSelected && <span className="w-2 h-2 rounded-full bg-[#0B1220]" />}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="text-sm sm:text-base font-bold text-white">
+                              <h3 className="text-sm sm:text-base font-bold text-[#FAF7F0]">
                                 {hall.name}
                               </h3>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-amber-300 font-semibold">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#182436] text-[#C49A6C] border border-[#22334A] font-semibold">
                                 {hall.capacity}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-300 mt-1">{hall.suitability}</p>
+                            <p className="text-xs text-[#8A9BB3] mt-1">{hall.suitability}</p>
                             <div className="flex flex-wrap gap-2 mt-2">
                               {hall.features.map((f, idx) => (
                                 <span
                                   key={idx}
-                                  className="text-[10px] bg-black/40 px-2 py-0.5 rounded-md text-slate-400"
+                                  className="text-[10px] bg-[#111A29] border border-[#22334A] px-2 py-0.5 rounded-md text-[#8A9BB3]"
                                 >
                                   • {f}
                                 </span>
@@ -487,16 +468,16 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* Right Column: Services & Client Form */}
+            {/* Left Column: Services & Client Form */}
             <div className="lg:col-span-5 space-y-6">
-              {/* Optional Add-on Services */}
-              <div className="bg-[#0d1612] border border-amber-500/25 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <h2 className="text-base sm:text-lg font-bold font-aref text-white flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-amber-400" />
+              {/* Optional Add-on Services (Matching Image 1) */}
+              <div className="bg-[#152132] border border-[#22334A] rounded-[28px] p-5 sm:p-6 shadow-2xl">
+                <h2 className="text-base sm:text-lg font-bold font-aref text-[#C49A6C] flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-[#C49A6C]" />
                   <span>الخدمات المجهزة لمناسبتك</span>
                 </h2>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {optionalServices.map((service) => {
                     const isChecked = selectedServices.includes(service.id);
                     const Icon = service.icon;
@@ -506,28 +487,28 @@ export default function BookingPage() {
                         key={service.id}
                         type="button"
                         onClick={() => toggleService(service.id)}
-                        className={`w-full p-3 rounded-2xl border text-right flex items-start gap-3 transition ${
+                        className={`w-full p-3.5 rounded-2xl border text-right flex items-center justify-between gap-3 transition ${
                           isChecked
-                            ? "bg-amber-500/15 border-amber-400/80 text-white"
-                            : "bg-black/35 border-white/10 text-slate-300 hover:bg-white/5"
+                            ? "bg-[#111A29] border-[#C49A6C] shadow-sm ring-1 ring-[#C49A6C]"
+                            : "bg-[#111A29] border-[#22334A] hover:border-[#C49A6C]/50"
                         }`}
                       >
+                        <div className="flex flex-col text-right">
+                          <span className="text-xs sm:text-sm font-bold text-[#FAF7F0]">
+                            {service.title}
+                          </span>
+                          <span className="text-[11px] text-[#8A9BB3] mt-0.5">
+                            {service.desc}
+                          </span>
+                        </div>
                         <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
                             isChecked
-                              ? "bg-amber-400 text-slate-950 font-bold"
-                              : "bg-white/10 text-slate-400"
+                              ? "bg-[#C49A6C] text-[#0B1220] border-[#C49A6C]"
+                              : "bg-[#182436] text-[#C49A6C] border-[#2A3C54]"
                           }`}
                         >
                           <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="block text-xs font-bold text-white">
-                            {service.title}
-                          </span>
-                          <span className="block text-[10px] text-slate-400 mt-0.5">
-                            {service.desc}
-                          </span>
                         </div>
                       </button>
                     );
@@ -535,16 +516,16 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Reservation Details Form */}
-              <div className="bg-[#0d1612] border border-amber-500/25 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <h2 className="text-base sm:text-lg font-bold font-aref text-white flex items-center gap-2 mb-4">
-                  <HeartHandshake className="w-5 h-5 text-amber-400" />
+              {/* Reservation Details Form (Matching Image 1) */}
+              <div className="bg-[#152132] border border-[#22334A] rounded-[28px] p-5 sm:p-6 shadow-2xl">
+                <h2 className="text-base sm:text-lg font-bold font-aref text-[#C49A6C] flex items-center gap-2 mb-4">
+                  <HeartHandshake className="w-5 h-5 text-[#C49A6C]" />
                   <span>بيانات صاحب الحجز</span>
                 </h2>
 
                 <form onSubmit={handleBookingSubmit} className="space-y-3.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-[#8A9BB3] mb-1">
                       الاسم الثلاثي أو الرباعي *
                     </label>
                     <input
@@ -553,27 +534,27 @@ export default function BookingPage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="أدخل اسم صاحب الحجز"
-                      className="w-full px-4 py-3 rounded-2xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111A29] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/40 focus:outline-none focus:border-[#C49A6C] text-right"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                        رقم الهاتف / الواتساب *
+                      <label className="block text-xs font-semibold text-[#8A9BB3] mb-1">
+                        رقم الهاتف / واتساب *
                       </label>
                       <input
                         type="tel"
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="01XXXXXXXXX"
+                        placeholder="968XXXXXXXX"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-2xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#111A29] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/40 focus:outline-none focus:border-[#C49A6C] text-right"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-[#8A9BB3] mb-1">
                         رقم هاتف إضافي (بديل)
                       </label>
                       <input
@@ -582,13 +563,13 @@ export default function BookingPage() {
                         onChange={(e) => setSecondaryPhone(e.target.value)}
                         placeholder="اختياري"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-2xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#111A29] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/40 focus:outline-none focus:border-[#C49A6C] text-right"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-[#8A9BB3] mb-1">
                       {bookingType === "katbketab" ? "اسما العروسين" : "اسم المتوفى رحمه الله"}
                     </label>
                     <input
@@ -597,36 +578,36 @@ export default function BookingPage() {
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder={
                         bookingType === "katbketab"
-                          ? "مثال: أحمد & سارة"
-                          : "مثال: المرحوم بإذن الله فلان الفلاني"
+                          ? "مثال: اسم العروسين، طلب مأذون..."
+                          : "مثال: المرحوم بإذن الله فلان الفلاني..."
                       }
-                      className="w-full px-4 py-3 rounded-2xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111A29] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/40 focus:outline-none focus:border-[#C49A6C] text-right"
                     />
                   </div>
 
                   {/* Summary Box */}
-                  <div className="p-3.5 rounded-2xl bg-black/60 border border-white/10 text-xs text-slate-300 space-y-1.5">
+                  <div className="p-3.5 rounded-2xl bg-[#111A29] border border-[#22334A] text-xs text-[#8A9BB3] space-y-1.5">
                     <div className="flex justify-between">
                       <span>المناسبة:</span>
-                      <span className="font-bold text-amber-300">
+                      <span className="font-bold text-[#FAF7F0]">
                         {bookingType === "katbketab" ? "كتب كتاب (عقد قران)" : "عزاء"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>الموعد المحدد:</span>
-                      <span className="font-bold text-white">
+                      <span className="font-bold text-[#FAF7F0]">
                         {selectedDay} {currentMonth.name} - {selectedSlot}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>القاعة:</span>
-                      <span className="font-bold text-white">{selectedHall}</span>
+                      <span className="font-bold text-[#FAF7F0]">{selectedHall}</span>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 active:scale-95 transition"
+                    className="w-full py-3.5 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-black text-xs shadow-[0_0_20px_rgba(196,154,108,0.25)] active:scale-95 transition"
                   >
                     تأكيد وتسجيل الحجز الآن
                   </button>
@@ -638,7 +619,7 @@ export default function BookingPage() {
       </main>
 
       {/* Footer Note */}
-      <footer className="border-t border-white/10 bg-[#060a08] py-8 text-center text-xs text-slate-400">
+      <footer className="border-t border-[#22334A] bg-[#0B1220] py-8 text-center text-xs text-[#8A9BB3]">
         <p>© جامع الحق ودار المناسبات الإسلامية — خدمة المجتمع والسكينة الإيمانية.</p>
       </footer>
     </div>

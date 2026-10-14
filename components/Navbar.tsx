@@ -34,19 +34,19 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
 
   return (
     <>
-      <header className="sticky top-0 left-0 right-0 z-50 bg-[#090f0c]/90 backdrop-blur-md border-b border-amber-500/20 text-white transition-all duration-300">
+      <header className="sticky top-0 left-0 right-0 z-50 bg-[#0B1220]/95 backdrop-blur-md border-b border-[#22334A] text-[#FAF7F0] transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
             {/* Logo and Brand */}
-            <Link href="/" className="flex items-center gap-2 group shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-105 transition-transform shadow-sm">
-                <Landmark className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#152132] border border-[#22334A] flex items-center justify-center text-[#C49A6C] group-hover:border-[#C49A6C] group-hover:scale-105 transition-all shadow-sm">
+                <Landmark className="w-4 h-4 sm:w-5 sm:h-5 text-[#C49A6C]" />
               </div>
               <div className="flex flex-col text-right">
-                <span className="font-aref text-lg sm:text-2xl font-bold text-white group-hover:text-amber-300 transition-colors leading-tight">
+                <span className="font-aref text-lg sm:text-2xl font-bold text-[#FAF7F0] group-hover:text-[#C49A6C] transition-colors leading-tight">
                   جامع الحق
                 </span>
-                <span className="hidden sm:inline text-[10px] font-semibold text-amber-300/80 tracking-wide">
+                <span className="hidden sm:inline text-[10px] font-semibold text-[#8A9BB3] tracking-wide">
                   دار المناسبات الإسلامية
                 </span>
               </div>
@@ -62,11 +62,11 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
                     href={item.href}
                     className={`flex items-center gap-1.5 py-2 text-sm font-semibold transition-colors ${
                       isActive || (item.href === "/booking" && pathname.startsWith("/booking"))
-                        ? "text-amber-300 font-bold"
-                        : "text-slate-200 hover:text-amber-300"
+                        ? "text-[#C49A6C] font-bold"
+                        : "text-[#8A9BB3] hover:text-[#FAF7F0]"
                     }`}
                   >
-                    {item.icon && <item.icon className="w-4 h-4 text-amber-400" />}
+                    {item.icon && <item.icon className="w-4 h-4 text-[#C49A6C]" />}
                     <span>{item.name}</span>
                   </Link>
                 );
@@ -77,9 +77,9 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
             <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() => openCalendarFor("katbketab")}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 px-5 py-2 text-xs font-black text-slate-950 transition shadow-lg shadow-amber-500/20 active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] px-5 py-2.5 text-xs font-black text-[#0B1220] transition shadow-[0_0_20px_rgba(196,154,108,0.25)] active:scale-95"
               >
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5 text-[#0B1220]" />
                 <span>احجز مناسبتك (التقويم)</span>
               </button>
             </div>
@@ -94,8 +94,8 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
                     href={item.href}
                     className={`transition whitespace-nowrap ${
                       isActive
-                        ? "text-amber-300 font-bold"
-                        : "text-slate-200 hover:text-amber-300"
+                        ? "text-[#C49A6C] font-bold"
+                        : "text-[#8A9BB3] hover:text-[#FAF7F0]"
                     }`}
                   >
                     {item.name}

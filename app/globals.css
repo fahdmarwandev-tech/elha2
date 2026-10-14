@@ -13,8 +13,17 @@
 }
 
 :root {
-  --background: #f1f6f2;
-  --foreground: #0f172a;
+  --background: #0B1220;
+  --foreground: #FAF7F0;
+  --color-navy-dark: #0B1220;
+  --color-navy-surface: #152132;
+  --color-navy-card: #182436;
+  --color-navy-border: #22334A;
+  --color-caramel: #C49A6C;
+  --color-caramel-dark: #7D5E3B;
+  --color-sandstone: #DECDB7;
+  --color-ivory: #FAF7F0;
+  --color-slate-muted: #8A9BB3;
 }
 
 *, *::before, *::after {
@@ -26,8 +35,8 @@ html {
 }
 
 body {
-  background-color: #f1f6f2;
-  color: #0f172a;
+  background-color: #0B1220;
+  color: #FAF7F0;
   font-family: 'Tajawal', 'Cairo', sans-serif;
   min-height: 100vh;
   margin: 0;
@@ -36,17 +45,17 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar in navy and caramel palette */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f6f2;
+  background: #0B1220;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #22334A;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #C49A6C;
 }

@@ -92,12 +92,12 @@ export default function QuickBookingModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-[#0d1612] border border-amber-500/30 rounded-3xl shadow-2xl text-white p-5 sm:p-7">
+      <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-[#152132] border border-[#22334A] rounded-3xl shadow-2xl text-[#FAF7F0] p-5 sm:p-7">
         {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="إغلاق"
-          className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition"
+          className="absolute top-4 left-4 p-2 rounded-full bg-[#0B1220] hover:bg-[#182436] text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A] transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -105,47 +105,47 @@ export default function QuickBookingModal({
         {isSubmitted ? (
           /* Confirmation View */
           <div className="py-8 text-center flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 mb-5 animate-bounce">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-20 h-20 rounded-full bg-[#0B1220] border-2 border-[#C49A6C] flex items-center justify-center text-[#C49A6C] mb-5 animate-bounce">
+              <CheckCircle2 className="w-10 h-10 text-[#C49A6C]" />
             </div>
 
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 mb-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#182436] text-[#C49A6C] border border-[#22334A] mb-2">
               تم تسجيل طلب الحجز بنجاح
             </span>
 
-            <h3 className="text-2xl font-black text-white font-aref mb-2">
+            <h3 className="text-2xl font-black text-[#FAF7F0] font-aref mb-2">
               {bookingType === "katbketab" ? "مبارك مقدماً عقد القران" : "عظم الله أجركم وأحسن عزاءكم"}
             </h3>
 
-            <p className="text-slate-300 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+            <p className="text-[#8A9BB3] text-sm max-w-md mx-auto mb-6 leading-relaxed">
               تم استلام حجزك المبدئي لدار المناسبات بجامع الحق. رقم الحجز المرجعي:
-              <strong className="block text-amber-300 text-lg font-mono mt-1">
+              <strong className="block text-[#FAF7F0] text-lg font-mono mt-1">
                 MN-{Math.floor(100000 + Math.random() * 900000)}
               </strong>
             </p>
 
-            <div className="bg-black/40 border border-white/10 rounded-2xl p-4 w-full max-w-md text-right text-xs space-y-2 mb-6">
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">نوع المناسبة:</span>
-                <span className="font-bold text-amber-300">
+            <div className="bg-[#0B1220] border border-[#22334A] rounded-2xl p-4 w-full max-w-md text-right text-xs space-y-2 mb-6">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">نوع المناسبة:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {bookingType === "katbketab" ? "عقد قران (كتب كتاب)" : "مجلس عزاء وتأبين"}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">التاريخ المحدد:</span>
-                <span className="font-bold text-white">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">التاريخ المحدد:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {selectedDay} {currentMonth.name}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-slate-400">الفترة والقاعة:</span>
-                <span className="font-bold text-white">
+              <div className="flex justify-between border-b border-[#22334A] pb-2">
+                <span className="text-[#8A9BB3]">الفترة والقاعة:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   فترة {selectedSlot} • {selectedHall}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">صاحب الحجز:</span>
-                <span className="font-bold text-white">
+                <span className="text-[#8A9BB3]">صاحب الحجز:</span>
+                <span className="font-bold text-[#FAF7F0]">
                   {fullName} ({phone})
                 </span>
               </div>
@@ -160,14 +160,14 @@ export default function QuickBookingModal({
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 font-bold text-xs text-white flex items-center justify-center gap-2 transition"
+                className="w-full py-3 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] font-black text-xs text-[#0B1220] flex items-center justify-center gap-2 transition shadow-md shadow-[#C49A6C]/20"
               >
                 <Send className="w-4 h-4" />
                 تأكيد فوري عبر واتساب
               </a>
               <button
                 onClick={resetForm}
-                className="w-full py-3 rounded-full bg-white/10 hover:bg-white/20 font-bold text-xs text-slate-200 transition"
+                className="w-full py-3 rounded-full bg-[#182436] hover:bg-[#0B1220] font-bold text-xs text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A] transition"
               >
                 إغلاق النافذة
               </button>
@@ -178,27 +178,27 @@ export default function QuickBookingModal({
           <div>
             {/* Header */}
             <div className="text-right mb-5 pr-1">
-              <div className="flex items-center gap-2 text-amber-300 font-bold text-xs mb-1">
-                <CalendarIcon className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center gap-2 text-[#C49A6C] font-bold text-xs mb-1">
+                <CalendarIcon className="w-4 h-4 text-[#C49A6C]" />
                 <span>حجز مباشر لدار المناسبات مع التقويم</span>
               </div>
-              <h2 className="text-2xl font-bold font-aref text-white">
+              <h2 className="text-2xl font-bold font-aref text-[#FAF7F0]">
                 حجز موعد {bookingType === "3aza" ? "عزاء" : "كتب كتاب"}
               </h2>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-[#8A9BB3] mt-1">
                 اختر نوع المناسبة واليوم من التقويم لتحديد الفترة والقاعة المناسبة لك بكل سهولة.
               </p>
             </div>
 
             {/* Occasion Switcher: 3aza vs Katb Ketab */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-black/40 border border-white/10 rounded-2xl mb-5">
+            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0B1220] border border-[#22334A] rounded-2xl mb-5">
               <button
                 type="button"
                 onClick={() => setBookingType("3aza")}
                 className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
                   bookingType === "3aza"
-                    ? "bg-[#8f6b28] text-white shadow-md shadow-amber-900/30 border border-amber-400/40"
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                    ? "bg-[#C49A6C] text-[#0B1220] shadow-sm font-black"
+                    : "text-[#8A9BB3] hover:text-[#FAF7F0] hover:bg-[#182436]"
                 }`}
               >
                 <span>🕊️ حجز عزاء</span>
@@ -209,8 +209,8 @@ export default function QuickBookingModal({
                 onClick={() => setBookingType("katbketab")}
                 className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
                   bookingType === "katbketab"
-                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20 font-black"
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                    ? "bg-[#C49A6C] text-[#0B1220] shadow-sm font-black"
+                    : "text-[#8A9BB3] hover:text-[#FAF7F0] hover:bg-[#182436]"
                 }`}
               >
                 <span>💍 حجز كتب كتاب</span>
@@ -219,10 +219,10 @@ export default function QuickBookingModal({
             </div>
 
             {/* Interactive Calendar Part */}
-            <div className="bg-black/35 border border-white/10 rounded-2xl p-4 mb-5">
+            <div className="bg-[#0B1220] border border-[#22334A] rounded-2xl p-4 mb-5">
               {/* Month Navigation */}
               <div className="flex items-center justify-between mb-3 text-sm">
-                <span className="font-bold text-amber-200 font-aref text-base">
+                <span className="font-bold text-[#FAF7F0] font-aref text-base">
                   {currentMonth.name}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -230,7 +230,7 @@ export default function QuickBookingModal({
                     type="button"
                     onClick={() => setCurrentMonthIndex(0)}
                     disabled={currentMonthIndex === 0}
-                    className="p-1 rounded-lg bg-white/10 disabled:opacity-30 hover:bg-white/20 transition text-slate-300"
+                    className="p-1 rounded-lg bg-[#152132] disabled:opacity-30 hover:bg-[#182436] transition text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A]"
                     title="الشهر السابق"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -239,7 +239,7 @@ export default function QuickBookingModal({
                     type="button"
                     onClick={() => setCurrentMonthIndex(1)}
                     disabled={currentMonthIndex === 1}
-                    className="p-1 rounded-lg bg-white/10 disabled:opacity-30 hover:bg-white/20 transition text-slate-300"
+                    className="p-1 rounded-lg bg-[#152132] disabled:opacity-30 hover:bg-[#182436] transition text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A]"
                     title="الشهر التالي"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -248,7 +248,7 @@ export default function QuickBookingModal({
               </div>
 
               {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 mb-2">
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-[#8A9BB3] mb-2">
                 <span>أحد</span>
                 <span>إثنين</span>
                 <span>ثلاثاء</span>
@@ -280,17 +280,17 @@ export default function QuickBookingModal({
                       onClick={() => setSelectedDay(day)}
                       className={`h-8 sm:h-9 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center relative ${
                         isSelected
-                          ? "bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-400/30 scale-105"
+                          ? "bg-[#C49A6C] text-[#0B1220] font-black shadow-md shadow-[#C49A6C]/30 scale-105"
                           : isBooked
-                          ? "bg-white/5 text-slate-600 cursor-not-allowed line-through"
+                          ? "bg-white/5 text-[#8A9BB3]/40 cursor-not-allowed line-through"
                           : isPartiallyBooked
-                          ? "bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20"
-                          : "bg-white/5 text-slate-200 hover:bg-white/15"
+                          ? "bg-[#182436] text-[#FAF7F0] border border-[#7D5E3B] hover:bg-[#152132]"
+                          : "bg-[#152132] text-[#FAF7F0] border border-[#22334A] hover:border-[#C49A6C] hover:bg-[#182436]"
                       }`}
                     >
                       <span>{day}</span>
                       {isPartiallyBooked && !isSelected && (
-                        <span className="w-1 h-1 rounded-full bg-amber-400 absolute bottom-1" />
+                        <span className="w-1 h-1 rounded-full bg-[#7D5E3B] absolute bottom-1" />
                       )}
                     </button>
                   );
@@ -298,25 +298,29 @@ export default function QuickBookingModal({
               </div>
 
               {/* Calendar Legend */}
-              <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-white/5 text-[10px] text-slate-400">
+              <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-[#22334A] text-[10px] text-[#8A9BB3]">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="w-2 h-2 rounded-full bg-[#C49A6C]" />
                   المحدد ({selectedDay} {currentMonth.name})
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  متاح للحجز
+                  <span className="w-2 h-2 rounded-full border border-[#22334A]" />
+                  متاح
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-400/60" />
-                  محجوز بالكامل
+                  <span className="w-2 h-2 rounded-full bg-[#7D5E3B]" />
+                  متاح جزئياً
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#2A374A]" />
+                  محجوز
                 </span>
               </div>
             </div>
 
             {/* Time Slot Picker */}
             <div className="mb-4">
-              <label className="block text-xs font-bold text-amber-200 mb-2 text-right">
+              <label className="block text-xs font-bold text-[#8A9BB3] mb-2 text-right">
                 الفترة الزمنية المطلوبة:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -327,12 +331,12 @@ export default function QuickBookingModal({
                     onClick={() => setSelectedSlot(slot.id)}
                     className={`p-2.5 rounded-xl border text-center transition ${
                       selectedSlot === slot.id
-                        ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-sm"
-                        : "bg-black/30 border-white/10 text-slate-300 hover:bg-white/5"
+                        ? "bg-[#182436] border-[#C49A6C] text-[#FAF7F0] font-bold shadow-sm ring-1 ring-[#C49A6C]"
+                        : "bg-[#0B1220] border-[#22334A] text-[#8A9BB3] hover:bg-[#182436]"
                     }`}
                   >
                     <span className="text-xs block font-bold">{slot.label}</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">{slot.time}</span>
+                    <span className="text-[10px] text-[#C49A6C] block mt-0.5">{slot.time}</span>
                   </button>
                 ))}
               </div>
@@ -340,7 +344,7 @@ export default function QuickBookingModal({
 
             {/* Hall Selection */}
             <div className="mb-5">
-              <label className="block text-xs font-bold text-amber-200 mb-2 text-right">
+              <label className="block text-xs font-bold text-[#8A9BB3] mb-2 text-right">
                 اختيار القاعة المناسبة:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -351,12 +355,12 @@ export default function QuickBookingModal({
                     onClick={() => setSelectedHall(hall.id)}
                     className={`p-2.5 rounded-xl border text-right transition ${
                       selectedHall === hall.id
-                        ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
-                        : "bg-black/30 border-white/10 text-slate-300 hover:bg-white/5"
+                        ? "bg-[#182436] border-[#C49A6C] text-[#FAF7F0] shadow-sm ring-1 ring-[#C49A6C]"
+                        : "bg-[#0B1220] border-[#22334A] text-[#8A9BB3] hover:bg-[#182436]"
                     }`}
                   >
                     <span className="text-xs font-bold block">{hall.name}</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                    <span className="text-[10px] text-[#8A9BB3] block mt-0.5">
                       {hall.capacity}
                     </span>
                   </button>
@@ -368,7 +372,7 @@ export default function QuickBookingModal({
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1 text-right">
+                  <label className="block text-[11px] font-bold text-[#8A9BB3] mb-1 text-right">
                     الاسم بالكامل *
                   </label>
                   <input
@@ -377,11 +381,11 @@ export default function QuickBookingModal({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="مثال: محمد أحمد علي"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1220] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#C49A6C] focus:bg-[#182436] text-right transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1 text-right">
+                  <label className="block text-[11px] font-bold text-[#8A9BB3] mb-1 text-right">
                     رقم الهاتف / واتساب *
                   </label>
                   <input
@@ -391,13 +395,13 @@ export default function QuickBookingModal({
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="01XXXXXXXXX"
                     dir="ltr"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1220] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#C49A6C] focus:bg-[#182436] text-right transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1 text-right">
+                <label className="block text-[11px] font-bold text-[#8A9BB3] mb-1 text-right">
                   ملاحظات أو طلبات خاصة (اختياري)
                 </label>
                 <input
@@ -409,7 +413,7 @@ export default function QuickBookingModal({
                       ? "مثال: اسم العروسين، طلب مأذون، تجهيز تصوير"
                       : "مثال: اسم المتوفى، طلب قارئ إذاعي محدد، تجهيز قهوة وضيافة"
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 text-right"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1220] border border-[#22334A] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#C49A6C] focus:bg-[#182436] text-right transition"
                 />
               </div>
 
@@ -417,7 +421,7 @@ export default function QuickBookingModal({
               <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                  className="w-full py-3 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-black text-xs shadow-md shadow-[#C49A6C]/20 active:scale-95 transition"
                 >
                   تأكيد حجز {bookingType === "3aza" ? "العزاء" : "كتب الكتاب"} لـ ({selectedDay}{" "}
                   {currentMonth.name})
@@ -425,7 +429,7 @@ export default function QuickBookingModal({
                 <Link
                   href="/booking"
                   onClick={onClose}
-                  className="w-full sm:w-auto px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold text-center transition whitespace-nowrap"
+                  className="w-full sm:w-auto px-4 py-3 rounded-full bg-[#0B1220] hover:bg-[#182436] text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A] text-xs font-bold text-center transition whitespace-nowrap"
                 >
                   صفحة الحجوزات الكاملة
                 </Link>

@@ -6,12 +6,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#f1f6f2",
+  themeColor: "#1C130D",
 };
 
 export const metadata: Metadata = {
   title: "جامع الحق | الصرح الإيماني والمنارة المجتمعية",
-  description: "الموقع الرسمي لجامع الحق - صرح إيماني ومجتمعي يجمع بين أصالة العمارة الإسلامية وروحانية الرسالة الخالدة ومواقيت الصلاة.",
+  description: "الموقع الرسمي لجامع الحق - صرح إيماني ومجتمعي يجمع بين أصالة العمارة الإسلامية وروحانية الرسالة الخالدة وأوقات الصلاة.",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-[#f1f6f2] text-[#0f172a]">
+      <body className="min-h-full flex flex-col bg-[#1C130D] text-[#FAF7F0]">
         <div className="flex-1 flex flex-col">
           {children}
         </div>

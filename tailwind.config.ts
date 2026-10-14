@@ -12,16 +12,30 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        gold: {
-          DEFAULT: "#B8860B",
-          light: "#E5C07B",
-          dark: "#92400E",
+        // Luxury Midnight Navy & Warm Caramel/Sandstone Palette
+        navy: {
+          DEFAULT: "#101726",
+          dark: "#0B1220",
+          surface: "#152132",
+          card: "#182436",
+          border: "#22334A",
+          inner: "#111A29",
+          muted: "#233246",
         },
-        sage: {
-          50: "#f4f7f4",
-          100: "#e5ede6",
-          200: "#ccdcce",
-          300: "#a9c4ad",
+        caramel: {
+          DEFAULT: "#C49A6C", // Warm Caramel / Desert Gold
+          light: "#D4AF85",
+          dark: "#7D5E3B",
+          glow: "rgba(196, 154, 108, 0.5)",
+        },
+        sandstone: {
+          DEFAULT: "#DECDB7", // Warm desert sandstone from Image 2
+          light: "#EAE0D1",
+          dark: "#C5B29B",
+        },
+        ivory: {
+          DEFAULT: "#FAF7F0",
+          pure: "#FFFFFF",
         },
       },
       fontFamily: {
