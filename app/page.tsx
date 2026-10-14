@@ -51,6 +51,8 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const videoLoadedRef = useRef(false);
+  const [desktopHqLoaded, setDesktopHqLoaded] = useState(false);
+  const [mobileHqLoaded, setMobileHqLoaded] = useState(false);
 
   const desktopVideoRef = useRef<HTMLVideoElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
@@ -149,8 +151,18 @@ export default function Home() {
   // Header extras (logo & left actions) fade out gently as scroll begins
   const headerExtrasOpacity = Math.max(0, 1 - scrollFactor * 2.5);
 
-  // Proactively start playing video on mount
+  // Proactively start playing video on mount and check cached images
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const imgMobile = new Image();
+      imgMobile.src = "/mobile_first_frame.jpg";
+      if (imgMobile.complete) setMobileHqLoaded(true);
+
+      const imgDesktop = new Image();
+      imgDesktop.src = "/landing_first_frame.jpg";
+      if (imgDesktop.complete) setDesktopHqLoaded(true);
+    }
+
     if (desktopVideoRef.current) {
       desktopVideoRef.current.play().catch(() => {});
     }
@@ -195,16 +207,27 @@ export default function Home() {
               <source src="/1012(1).mp4" type="video/mp4" />
             </video>
 
-            {/* Subtle soft-blur first-frame preview overlay while video is buffering */}
+            {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}
             <div
-              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-700 ease-out ${
-                videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-opacity duration-700 ease-out ${
+                videoLoaded ? "opacity-0" : "opacity-100"
               }`}
             >
+              {/* Step 1: Blurry low-quality image (loads instantly in ~10ms, 13KB) */}
+              <img
+                src="/mobile_first_frame_lq.jpg"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center filter blur-lg scale-105"
+              />
+
+              {/* Step 2: High quality picture fades in over the blurry one once loaded */}
               <img
                 src="/mobile_first_frame.jpg"
                 alt=""
-                className="h-full w-full object-cover object-center scale-105 filter blur-[5px]"
+                onLoad={() => setMobileHqLoaded(true)}
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
+                  mobileHqLoaded ? "opacity-100" : "opacity-0"
+                }`}
               />
             </div>
           </div>
@@ -447,16 +470,27 @@ export default function Home() {
               <source src="/1014.mp4" type="video/mp4" />
             </video>
 
-            {/* Subtle soft-blur first-frame preview overlay while video is buffering */}
+            {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}
             <div
-              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-all duration-700 ease-out ${
-                videoLoaded ? "opacity-0 scale-100 blur-0" : "opacity-100"
+              className={`absolute inset-0 z-10 pointer-events-none overflow-hidden transition-opacity duration-700 ease-out ${
+                videoLoaded ? "opacity-0" : "opacity-100"
               }`}
             >
+              {/* Step 1: Blurry low-quality image (loads instantly in ~10ms, 12KB) */}
+              <img
+                src="/landing_first_frame_lq.jpg"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center filter blur-lg scale-105"
+              />
+
+              {/* Step 2: High quality picture fades in over the blurry one once loaded */}
               <img
                 src="/landing_first_frame.jpg"
                 alt=""
-                className="h-full w-full object-cover object-center scale-105 filter blur-[5px]"
+                onLoad={() => setDesktopHqLoaded(true)}
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
+                  desktopHqLoaded ? "opacity-100" : "opacity-0"
+                }`}
               />
             </div>
           </div>
