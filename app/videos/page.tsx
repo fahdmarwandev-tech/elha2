@@ -25,7 +25,7 @@ interface VideoItem {
   id: string;
   title: string;
   desc: string;
-  category: "tours" | "monasbat" | "khutbah" | "recitations";
+  category: "khutbah" | "lessons" | "recitations" | "tours";
   categoryName: string;
   src: string;
   poster: string;
@@ -39,16 +39,16 @@ export default function VideosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeVideo, setActiveVideo] = useState<VideoItem>({
-    id: "intro-main",
-    title: "المقطع التعريفي الشامل: صرح جامع الحق ودار المناسبات (عرض الشاشة)",
-    desc: "جولة سينمائية متكاملة تستعرض المعمار الإسلامي الأصيل لجامع الحق وتجهيزات دار المناسبات الفاخرة المخصصة لمناسبات كتب الكتاب ومجالس العزاء.",
-    category: "tours",
-    categoryName: "جولات ومعالم المسجد",
+    id: "friday-khutbah-1",
+    title: "خطبة الجمعة: فضل عمارة بيوت الله وسكينة القلوب في رحاب الإيمان",
+    desc: "خطبة جمعة مباركة من منبر جامع الحق تتناول أهمية تعمير المساجد بالطاعة، وحلقات العلم، وأثرها في تماسك المجتمع وطمأنينة النفس.",
+    category: "khutbah",
+    categoryName: "خطب الجمعة",
     src: "/1014.mp4",
     poster: "/landing_last_frame.jpg",
-    duration: "00:30",
+    duration: "28:15",
     date: "أكتوبر 2026",
-    views: "12,450",
+    views: "14,800",
     isFeatured: true,
   });
 
@@ -59,85 +59,84 @@ export default function VideosPage() {
 
   const videoList: VideoItem[] = [
     {
-      id: "intro-main",
-      title: "المقطع التعريفي الشامل: صرح جامع الحق ودار المناسبات (عرض الشاشة)",
-      desc: "جولة سينمائية متكاملة تستعرض المعمار الإسلامي الأصيل لجامع الحق وتجهيزات دار المناسبات الفاخرة المخصصة لمناسبات كتب الكتاب ومجالس العزاء.",
-      category: "tours",
-      categoryName: "جولات ومعالم المسجد",
+      id: "friday-khutbah-1",
+      title: "خطبة الجمعة: فضل عمارة بيوت الله وسكينة القلوب في رحاب الإيمان",
+      desc: "خطبة جمعة مباركة من منبر جامع الحق تتناول أهمية تعمير المساجد بالطاعة، وحلقات العلم، وأثرها في تماسك المجتمع وطمأنينة النفس.",
+      category: "khutbah",
+      categoryName: "خطب الجمعة",
       src: "/1014.mp4",
       poster: "/landing_last_frame.jpg",
-      duration: "00:30",
+      duration: "28:15",
       date: "أكتوبر 2026",
-      views: "12,450",
+      views: "14,800",
       isFeatured: true,
     },
     {
-      id: "mobile-tour",
-      title: "أروقة المسجد ومحراب الصلاة (عرض الهاتف الرأسي)",
-      desc: "لقطات قريبة تأخذك في رحاب الهدوء والسكينة داخل قاعة الصلاة الرئيسية والمحراب النوراني لجامع الحق.",
-      category: "tours",
-      categoryName: "جولات ومعالم المسجد",
-      src: "/1012(1).mp4",
-      poster: "/mobile_last_frame.jpg",
-      duration: "00:25",
-      date: "أكتوبر 2026",
-      views: "8,920",
-    },
-    {
-      id: "katb-ketab-hall",
-      title: "قاعات دار المناسبات: تجهيزات عقد القران (كتب الكتاب)",
-      desc: "استعراض الإمكانات المخصصة لعقد القران والإشهار، مع جلسات مريحة وتجهيزات إضاءة وصوت فندقية راقية.",
-      category: "monasbat",
-      categoryName: "دار المناسبات",
+      id: "lesson-tafseer",
+      title: "درس ديني: لطائف وتأملات في سورة النور وقيم العفة والمودة",
+      desc: "درس إيماني ضمن السلسلة الأسبوعية لشرح كتاب الله وتفسير آياته، مع بيان هدايات القرآن في تهذيب السلوك وبناء الأسرة الصالحة.",
+      category: "lessons",
+      categoryName: "دروس دينية",
       src: "/1014.mp4",
       poster: "/golden-hour-mosque-cream-fade.png",
-      duration: "00:30",
+      duration: "35:40",
       date: "أكتوبر 2026",
-      views: "9,600",
+      views: "9,640",
     },
     {
-      id: "aza-halls",
-      title: "قاعات العزاء والتعازي: خدمات متكاملة وسكينة للمُعزّين",
-      desc: "نظام استقبال وتجهيز كامل لمجالس العزاء الرجالية والنسائية، بما يضمن الوقار والراحة لأهل المتوفى وضيوفهم.",
-      category: "monasbat",
-      categoryName: "دار المناسبات",
+      id: "khutbah-family",
+      title: "خطبة الجمعة: صلة الأرحام وحقوق الجوار في ميزان الإسلام",
+      desc: "توجيهات نبوية شريفة من منبر جامع الحق تحث على التراحم وبر الوالدين وإفشاء السلام والتكافل بين أبناء المجتمع الواحد.",
+      category: "khutbah",
+      categoryName: "خطب الجمعة",
       src: "/1012(1).mp4",
       poster: "/Illuminated Mosque at Dusk.png",
-      duration: "00:25",
+      duration: "24:50",
       date: "سبتمبر 2026",
-      views: "6,840",
+      views: "11,200",
     },
     {
-      id: "courtyard-dusk",
-      title: "مشهد الغروب في الصحن الرخامي لمسجد الحق",
-      desc: "انعكاس أضواء الغروب الذهبية على مئذنة وقباب المسجد، مع هدوء يبعث على التأمل وذكر الله.",
-      category: "tours",
-      categoryName: "جولات ومعالم المسجد",
+      id: "lesson-seerah",
+      title: "محاضرة إيمانية: قبسات من السيرة النبوية ومواقف في الصبر واليقين",
+      desc: "محاضرة دينية جامعة تستعرض محطات ملهمة من حياة المصطفى ﷺ وأصحابه الكرام، وما يستفاد منها في واقعنا المعاصر.",
+      category: "lessons",
+      categoryName: "دروس دينية",
       src: "/1014.mp4",
       poster: "/golden-mosque-courtyard.png",
-      duration: "00:30",
+      duration: "42:10",
       date: "سبتمبر 2026",
-      views: "14,100",
+      views: "8,750",
     },
     {
-      id: "recitation-night",
-      title: "تلاوة خاشعة من صلاة التراويح والقيام بالجامع",
-      desc: "أصوات عذبة من نخبة أئمة جامع الحق تأسر القلوب في أجواء إيمانية مباركة.",
-      category: "recitations",
-      categoryName: "تلاوات خاشعة",
-      src: "/1012(1).mp4",
+      id: "lesson-tazkiyah",
+      title: "درس ديني: تزكية النفوس وفضائل الأعمال الصالحة في حياة المسلم",
+      desc: "شرح مفصل لسبل تزكية النفس وسلامة الصدر، والاستقامة على الطاعات ونيل محبة الله ورضوانه.",
+      category: "lessons",
+      categoryName: "دروس دينية",
+      src: "/1014.mp4",
       poster: "/masjid_enhanced.png",
-      duration: "00:25",
-      date: "رمضان المبارك",
-      views: "21,300",
+      duration: "31:20",
+      date: "أكتوبر 2026",
+      views: "12,300",
+    },
+    {
+      id: "khutbah-solidarity",
+      title: "خطبة الجمعة: التكافل الاجتماعي والتراحم والتعاون بين المؤمنين",
+      desc: "خطبة جمعة من منبر جامع الحق تتناول قيم الإيثار والمواساة وإعانة المحتاجين، وبناء مجتمع إيماني متماسك.",
+      category: "khutbah",
+      categoryName: "خطب الجمعة",
+      src: "/1012(1).mp4",
+      poster: "/mobile_last_frame.jpg",
+      duration: "26:45",
+      date: "سبتمبر 2026",
+      views: "15,100",
     },
   ];
 
   const categories = [
-    { id: "all", label: "جميع الفيديوهات" },
-    { id: "tours", label: "جولات ومعالم المسجد" },
-    { id: "monasbat", label: "قاعات دار المناسبات (عزاء وكتب كتاب)" },
-    { id: "recitations", label: "تلاوات وخطب" },
+    { id: "all", label: "جميع المرئيات" },
+    { id: "khutbah", label: "خطب الجمعة" },
+    { id: "lessons", label: "دروس دينية ومحاضرات" },
   ];
 
   const filteredVideos = videoList.filter((item) => {
@@ -176,36 +175,36 @@ export default function VideosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1220] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#C49A6C] selection:text-[#0B1220]">
+    <div className="min-h-screen bg-[#050A14] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#D4AF85] selection:text-[#050B14]">
       <Navbar />
 
       {/* Header Banner */}
-      <section className="relative py-10 lg:py-14 bg-gradient-to-b from-[#152132] via-[#0B1220] to-[#0B1220] border-b border-[#22334A] px-4 sm:px-6 lg:px-8">
+      <section className="relative py-10 lg:py-14 bg-gradient-to-b from-[#0A1628] via-[#070F1E] to-[#050A14] border-b border-[#1E3A63]/60 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#182436] border border-[#22334A] text-[#C49A6C] text-xs font-bold mb-3 shadow-sm">
-            <Film className="w-4 h-4 text-[#C49A6C]" />
-            <span>مكتبة المرئيات والتوثيق المرئي لجامع الحق</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0D1A2D] border border-[#1E3A63] text-[#D4AF85] text-xs font-bold mb-3 shadow-[0_0_15px_rgba(212,175,133,0.15)]">
+            <Film className="w-4 h-4 text-[#D4AF85]" />
+            <span>المكتبة المرئية الإسلامية • جامع الحق</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black font-aref text-[#FAF7F0] tracking-tight mb-3 drop-shadow-md">
-            الفيديوهات والمرئيات المتاحة
+          <h1 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent tracking-tight mb-3 drop-shadow-md">
+            المرئيات والدروس الدينية وخطب الجمعة
           </h1>
 
           <p className="text-[#8A9BB3] text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
-            استعرض المقاطع المرئية التوثيقية لجامع الحق، وجولات قاعات دار المناسبات المجهزة لعقد القران (كتب الكتاب) ومجالس العزاء، والتلاوات المباركة.
+            استمع وشاهد خطب الجمعة المباركة، والدروس والمحاضرات الدينية الإيمانية من محراب ومنبر جامع الحق.
           </p>
 
           {/* Search & Categories Bar */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
             {/* Search Input */}
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-[#C49A6C] absolute right-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#D4AF85] absolute right-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في الفيديوهات..."
-                className="w-full pr-10 pl-4 py-2.5 rounded-full bg-[#0B1220] border border-[#22334A] text-xs text-[#FAF7F0] placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#C49A6C] transition"
+                placeholder="ابحث في خطب الجمعة أو الدروس والمحاضرات..."
+                className="w-full pr-10 pl-4 py-2.5 rounded-full bg-[#050C18] border border-[#1E3A63] text-xs text-[#FAF7F0] placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#D4AF85] focus:ring-1 focus:ring-[#D4AF85]/40 transition"
               />
             </div>
 
@@ -215,10 +214,10 @@ export default function VideosPage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition ${
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
                     selectedCategory === cat.id
-                      ? "bg-[#C49A6C] text-[#0B1220] shadow-md shadow-[#C49A6C]/20"
-                      : "bg-[#152132] text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#22334A] hover:bg-[#182436]"
+                      ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] shadow-[0_0_15px_rgba(212,175,133,0.3)]"
+                      : "bg-[#0D1A2D] text-[#8A9BB3] hover:text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/50 hover:bg-[#122849]/50"
                   }`}
                 >
                   {cat.label}
@@ -232,7 +231,7 @@ export default function VideosPage() {
       {/* Main Video Showcase */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
         {/* Featured Video Player Box */}
-        <section className="bg-[#152132] border border-[#22334A] rounded-3xl overflow-hidden shadow-2xl mb-12">
+        <section className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-12">
           <div className="relative aspect-video w-full bg-black group overflow-hidden">
             <video
               ref={mainVideoRef}
@@ -246,19 +245,19 @@ export default function VideosPage() {
             />
           </div>
 
-          {/* Video Metadata & Controls */}
-          <div className="p-5 sm:p-7 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
+          {/* Video Metadata */}
+          <div className="p-5 sm:p-7">
+            <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#182436] text-[#C49A6C] border border-[#22334A]">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63]">
                   {activeVideo.categoryName}
                 </span>
                 <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
-                  <Clock className="w-3.5 h-3.5 text-[#C49A6C]" />
+                  <Clock className="w-3.5 h-3.5 text-[#D4AF85]" />
                   {activeVideo.duration}
                 </span>
                 <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
-                  <Eye className="w-3.5 h-3.5 text-[#C49A6C]" />
+                  <Eye className="w-3.5 h-3.5 text-[#D4AF85]" />
                   {activeVideo.views} مشاهدة
                 </span>
               </div>
@@ -271,37 +270,17 @@ export default function VideosPage() {
                 {activeVideo.desc}
               </p>
             </div>
-
-            {/* Quick Actions alongside player */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 w-full lg:w-auto shrink-0">
-              <button
-                onClick={() => {
-                  setBookingType("katbketab");
-                  setCalendarModalOpen(true);
-                }}
-                className="px-6 py-3 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#C49A6C]/20 transition active:scale-95"
-              >
-                <Calendar className="w-4 h-4 text-[#0B1220]" />
-                <span>حجز مناسبة (عزاء / كتب كتاب)</span>
-              </button>
-
-              <button
-                onClick={handleReplay}
-                className="px-6 py-2.5 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#FAF7F0] border border-[#22334A] font-bold text-xs flex items-center justify-center gap-2 transition"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-[#C49A6C]" />
-                <span>إعادة تشغيل المقطع</span>
-              </button>
-            </div>
           </div>
         </section>
 
         {/* Video Catalog Grid */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold font-aref text-[#FAF7F0] flex items-center gap-2">
-              <VideoIcon className="w-5 h-5 text-[#C49A6C]" />
-              <span>قائمة الفيديوهات المعروضة ({filteredVideos.length})</span>
+            <h3 className="text-xl font-bold font-aref flex items-center gap-2">
+              <VideoIcon className="w-5 h-5 text-[#D4AF85]" />
+              <span className="bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
+                قائمة المرئيات والدروس المعروضة ({filteredVideos.length})
+              </span>
             </h3>
             <span className="text-xs text-[#8A9BB3]">
               اضغط على أي فيديو لتشغيله في المشغل الرئيسي
@@ -316,10 +295,10 @@ export default function VideosPage() {
                 <div
                   key={video.id}
                   onClick={() => handleSelectVideo(video)}
-                  className={`group cursor-pointer bg-[#152132] border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+                  className={`group cursor-pointer bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between ${
                     isCurrent
-                      ? "border-[#C49A6C] shadow-xl shadow-[#C49A6C]/10 scale-[1.02]"
-                      : "border-[#22334A] hover:border-[#C49A6C]/60 hover:bg-[#182436]"
+                      ? "border-[#D4AF85] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] scale-[1.02]"
+                      : "border-[#1E3A63]/80 hover:border-[#D4AF85]/70 hover:shadow-[0_10px_25px_rgba(18,40,73,0.4)]"
                   }`}
                 >
                   {/* Thumbnail Container */}
@@ -332,18 +311,18 @@ export default function VideosPage() {
 
                     {/* Play Button Overlay */}
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-[#C49A6C] text-[#0B1220] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5 fill-[#0B1220] ml-0.5" />
+                      <div className="w-12 h-12 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] flex items-center justify-center shadow-[0_0_15px_rgba(212,175,133,0.4)] group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 fill-[#FFF2D2] text-[#FFF2D2] ml-0.5" />
                       </div>
                     </div>
 
                     {/* Duration badge */}
-                    <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[#FAF7F0] text-[10px] font-mono font-bold">
+                    <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[#FAF7F0] text-[10px] font-mono font-bold border border-[#1E3A63]/60">
                       {video.duration}
                     </span>
 
                     {/* Category pill */}
-                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#0B1220]/80 backdrop-blur-md text-[#C49A6C] text-[10px] font-semibold border border-[#22334A]">
+                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#050A14]/85 backdrop-blur-md text-[#D4AF85] text-[10px] font-semibold border border-[#1E3A63]">
                       {video.categoryName}
                     </span>
                   </div>
@@ -351,7 +330,7 @@ export default function VideosPage() {
                   {/* Card Content */}
                   <div className="p-4 flex flex-col justify-between flex-1">
                     <div>
-                      <h4 className="font-bold text-sm text-[#FAF7F0] group-hover:text-[#C49A6C] transition-colors line-clamp-2 leading-snug mb-1.5">
+                      <h4 className="font-bold text-sm text-[#FAF7F0] group-hover:text-[#D4AF85] transition-colors line-clamp-2 leading-snug mb-1.5">
                         {video.title}
                       </h4>
                       <p className="text-xs text-[#8A9BB3] line-clamp-2 leading-relaxed mb-3">
@@ -359,9 +338,9 @@ export default function VideosPage() {
                       </p>
                     </div>
 
-                    <div className="pt-2 border-t border-[#22334A] flex items-center justify-between text-[11px] text-[#8A9BB3]">
+                    <div className="pt-2 border-t border-[#1E3A63]/60 flex items-center justify-between text-[11px] text-[#8A9BB3]">
                       <span>{video.date}</span>
-                      <span className="text-[#C49A6C] font-bold group-hover:translate-x-[-4px] transition-transform flex items-center gap-1">
+                      <span className="text-[#D4AF85] font-bold group-hover:translate-x-[-4px] transition-transform flex items-center gap-1">
                         تشغيل الآن ←
                       </span>
                     </div>
@@ -373,32 +352,32 @@ export default function VideosPage() {
         </section>
 
         {/* Hall Reservation CTA Banner */}
-        <section className="mt-16 bg-gradient-to-r from-[#152132] via-[#182436] to-[#0B1220] border border-[#22334A] rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+        <section className="mt-16 bg-gradient-to-r from-[#070F1E] via-[#0D1A2D] to-[#0A1628] border border-[#1E3A63] rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_15px_40px_rgba(0,0,0,0.7)]">
           <div className="space-y-2 text-right">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#182436] text-[#C49A6C] border border-[#22334A] inline-block">
-              دار المناسبات الإسلامية
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] inline-block">
+              المجلس العام
             </span>
-            <h3 className="text-2xl sm:text-3xl font-black font-aref text-[#FAF7F0]">
-              هل ترغب في حجز قاعة العزاء أو عقد القران (كتب الكتاب)؟
+            <h3 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
+              هل ترغب في حجز قاعة العزاء أو عقد القران؟
             </h3>
             <p className="text-xs sm:text-sm text-[#8A9BB3] max-w-xl leading-relaxed">
-              يمكنك الاطلاع على مواعيد التقويم المتاحة واختيار القاعة والخدمات المرافقة فورياً من خلال نظام الحجز الإلكتروني.
+              يمكنك الاطلاع على مواعيد التقويم المتاحة واختيار القاعة والخدمات المرافقة فورياً من خلال نظام الحجز الإلكتروني للمجلس.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
             <Link
               href="/booking"
-              className="px-6 py-3.5 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-black text-xs text-center shadow-lg shadow-[#C49A6C]/20 transition active:scale-95"
+              className="px-6 py-3.5 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85]/80 hover:border-[#D4AF85] text-[#FFF2D2] font-black text-xs text-center shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] transition active:scale-95"
             >
-              الانتقال لصفحة الحجز والتقويم
+              الانتقال لصفحة المجلس والتقويم
             </Link>
             <button
               onClick={() => {
                 setBookingType("katbketab");
                 setCalendarModalOpen(true);
               }}
-              className="px-6 py-3.5 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#FAF7F0] border border-[#22334A] font-bold text-xs text-center transition"
+              className="px-6 py-3.5 rounded-full bg-[#0A1628] hover:bg-[#122849] text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/60 font-bold text-xs text-center transition"
             >
               حجز سريع الآن
             </button>
@@ -407,8 +386,8 @@ export default function VideosPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#22334A] bg-[#080D18] py-8 text-center text-xs text-[#8A9BB3]">
-        <p>© جامع الحق ودار المناسبات — مكتبة المرئيات والتوثيق.</p>
+      <footer className="border-t border-[#1E3A63]/60 bg-[#050A14] py-8 text-center text-xs text-[#8A9BB3]">
+        <p>© جامع الحق والمجلس العام — مكتبة المرئيات والتوثيق.</p>
       </footer>
 
       {/* Quick Booking Modal */}

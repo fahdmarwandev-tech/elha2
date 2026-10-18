@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
+  Building2,
   Calendar,
   HeartHandshake,
   Landmark,
@@ -12,6 +13,7 @@ import {
   Phone,
   RotateCcw,
   Search,
+  User,
   Users,
   Video,
   X,
@@ -137,11 +139,11 @@ export default function Home() {
   const scrollFactor = Math.min(1, Math.max(0, scrollY / 240));
   // Gap shrinks from 180px down to 10px as you scroll
   const dynamicGap = Math.max(10, Math.round((1 - scrollFactor) * 180));
-  // Mobile dynamic gap shrinks from 26px down to 6px
-  const mobileDynamicGap = Math.max(6, Math.round((1 - scrollFactor) * 26));
+  // Mobile dynamic gap shrinks from 12px down to 6px
+  const mobileDynamicGap = Math.max(6, Math.round((1 - scrollFactor) * 12));
   // Nav cluster translates horizontally towards the 3-bar sidebar button at top-right
   const navTranslateX = scrollFactor * 340;
-  const mobileNavTranslateX = scrollFactor * 175;
+  const mobileNavTranslateX = scrollFactor * 135;
   // Nav stays 100% visible while drawing closer, then smoothly drops into the 3-bar button at the end
   const navOpacity = scrollFactor >= 0.85 ? Math.max(0, (1 - scrollFactor) / 0.15) : 1;
   const navScale = scrollFactor >= 0.75 ? Math.max(0.15, 1 - (scrollFactor - 0.75) * 3.4) : Math.max(0.85, 1 - scrollFactor * 0.15);
@@ -187,7 +189,7 @@ export default function Home() {
           Full-screen edge-to-edge. Video plays in background and halts on last frame.
           Navbar is an overlay directly in the video frame at the top.
           ========================================================================= */}
-      <div className="block lg:hidden min-h-screen bg-[#0B1220] relative overflow-x-hidden text-right">
+      <div className="block lg:hidden min-h-screen bg-[#050A14] relative overflow-x-hidden text-right">
         {/* Fullscreen Mobile Hero Container */}
         <section className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden bg-black">
           {/* Background Video: Edge to edge, plays on load and halts on last frame */}
@@ -243,37 +245,37 @@ export default function Home() {
           {!videoEnded && (
             <button
               onClick={handleSkip}
-              className="absolute top-4 left-4 z-40 px-3.5 py-1.5 rounded-full bg-[#152132]/85 text-[#FAF7F0] hover:text-white text-xs font-semibold backdrop-blur-md border border-[#22334A] flex items-center gap-1.5 shadow-lg active:scale-95 transition"
+              className="absolute top-4 left-4 z-40 px-3.5 py-1.5 rounded-full bg-[#0A1628]/85 text-[#FAF7F0] hover:text-[#FFF2D2] text-xs font-semibold backdrop-blur-md border border-[#1E3A63] flex items-center gap-1.5 shadow-lg active:scale-95 transition"
             >
               <span>تخطي</span>
-              <ArrowLeft className="w-3 h-3 text-[#C49A6C]" />
+              <ArrowLeft className="w-3 h-3 text-[#D4AF85]" />
             </button>
           )}
 
           {/* Mobile Top App Bar: Fixed inside viewport with scroll convergence into 3-bar sidebar button */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-3 sm:px-4 pt-3.5 sm:pt-4 pb-2 transition-opacity duration-700 ${
+            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-2.5 sm:px-4 pt-3.5 sm:pt-4 pb-2 transition-opacity duration-700 ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Mosque Branding */}
+            {/* Mosque Branding (Right side in RTL) */}
             <Link
               href="/"
               style={{
                 opacity: headerExtrasOpacity,
                 pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
               }}
-              className="flex items-center gap-1.5 sm:gap-2 group transition-opacity duration-300"
+              className="flex items-center gap-1 sm:gap-1.5 group transition-opacity duration-300 shrink-0"
             >
-              <MosqueDomeIcon className="w-5 h-5 text-[#C49A6C]" />
-              <span className="font-aref text-xl font-bold text-[#FAF7F0] transition-colors group-hover:text-[#C49A6C] drop-shadow-md">
+              <MosqueDomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF85]" />
+              <span className="font-aref text-lg sm:text-xl font-bold text-[#FAF7F0] transition-colors group-hover:text-[#D4AF85] drop-shadow-md">
                 جامع الحق
               </span>
             </Link>
 
-            {/* The 3 Links: Smooth, luxury typography */}
+            {/* The 3 Links: Smooth, luxury typography (Center in RTL) */}
             <nav
               style={{
                 gap: `${mobileDynamicGap}px`,
@@ -286,23 +288,40 @@ export default function Home() {
             >
               <Link
                 href="/booking"
-                className="text-[#D4AF85] hover:text-[#FAF7F0] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-sm sm:text-base font-bold"
+                className="text-[#D4AF85] hover:text-[#FAF7F0] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-xs sm:text-sm font-bold"
               >
-                حجز مناسبة
+                المجلس
               </Link>
               <Link
                 href="/videos"
-                className="text-white/95 hover:text-[#D4AF85] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-sm sm:text-base font-bold"
+                className="text-white/95 hover:text-[#D4AF85] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-xs sm:text-sm font-bold"
               >
-                الفيديوهات
+                الخطب والدروس
               </Link>
               <a
                 href="#about-mobile"
-                className="text-white/95 hover:text-[#D4AF85] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-sm sm:text-base font-bold"
+                className="text-white/95 hover:text-[#D4AF85] transition-colors whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-xs sm:text-sm font-bold"
               >
                 عن المسجد
               </a>
             </nav>
+
+            {/* Login Action (Left side in RTL) - Always 100% visible on mobile, never cut off */}
+            <div
+              style={{
+                opacity: headerExtrasOpacity,
+                pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
+              }}
+              className="flex items-center shrink-0 transition-opacity duration-300"
+            >
+              <Link
+                href="/login"
+                className="text-[#FAF7F0] hover:text-white transition-all whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] text-xs font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#4A79B8]/60 hover:border-[#D4AF85] shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95"
+              >
+                <User className="w-3.5 h-3.5 text-[#D4AF85]" />
+                <span>دخول</span>
+              </Link>
+            </div>
           </header>
 
           {/* Main Hero Content (Strictly Right-Aligned over the sunset marble courtyard) */}
@@ -346,35 +365,35 @@ export default function Home() {
 
           {/* Mobile Bottom Features Bar (3 columns with dividers) */}
           <div
-            className={`relative z-20 w-full grid grid-cols-3 border-t border-[#22334A] pt-3 pb-5 px-1 bg-gradient-to-t from-[#0B1220] to-transparent transition-opacity duration-1000 ${
+            className={`relative z-20 w-full grid grid-cols-3 border-t border-[#1E3A63]/60 pt-3 pb-5 px-1 bg-gradient-to-t from-[#050A14] to-transparent transition-opacity duration-1000 ${
               videoEnded ? "opacity-100" : "opacity-0"
             }`}
           >
             {/* Column 1 (صدقة جارية - renders on right in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
-              <div className="w-11 h-11 rounded-full bg-[#152132] backdrop-blur-md border border-[#22334A] flex items-center justify-center text-[#C49A6C] mb-1.5 shadow-sm">
-                <HeartHandshake className="w-5 h-5 text-[#C49A6C]" />
+              <div className="w-11 h-11 rounded-full bg-[#0D1A2D] backdrop-blur-md border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-1.5 shadow-sm">
+                <HeartHandshake className="w-5 h-5 text-[#D4AF85]" />
               </div>
               <span className="text-xs font-bold text-[#FAF7F0]">صدقة جارية</span>
-              <span className="text-[10px] text-[#8A9BB3]">لأجر مستدام</span>
+              <span className="text-[10px] text-[#8EA3BF]">لأجر مستدام</span>
             </div>
 
             {/* Column 2 (علم ونور - renders in center) with vertical dividers */}
-            <div className="flex flex-col items-center text-center px-1 border-r border-l border-[#22334A]">
-              <div className="w-11 h-11 rounded-full bg-[#152132] backdrop-blur-md border border-[#22334A] flex items-center justify-center text-[#C49A6C] mb-1.5 shadow-sm">
-                <BookOpen className="w-5 h-5 text-[#C49A6C]" />
+            <div className="flex flex-col items-center text-center px-1 border-r border-l border-[#1E3A63]/60">
+              <div className="w-11 h-11 rounded-full bg-[#0D1A2D] backdrop-blur-md border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-1.5 shadow-sm">
+                <BookOpen className="w-5 h-5 text-[#D4AF85]" />
               </div>
               <span className="text-xs font-bold text-[#FAF7F0]">علمٌ ونور</span>
-              <span className="text-[10px] text-[#8A9BB3]">لبناء جيل واعٍ</span>
+              <span className="text-[10px] text-[#8EA3BF]">لبناء جيل واعٍ</span>
             </div>
 
             {/* Column 3 (مجتمع متعاون - renders on left in RTL) */}
             <div className="flex flex-col items-center text-center px-1">
-              <div className="w-11 h-11 rounded-full bg-[#152132] backdrop-blur-md border border-[#22334A] flex items-center justify-center text-[#C49A6C] mb-1.5 shadow-sm">
-                <Users className="w-5 h-5 text-[#C49A6C]" />
+              <div className="w-11 h-11 rounded-full bg-[#0D1A2D] backdrop-blur-md border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-1.5 shadow-sm">
+                <Users className="w-5 h-5 text-[#D4AF85]" />
               </div>
               <span className="text-xs font-bold text-[#FAF7F0]">مجتمع متعاون</span>
-              <span className="text-[10px] text-[#8A9BB3]">معاً نصنع الأثر</span>
+              <span className="text-[10px] text-[#8EA3BF]">معاً نصنع الأثر</span>
             </div>
           </div>
         </section>
@@ -383,7 +402,7 @@ export default function Home() {
         <AboutMosque id="about-mobile" />
 
         {/* Mobile Prayer Times Strip */}
-        <section id="prayer-times-mobile" className="border-t border-[#22334A] bg-[#152132] px-4 py-8">
+        <section id="prayer-times-mobile" className="border-t border-[#1E3A63]/60 bg-[#050A14] px-4 py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -392,10 +411,10 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#FAF7F0]">أوقات الصلاة</h3>
-                <p className="text-xs text-[#8A9BB3]">حسب التوقيت المحلي لجامع الحق</p>
+                <h3 className="text-lg font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">أوقات الصلاة</h3>
+                <p className="text-xs text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>
               </div>
-              <span className="text-[11px] font-bold px-2.5 py-1 bg-[#182436] text-[#C49A6C] border border-[#22334A] rounded-full">
+              <span className="text-[11px] font-bold px-2.5 py-1 bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] rounded-full">
                 ● محدث الآن
               </span>
             </div>
@@ -406,18 +425,18 @@ export default function Home() {
                   key={i}
                   className={`p-3 rounded-2xl border text-center transition-all ${
                     prayer.isNext
-                      ? "bg-[#182436] text-[#FAF7F0] border-[#C49A6C] shadow-lg shadow-[#C49A6C]/10"
-                      : "bg-[#0B1220] text-[#FAF7F0] border-[#22334A]"
+                      ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border-2 border-[#D4AF85] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)]"
+                      : "bg-[#0A1628] text-[#FAF7F0] border border-[#1E3A63]"
                   }`}
                 >
-                  <span className={`text-[11px] font-semibold block mb-0.5 ${prayer.isNext ? "text-[#C49A6C]" : "text-[#8A9BB3]"}`}>
+                  <span className={`text-[11px] font-semibold block mb-0.5 ${prayer.isNext ? "text-[#D4AF85]" : "text-[#8EA3BF]"}`}>
                     {prayer.name}
                   </span>
                   <span className="text-base font-bold font-mono tracking-tight block text-[#FAF7F0]">
                     {prayer.time}
                   </span>
                   {prayer.isNext && (
-                    <span className="inline-block mt-1 text-[9px] bg-[#C49A6C] text-[#0B1220] font-bold px-2 py-0.5 rounded-full">
+                    <span className="inline-block mt-1 text-[9px] bg-[#D4AF85] text-[#050B14] font-bold px-2 py-0.5 rounded-full">
                       القادمة
                     </span>
                   )}
@@ -428,15 +447,15 @@ export default function Home() {
         </section>
 
         {/* Mobile Footer */}
-        <footer className="border-t border-[#22334A] bg-[#080D18] py-6 px-4 text-center text-xs text-[#8A9BB3] flex flex-col gap-2">
+        <footer className="border-t border-[#1E3A63]/60 bg-[#03060C] py-6 px-4 text-center text-xs text-[#8EA3BF] flex flex-col gap-2">
           <span>© جميع الحقوق محفوظة لجامع الحق — صرح الإيمان والسكينة.</span>
-          <div className="flex items-center justify-center gap-4 text-[11px] text-[#8A9BB3]">
+          <div className="flex items-center justify-center gap-4 text-[11px] text-[#8EA3BF]">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-[#C49A6C]" />
+              <MapPin className="w-3 h-3 text-[#D4AF85]" />
               سلطنة عمان — ولاية السيب (الموالح الجنوبية)
             </span>
             <span className="flex items-center gap-1">
-              <Phone className="w-3 h-3 text-[#C49A6C]" />
+              <Phone className="w-3 h-3 text-[#D4AF85]" />
               للتواصل والاستفسار
             </span>
           </div>
@@ -450,7 +469,7 @@ export default function Home() {
           - Navbar is directly INSIDE the video frame at the top.
           - When video ends, it pauses on the last frame, and the text fades in.
           ========================================================================= */}
-      <main className="hidden lg:flex flex-col w-full min-h-screen bg-[#0B1220] text-[#FAF7F0] overflow-x-hidden">
+      <main className="hidden lg:flex flex-col w-full min-h-screen bg-[#050A14] text-[#FAF7F0] overflow-x-hidden">
         {/* Fullscreen Edge-to-Edge Hero Section */}
         <section className="relative w-full min-h-screen flex flex-col justify-between overflow-hidden bg-black">
           {/* Background Video: Edge-to-edge starting at the absolute top (0px) */}
@@ -506,10 +525,10 @@ export default function Home() {
           {!videoEnded && (
             <button
               onClick={handleSkip}
-              className="absolute top-6 left-6 z-40 px-4 py-2 rounded-full bg-[#152132]/85 hover:bg-[#182436] text-[#FAF7F0] text-xs font-semibold backdrop-blur-md border border-[#22334A] transition-all flex items-center gap-2 shadow-xl active:scale-95"
+              className="absolute top-6 left-6 z-40 px-4 py-2 rounded-full bg-[#0A1628]/85 hover:bg-[#122849] text-[#FAF7F0] hover:text-[#FFF2D2] text-xs font-semibold backdrop-blur-md border border-[#1E3A63] transition-all flex items-center gap-2 shadow-xl active:scale-95"
             >
               <span>تخطي</span>
-              <ArrowLeft className="w-3.5 h-3.5 text-[#C49A6C]" />
+              <ArrowLeft className="w-3.5 h-3.5 text-[#D4AF85]" />
             </button>
           )}
 
@@ -552,7 +571,7 @@ export default function Home() {
                 className="flex items-center gap-2.5 py-2 text-xl lg:text-2xl font-bold text-[#D4AF85] hover:text-white transition-colors drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] whitespace-nowrap"
               >
                 <Calendar className="w-5 h-5 text-[#D4AF85]" />
-                <span>حجز مناسبة</span>
+                <span>المجلس</span>
               </Link>
 
               <Link
@@ -560,7 +579,7 @@ export default function Home() {
                 className="flex items-center gap-2.5 py-2 text-xl lg:text-2xl font-bold text-white/95 hover:text-[#D4AF85] transition-colors drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] whitespace-nowrap"
               >
                 <Video className="w-5 h-5 text-[#D4AF85]" />
-                <span>الفيديوهات</span>
+                <span>الخطب والدروس</span>
               </Link>
 
               <a
@@ -586,14 +605,14 @@ export default function Home() {
                 <Search className="h-5 w-5" />
               </button>
 
-              {/* Direct Booking with Calendar Modal button */}
-              <button
-                onClick={() => openCalendarFor("katbketab")}
-                className="items-center gap-2 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_6px_20px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.35)] border border-[#4A79B8]/50 transition inline-flex active:scale-95 cursor-pointer"
+              {/* Sign In Button in this exact position */}
+              <Link
+                href="/login"
+                className="items-center gap-2 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_6px_20px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.35)] border border-[#4A79B8]/50 hover:border-[#D4AF85]/80 transition inline-flex active:scale-95 cursor-pointer"
               >
-                <Calendar className="h-4 w-4 text-[#D4AF85]" />
-                <span className="drop-shadow-sm">احجز مناسبتك (التقويم)</span>
-              </button>
+                <User className="h-4 w-4 text-[#D4AF85]" />
+                <span className="drop-shadow-sm">تسجيل الدخول</span>
+              </Link>
             </div>
           </header>
 
@@ -665,7 +684,7 @@ export default function Home() {
         <AboutMosque id="about" />
 
         {/* Dar Monasbat & Videos Showcase Section (Full Width Desktop) */}
-        <section id="monasbat-section" className="w-full border-t border-[#22334A] bg-[#0B1220] px-8 lg:px-16 py-16">
+        <section id="monasbat-section" className="w-full border-t border-[#1E3A63]/60 bg-[#050A14] px-8 lg:px-16 py-16">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -676,14 +695,14 @@ export default function Home() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 text-right">
               <div>
-                <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-[#152132] text-[#C49A6C] border border-[#22334A] mb-2 shadow-sm">
-                  <Calendar className="w-3.5 h-3.5 text-[#C49A6C]" />
-                  <span>دار المناسبات الإسلامية • جامع الحق</span>
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-[#0D1A2D] text-[#D4AF85] border border-[#1E3A63] mb-2 shadow-sm">
+                  <Calendar className="w-3.5 h-3.5 text-[#D4AF85]" />
+                  <span>المجلس العام • جامع الحق</span>
                 </span>
-                <h3 className="text-3xl font-extrabold font-aref text-[#FAF7F0]">
-                  حجز قاعات المناسبات (عزاء وكتب كتاب)
+                <h3 className="text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
+                  حجز قاعات المناسبات (عقد قران وعزاء)
                 </h3>
-                <p className="text-sm text-[#8A9BB3] mt-1 max-w-2xl">
+                <p className="text-sm text-[#8EA3BF] mt-1 max-w-2xl">
                   قاعات فسيحة ومجهزة بأحدث الأنظمة الصوتية والمرئية، مع إمكانية استعراض التقويم المباشر وحجز موعدك فورياً.
                 </p>
               </div>
@@ -691,36 +710,36 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/booking"
-                  className="px-6 py-3 rounded-full bg-[#152132] hover:bg-[#182436] text-[#FAF7F0] border border-[#22334A] text-xs font-bold transition flex items-center gap-2"
+                  className="px-6 py-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85]/80 hover:border-[#D4AF85] text-[#FFF2D2] text-xs font-bold transition flex items-center gap-2 shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)]"
                 >
                   <span>جدول الحجوزات الكامل</span>
-                  <ArrowLeft className="w-4 h-4 text-[#C49A6C]" />
+                  <ArrowLeft className="w-4 h-4 text-[#D4AF85]" />
                 </Link>
                 <Link
                   href="/videos"
-                  className="px-6 py-3 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#C49A6C] border border-[#22334A] text-xs font-bold transition flex items-center gap-2"
+                  className="px-6 py-3 rounded-full bg-[#0A1628] hover:bg-[#122849] text-[#D4AF85] border border-[#1E3A63] hover:border-[#D4AF85]/60 text-xs font-bold transition flex items-center gap-2"
                 >
-                  <Video className="w-4 h-4 text-[#C49A6C]" />
-                  <span>معرض الفيديوهات</span>
+                  <Video className="w-4 h-4 text-[#D4AF85]" />
+                  <span>المرئيات والدروس الدينية</span>
                 </Link>
               </div>
             </div>
 
             {/* 3 Interactive Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Card 1: Katb Ketab */}
-              <div className="bg-[#152132] border border-[#22334A] rounded-3xl p-6 flex flex-col justify-between hover:border-[#C49A6C] transition group shadow-lg">
+              {/* Card 1: 3a2d Keran */}
+              <div className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 flex flex-col justify-between hover:border-[#D4AF85] shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_10px_30px_rgba(18,40,73,0.5)] transition group">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#182436] border border-[#22334A] flex items-center justify-center text-[#C49A6C] mb-4 text-2xl group-hover:scale-110 transition-transform">
-                    💍
+                  <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
+                    <HeartHandshake className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref text-[#FAF7F0] mb-2 group-hover:text-[#C49A6C] transition-colors">
-                    حجز كتب كتاب (عقد القران)
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
+                    حجز عقد قران
                   </h4>
-                  <p className="text-xs text-[#8A9BB3] leading-relaxed mb-4">
+                  <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
                     أجواء مباركة وفخامة تليق بيومكم السعيد، مع قاعات مجهزة بكافة متطلبات الإشهار، ضيافة راقية، وتوثيق مرئي.
                   </p>
-                  <ul className="text-[11px] text-[#C49A6C] space-y-1.5 mb-6">
+                  <ul className="text-[11px] text-[#D4AF85] space-y-1.5 mb-6">
                     <li>• اختيار القاعة المناسبة حسب عدد الضيوف</li>
                     <li>• تقويم مواعيد تفاعلي لاختيار اليوم والفترة</li>
                     <li>• خدمات صوتية وشاشات عرض ونظام ضيافة</li>
@@ -728,26 +747,26 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => openCalendarFor("katbketab")}
-                  className="w-full py-3 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] text-[#0B1220] font-black text-xs transition shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85]/80 hover:border-[#D4AF85] text-[#FFF2D2] font-black text-xs transition shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] flex items-center justify-center gap-2 active:scale-95"
                 >
-                  <Calendar className="w-4 h-4 text-[#0B1220]" />
-                  <span>احجز موعد كتب الكتاب (التقويم)</span>
+                  <Calendar className="w-4 h-4 text-[#D4AF85]" />
+                  <span>احجز موعد عقد القران (التقويم)</span>
                 </button>
               </div>
 
               {/* Card 2: 3aza */}
-              <div className="bg-[#152132] border border-[#22334A] rounded-3xl p-6 flex flex-col justify-between hover:border-[#C49A6C] transition group shadow-lg">
+              <div className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 flex flex-col justify-between hover:border-[#D4AF85] shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_10px_30px_rgba(18,40,73,0.5)] transition group">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#182436] border border-[#22334A] flex items-center justify-center text-[#FAF7F0] mb-4 text-2xl group-hover:scale-110 transition-transform">
-                    🕊️
+                  <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
+                    <Building2 className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref text-[#FAF7F0] mb-2 group-hover:text-[#C49A6C] transition-colors">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
                     حجز عزاء (دار التعازي)
                   </h4>
-                  <p className="text-xs text-[#8A9BB3] leading-relaxed mb-4">
+                  <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
                     مجالس تأبين وعزاء تراعي الوقار والسكينة، قاعات مستقلة للرجال وأخرى للسيدات، مع تلاوات خاشعة لكبار القراء.
                   </p>
-                  <ul className="text-[11px] text-[#C49A6C] space-y-1.5 mb-6">
+                  <ul className="text-[11px] text-[#D4AF85] space-y-1.5 mb-6">
                     <li>• قاعات كبرى ووسطى تسع حتى 500 معزٍ</li>
                     <li>• طاقم ضيافة متميز وخدمة فندقية</li>
                     <li>• توفير قراء معتمدين ونظام صوتي عالي النقاء</li>
@@ -755,33 +774,33 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => openCalendarFor("3aza")}
-                  className="w-full py-3 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#FAF7F0] border border-[#22334A] font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-full bg-[#0A1628] hover:bg-[#122849] text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/60 font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
                 >
-                  <Calendar className="w-4 h-4 text-[#C49A6C]" />
+                  <Calendar className="w-4 h-4 text-[#D4AF85]" />
                   <span>احجز موعد العزاء (التقويم)</span>
                 </button>
               </div>
 
-              {/* Card 3: Videos Showcase */}
-              <div className="bg-[#152132] border border-[#22334A] rounded-3xl p-6 flex flex-col justify-between hover:border-[#C49A6C] transition group shadow-lg">
+              {/* Card 3: Islamic Videos Showcase */}
+              <div className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 flex flex-col justify-between hover:border-[#D4AF85] shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_10px_30px_rgba(18,40,73,0.5)] transition group">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#182436] border border-[#22334A] flex items-center justify-center text-[#C49A6C] mb-4 group-hover:scale-110 transition-transform">
-                    <Video className="w-6 h-6 text-[#C49A6C]" />
+                  <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
+                    <Video className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref text-[#FAF7F0] mb-2 group-hover:text-[#C49A6C] transition-colors">
-                    مكتبة الفيديوهات والمرئيات
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
+                    المرئيات والدروس والخطب
                   </h4>
-                  <p className="text-xs text-[#8A9BB3] leading-relaxed mb-4">
-                    شاهد مقاطع الفيديو التوثيقية لجامع الحق، وجولات مصورة في قاعات دار المناسبات، وتلاوات قرآنية مسجلة بجودة عالية.
+                  <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
+                    شاهد واستمع إلى خطب الجمعة المباركة، والدروس والمحاضرات الدينية، والتلاوات القرآنية الخاشعة من محراب ومنبر جامع الحق.
                   </p>
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-[#22334A]">
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-[#1E3A63]">
                     <img
                       src="/landing_last_frame.jpg"
-                      alt="معرض الفيديوهات"
+                      alt="المرئيات والدروس الدينية"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-full bg-[#C49A6C] text-[#0B1220] flex items-center justify-center font-bold">
+                      <div className="w-10 h-10 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] flex items-center justify-center font-bold shadow-[0_0_15px_rgba(212,175,133,0.4)]">
                         ▶
                       </div>
                     </div>
@@ -789,10 +808,10 @@ export default function Home() {
                 </div>
                 <Link
                   href="/videos"
-                  className="w-full py-3 rounded-full bg-[#182436] hover:bg-[#22334A] text-[#FAF7F0] border border-[#22334A] font-bold text-xs transition flex items-center justify-center gap-2 text-center"
+                  className="w-full py-3 rounded-full bg-[#0A1628] hover:bg-[#122849] text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/60 font-bold text-xs transition flex items-center justify-center gap-2 text-center"
                 >
-                  <Video className="w-4 h-4 text-[#C49A6C]" />
-                  <span>استعراض جميع الفيديوهات المتاحة</span>
+                  <Video className="w-4 h-4 text-[#D4AF85]" />
+                  <span>استعراض المرئيات والدروس الدينية</span>
                 </Link>
               </div>
             </div>
@@ -800,7 +819,7 @@ export default function Home() {
         </section>
 
         {/* Desktop Interactive Prayer Times Strip (Full Width) */}
-        <section id="prayer-times" className="w-full border-t border-[#22334A] bg-[#152132] px-8 lg:px-16 py-14">
+        <section id="prayer-times" className="w-full border-t border-[#1E3A63]/60 bg-[#070F1E] px-8 lg:px-16 py-14">
           <motion.div
             initial={{ opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -810,10 +829,12 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl font-extrabold text-[#FAF7F0]">أوقات الصلاة</h3>
-                <p className="text-sm text-[#8A9BB3]">حسب التوقيت المحلي لجامع الحق</p>
+                <h3 className="text-2xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
+                  أوقات الصلاة
+                </h3>
+                <p className="text-sm text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>
               </div>
-              <span className="text-xs font-bold px-3.5 py-1.5 bg-[#182436] text-[#C49A6C] border border-[#22334A] rounded-full">
+              <span className="text-xs font-bold px-3.5 py-1.5 bg-[#0D1A2D] text-[#D4AF85] border border-[#1E3A63] rounded-full shadow-sm">
                 ● محدث مباشرة
               </span>
             </div>
@@ -824,13 +845,13 @@ export default function Home() {
                   key={i}
                   className={`p-5 rounded-2xl border text-center transition-all ${
                     prayer.isNext
-                      ? "bg-[#182436] text-[#FAF7F0] border-[#C49A6C] shadow-lg shadow-[#C49A6C]/10 scale-105"
-                      : "bg-[#0B1220] text-[#FAF7F0] border-[#22334A] hover:border-[#C49A6C]/40"
+                      ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border-2 border-[#D4AF85] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] scale-105"
+                      : "bg-[#050C18] text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/50"
                   }`}
                 >
                   <span
                     className={`text-xs font-semibold block mb-1.5 ${
-                      prayer.isNext ? "text-[#C49A6C]" : "text-[#8A9BB3]"
+                      prayer.isNext ? "text-[#D4AF85]" : "text-[#8EA3BF]"
                     }`}
                   >
                     {prayer.name}
@@ -839,7 +860,7 @@ export default function Home() {
                     {prayer.time}
                   </span>
                   {prayer.isNext && (
-                    <span className="inline-block mt-2.5 text-[10px] bg-[#C49A6C] text-[#0B1220] font-bold px-2.5 py-0.5 rounded-full">
+                    <span className="inline-block mt-2.5 text-[10px] bg-[#D4AF85] text-[#050B14] font-bold px-2.5 py-0.5 rounded-full">
                       القادمة
                     </span>
                   )}
@@ -850,16 +871,16 @@ export default function Home() {
         </section>
 
         {/* Desktop Footer (Full Width) */}
-        <footer className="w-full border-t border-[#22334A] bg-[#080D18] px-8 lg:px-16 py-8">
-          <div className="max-w-[1560px] mx-auto flex items-center justify-between gap-3 text-right text-xs text-[#8A9BB3]">
+        <footer className="w-full border-t border-[#1E3A63]/60 bg-[#03060C] px-8 lg:px-16 py-8">
+          <div className="max-w-[1560px] mx-auto flex items-center justify-between gap-3 text-right text-xs text-[#8EA3BF]">
             <span>© جميع الحقوق محفوظة لجامع الحق — صرح الإيمان والسكينة.</span>
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
               <span className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#C49A6C]" />
+                <MapPin className="w-4 h-4 text-[#D4AF85]" />
                 <span>سلطنة عمان — ولاية السيب (الموالح الجنوبية)</span>
               </span>
               <span className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-[#C49A6C]" />
+                <Phone className="w-4 h-4 text-[#D4AF85]" />
                 <span>للتواصل والاستفسار</span>
               </span>
             </div>
@@ -960,7 +981,7 @@ export default function Home() {
                 onClick={() => setSidebarOpen(false)}
                 className="text-base sm:text-lg font-bold text-white/90 hover:text-white transition tracking-wide drop-shadow-sm"
               >
-                الفيديوهات
+                الخطب والدروس
               </Link>
 
               {/* Featured Active Item with outlined pill border (like 'WIDE EXTERIOR') */}
@@ -969,7 +990,7 @@ export default function Home() {
                 onClick={() => setSidebarOpen(false)}
                 className="border border-white/60 hover:border-[#D4AF85] hover:bg-white/10 rounded-full px-8 py-2 text-base sm:text-lg font-bold text-[#D4AF85] hover:text-white transition-all shadow-sm tracking-wide drop-shadow-sm my-1"
               >
-                حجز مناسبة
+                المجلس
               </Link>
 
               <a
@@ -987,6 +1008,15 @@ export default function Home() {
               >
                 أوقات الصلاة
               </a>
+
+              <Link
+                href="/login"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center justify-center gap-2 border border-[#D4AF85]/60 hover:bg-[#D4AF85]/10 rounded-full px-6 py-2 text-base font-bold text-[#D4AF85] hover:text-white transition-all shadow-sm tracking-wide drop-shadow-sm mt-1"
+              >
+                <User className="w-4 h-4 text-[#D4AF85]" />
+                <span>تسجيل الدخول</span>
+              </Link>
             </nav>
 
             {/* Delicate thin divider */}
@@ -1005,7 +1035,7 @@ export default function Home() {
               احجز قاعة (التقويم)
             </button>
 
-            <div className="text-[11px] text-[#8A9BB3]/90 text-center space-y-0.5">
+            <div className="text-[11px] text-[#8EA3BF]/90 text-center space-y-0.5">
               <p>ولاية السيب — الموالح الجنوبية</p>
               <p className="text-[#D4AF85]/90">سلطنة عمان</p>
             </div>

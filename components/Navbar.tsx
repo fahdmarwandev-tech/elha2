@@ -8,6 +8,7 @@ import {
   Video,
   Landmark,
   RotateCcw,
+  User,
 } from "lucide-react";
 import QuickBookingModal from "./QuickBookingModal";
 
@@ -27,46 +28,41 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
   };
 
   const navLinks = [
-    { name: "حجز مناسبة", href: "/booking", icon: Calendar },
-    { name: "الفيديوهات", href: "/videos", icon: Video },
+    { name: "المجلس", href: "/booking", icon: Calendar },
+    { name: "الخطب والدروس", href: "/videos", icon: Video },
     { name: "عن المسجد", href: "/#about" },
   ];
 
   return (
     <>
-      <header className="sticky top-0 left-0 right-0 z-50 bg-[#0B1220]/95 backdrop-blur-md border-b border-[#22334A] text-[#FAF7F0] transition-all duration-300">
+      <header className="sticky top-0 left-0 right-0 z-50 bg-[#060D1A]/95 backdrop-blur-md border-b border-[#1E3A63]/60 text-[#FAF7F0] transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
-            {/* Logo and Brand */}
-            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#152132] border border-[#22334A] flex items-center justify-center text-[#C49A6C] group-hover:border-[#C49A6C] group-hover:scale-105 transition-all shadow-sm">
-                <Landmark className="w-4 h-4 sm:w-5 sm:h-5 text-[#C49A6C]" />
-              </div>
-              <div className="flex flex-col text-right">
-                <span className="font-aref text-lg sm:text-2xl font-bold text-[#FAF7F0] group-hover:text-[#C49A6C] transition-colors leading-tight">
-                  جامع الحق
-                </span>
-                <span className="hidden sm:inline text-[10px] font-semibold text-[#8A9BB3] tracking-wide">
-                  دار المناسبات الإسلامية
-                </span>
+            {/* Logo only in Navbar */}
+            <Link
+              href="/"
+              className="flex items-center group shrink-0"
+              aria-label="الرئيسية - جامع الحق"
+            >
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-b from-[#0F1E36] to-[#0A1526] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] group-hover:border-[#D4AF85] group-hover:scale-105 transition-all shadow-sm">
+                <Landmark className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF85]" />
               </div>
             </Link>
 
             {/* Desktop Navigation Links - The 3 requested links only */}
-            <nav className="hidden md:flex items-center gap-7">
+            <nav className="hidden md:flex items-center gap-8">
               {navLinks.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href === "/booking" && pathname.startsWith("/booking"));
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center gap-1.5 py-2 text-sm font-semibold transition-colors ${
-                      isActive || (item.href === "/booking" && pathname.startsWith("/booking"))
-                        ? "text-[#C49A6C] font-bold"
-                        : "text-[#8A9BB3] hover:text-[#FAF7F0]"
+                    className={`py-2 text-sm transition-all duration-200 relative ${
+                      isActive
+                        ? "text-[#FFF2D2] font-black drop-shadow-[0_0_12px_rgba(212,175,133,0.55)] border-b-2 border-[#D4AF85]"
+                        : "text-[#D4AF85]/80 hover:text-[#FFF2D2] font-bold"
                     }`}
                   >
-                    {item.icon && <item.icon className="w-4 h-4 text-[#C49A6C]" />}
                     <span>{item.name}</span>
                   </Link>
                 );
@@ -75,33 +71,44 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-3">
-              <button
-                onClick={() => openCalendarFor("katbketab")}
-                className="inline-flex items-center gap-2 rounded-full bg-[#C49A6C] hover:bg-[#D4AF85] px-5 py-2.5 text-xs font-black text-[#0B1220] transition shadow-[0_0_20px_rgba(196,154,108,0.25)] active:scale-95"
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-6 py-2.5 text-xs font-bold text-[#FFF2D2] border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_6px_20px_-3px_rgba(0,0,0,0.7),0_0_15px_rgba(212,175,133,0.25)] transition active:scale-95"
               >
-                <Calendar className="w-3.5 h-3.5 text-[#0B1220]" />
-                <span>احجز مناسبتك (التقويم)</span>
-              </button>
+                <User className="w-3.5 h-3.5 text-[#D4AF85]" />
+                <span>تسجيل الدخول</span>
+              </Link>
             </div>
 
-            {/* Mobile Navigation - The 3 links on top directly, Frameless like laptop view */}
-            <nav className="md:hidden flex items-center gap-4 text-xs font-semibold">
+            {/* Mobile Navigation - The links on top directly */}
+            <nav className="md:hidden flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0">
               {navLinks.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href === "/booking" && pathname.startsWith("/booking"));
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`transition whitespace-nowrap ${
+                    className={`transition-all whitespace-nowrap py-1 px-2.5 rounded-lg ${
                       isActive
-                        ? "text-[#C49A6C] font-bold"
-                        : "text-[#8A9BB3] hover:text-[#FAF7F0]"
+                        ? "text-[#FFF2D2] font-black bg-[#122849]/60 border border-[#D4AF85]/70 shadow-[0_0_12px_rgba(212,175,133,0.3)]"
+                        : "text-[#D4AF85]/80 hover:text-[#FFF2D2] font-bold"
                     }`}
                   >
                     {item.name}
                   </Link>
                 );
               })}
+              <Link
+                href="/login"
+                className={`transition-all whitespace-nowrap flex items-center gap-1 px-3 py-1.5 rounded-full border ${
+                  pathname === "/login" || pathname === "/signup"
+                    ? "text-[#FFF2D2] border-[#D4AF85] bg-[#122849] font-black shadow-[0_0_12px_rgba(212,175,133,0.4)]"
+                    : "text-[#FFF2D2] border-[#D4AF85]/60 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] font-bold shadow-sm"
+                }`}
+              >
+                <User className="w-3 h-3 text-[#D4AF85]" />
+                <span>دخول</span>
+              </Link>
             </nav>
           </div>
         </div>
