@@ -260,19 +260,19 @@ export default function Home() {
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Mosque Branding (Right side in RTL) */}
+            {/* Mosque Branding - Logo Only */}
             <Link
               href="/"
               style={{
                 opacity: headerExtrasOpacity,
                 pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
               }}
-              className="flex items-center gap-1 sm:gap-1.5 group transition-opacity duration-300 shrink-0"
+              className="group flex items-center transition-all active:scale-95 shrink-0"
+              aria-label="جامع الحق"
             >
-              <MosqueDomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF85]" />
-              <span className="font-aref text-lg sm:text-xl font-bold text-[#FAF7F0] transition-colors group-hover:text-[#D4AF85] drop-shadow-md">
-                جامع الحق
-              </span>
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] group-hover:border-[#D4AF85] flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                <Landmark className="w-5 h-5 text-[#D4AF85] drop-shadow-[0_0_8px_rgba(212,175,133,0.5)] group-hover:scale-110 transition-transform" />
+              </div>
             </Link>
 
             {/* The 3 Links: Smooth, luxury typography (Center in RTL) */}
@@ -540,19 +540,19 @@ export default function Home() {
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Logo in Aref Ruqaa Bold */}
+            {/* Logo in Landmark - Icon Only */}
             <Link
               href="/"
               style={{
                 opacity: headerExtrasOpacity,
                 pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
               }}
-              className="group flex items-center gap-2.5 transition-opacity duration-300"
+              className="group flex items-center transition-all active:scale-95 shrink-0"
+              aria-label="جامع الحق"
             >
-              <Landmark className="h-7 w-7 shrink-0 text-[#D4AF85] drop-shadow-md" />
-              <span className="font-aref text-3xl font-bold text-white transition-colors group-hover:text-[#D4AF85] drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                جامع الحق
-              </span>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] group-hover:border-[#D4AF85] flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+                <Landmark className="h-6 w-6 lg:h-7 lg:w-7 text-[#D4AF85] drop-shadow-[0_0_10px_rgba(212,175,133,0.5)] group-hover:scale-110 transition-transform" />
+              </div>
             </Link>
 
             {/* Desktop Nav links - 3 requested links with smooth elegant typography */}
