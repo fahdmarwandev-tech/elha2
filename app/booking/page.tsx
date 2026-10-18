@@ -9,7 +9,7 @@ import {
   Users,
   CheckCircle2,
   Phone,
-  Send,
+  Mail,
   Info,
   ChevronRight,
   ChevronLeft,
@@ -28,6 +28,7 @@ export default function BookingPage() {
 
   // Form inputs
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [secondaryPhone, setSecondaryPhone] = useState("");
   const [nationalId, setNationalId] = useState("");
@@ -77,7 +78,7 @@ export default function BookingPage() {
 
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !phone.trim() || !nationalId.trim()) return;
+    if (!fullName.trim() || !phone.trim() || !nationalId.trim() || !email.trim()) return;
     const code = `DAR-${Math.floor(100000 + Math.random() * 900000)}`;
     setReservationCode(code);
     setIsSubmitted(true);
@@ -125,7 +126,7 @@ export default function BookingPage() {
             </div>
 
             <span className="text-xs font-bold px-3 py-1 bg-[#0A1628] text-[#D4AF85] rounded-full border border-[#D4AF85]/50">
-              تم تسجيل طلب الحجز بنجاح
+              تم إرسال بريد التأكيد بنجاح
             </span>
 
             <h2 className="text-2xl sm:text-3xl font-black font-aref text-[#FAF7F0] mt-4 mb-2">
@@ -135,8 +136,12 @@ export default function BookingPage() {
             </h2>
 
             <p className="text-[#8EA3BF] text-xs sm:text-sm leading-relaxed mb-6">
-              تم تثبيت طلبك في جدول حجوزات المجلس بجامع الحق. كود الحجز المرجعي:
-              <span className="block text-2xl font-mono font-bold text-[#D4AF85] mt-2 drop-shadow-sm">
+              تم تثبيت طلبك في جدول حجوزات المجلس وإرسال رسالة التأكيد وتفاصيل الحجز إلى بريدك الإلكتروني:
+              <strong className="block text-[#D4AF85] font-mono text-sm sm:text-base mt-2 dir-ltr">
+                {email}
+              </strong>
+              كود الحجز المرجعي:
+              <span className="inline-block text-xl font-mono font-bold text-[#FAF7F0] mr-1 mt-1">
                 {reservationCode}
               </span>
             </p>
@@ -167,6 +172,12 @@ export default function BookingPage() {
                   {fullName} ({phone})
                 </span>
               </div>
+              <div className="flex justify-between border-b border-[#1E3A63]/60 pb-2">
+                <span className="text-[#8EA3BF]">البريد الإلكتروني:</span>
+                <span className="font-bold text-[#FAF7F0] font-mono dir-ltr">
+                  {email}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-[#8EA3BF]">الرقم المدني:</span>
                 <span className="font-bold text-[#FAF7F0] font-mono">
@@ -177,17 +188,11 @@ export default function BookingPage() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <a
-                href={`https://wa.me/201000000000?text=${encodeURIComponent(
-                  `السلام عليكم ورحمة الله، تم عمل حجز لـ ${
-                    bookingType === "katbketab" ? "عقد قران" : "عزاء"
-                  } بكود الحجز ${reservationCode} باسم ${fullName} (الرقم المدني: ${nationalId}) لتاريخ ${selectedDay} ${currentMonth.name}`
-                )}`}
-                target="_blank"
-                rel="noreferrer"
+                href={`mailto:${email}`}
                 className="w-full py-3.5 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] text-[#FFF2D2] font-bold text-xs flex items-center justify-center gap-2 border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_8px_20px_rgba(0,0,0,0.7),0_0_15px_rgba(212,175,133,0.3)] transition"
               >
-                <Send className="w-4 h-4 text-[#D4AF85]" />
-                تأكيد عبر واتساب إدارة المسجد
+                <Mail className="w-4 h-4 text-[#D4AF85]" />
+                <span>فتح البريد الإلكتروني لمراجعة التأكيد</span>
               </a>
               <button
                 onClick={() => setIsSubmitted(false)}
@@ -450,10 +455,26 @@ export default function BookingPage() {
                     />
                   </div>
 
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#8EA3BF] mb-1.5">
+                      البريد الإلكتروني (لاستلام التأكيد) *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      dir="ltr"
+                      className="w-full px-4 py-3 rounded-xl bg-[#050C18] border border-[#1E3A63] text-[#FAF7F0] text-xs placeholder:text-[#8EA3BF]/40 focus:outline-none focus:border-[#D4AF85] focus:ring-1 focus:ring-[#D4AF85] text-right"
+                    />
+                  </div>
+
                   {/* Phone */}
                   <div>
                     <label className="block text-xs font-semibold text-[#8EA3BF] mb-1.5">
-                      رقم الهاتف / واتساب *
+                      رقم الهاتف للتواصل *
                     </label>
                     <input
                       type="tel"
@@ -469,7 +490,7 @@ export default function BookingPage() {
                   {/* Secondary Phone */}
                   <div>
                     <label className="block text-xs font-semibold text-[#8EA3BF] mb-1.5">
-                      رقم هاتف إضافي (بديل)
+                      رقم هاتف إضافي (اختياري)
                     </label>
                     <input
                       type="tel"

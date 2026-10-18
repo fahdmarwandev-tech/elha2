@@ -14,7 +14,7 @@ import {
   HeartHandshake,
   ShieldCheck,
   Building2,
-  Send,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -35,6 +35,7 @@ export default function QuickBookingModal({
   const [selectedSlot, setSelectedSlot] = useState<string>("عشاء");
   const [selectedHall, setSelectedHall] = useState<string>("قاعة المجلس العام");
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -68,12 +69,16 @@ export default function QuickBookingModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !phone) return;
+    if (!fullName || !phone || !email) return;
     setIsSubmitted(true);
   };
 
   const resetForm = () => {
     setIsSubmitted(false);
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setNotes("");
     onClose();
   };
 
@@ -97,7 +102,7 @@ export default function QuickBookingModal({
             </div>
 
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] mb-2">
-              تم تسجيل طلب الحجز بنجاح
+              تم إرسال بريد التأكيد بنجاح
             </span>
 
             <h3 className="text-2xl font-black text-[#FAF7F0] font-aref mb-2">
@@ -105,8 +110,12 @@ export default function QuickBookingModal({
             </h3>
 
             <p className="text-[#8A9BB3] text-sm max-w-md mx-auto mb-6 leading-relaxed">
-              تم استلام حجزك المبدئي لمجلس جامع الحق. رقم الحجز المرجعي:
-              <strong className="block text-[#FAF7F0] text-lg font-mono mt-1">
+              تم استلام حجزك المبدئي وإرسال إشعار التأكيد ورقم المرجع إلى بريدك الإلكتروني:
+              <strong className="block text-[#D4AF85] font-mono mt-1 text-sm dir-ltr">
+                {email}
+              </strong>
+              رقم الحجز المرجعي:
+              <strong className="block text-[#FAF7F0] text-lg font-mono mt-0.5">
                 MN-{Math.floor(100000 + Math.random() * 900000)}
               </strong>
             </p>
@@ -130,6 +139,12 @@ export default function QuickBookingModal({
                   فترة {selectedSlot} • {selectedHall}
                 </span>
               </div>
+              <div className="flex justify-between border-b border-[#1E3A63]/50 pb-2">
+                <span className="text-[#8A9BB3]">البريد الإلكتروني:</span>
+                <span className="font-bold text-[#FAF7F0] font-mono dir-ltr">
+                  {email}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-[#8A9BB3]">صاحب الحجز:</span>
                 <span className="font-bold text-[#FAF7F0]">
@@ -140,17 +155,11 @@ export default function QuickBookingModal({
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
               <a
-                href={`https://wa.me/201000000000?text=${encodeURIComponent(
-                  `مرحباً إدارة جامع الحق، أود تأكيد حجز ${
-                    bookingType === "katbketab" ? "عقد قران" : "عزاء"
-                  } ليوم ${selectedDay} ${currentMonth.name} باسم ${fullName}`
-                )}`}
-                target="_blank"
-                rel="noreferrer"
+                href={`mailto:${email}`}
                 className="w-full py-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85]/80 hover:border-[#D4AF85] font-black text-xs text-[#FFF2D2] flex items-center justify-center gap-2 transition shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)]"
               >
-                <Send className="w-4 h-4 text-[#D4AF85]" />
-                تأكيد فوري عبر واتساب
+                <Mail className="w-4 h-4 text-[#D4AF85]" />
+                <span>فتح البريد الإلكتروني لمراجعة التأكيد</span>
               </a>
               <button
                 onClick={resetForm}
@@ -369,18 +378,33 @@ export default function QuickBookingModal({
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#8A9BB3] mb-1 text-right">
-                    رقم الهاتف / واتساب *
+                    البريد الإلكتروني (لاستلام التأكيد) *
                   </label>
                   <input
-                    type="tel"
+                    type="email"
                     required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
                     dir="ltr"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#050C18] border border-[#1E3A63] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#D4AF85] focus:ring-1 focus:ring-[#D4AF85]/40 text-right transition"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#8A9BB3] mb-1 text-right">
+                  رقم الهاتف للتواصل *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="01XXXXXXXXX"
+                  dir="ltr"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#050C18] border border-[#1E3A63] text-[#FAF7F0] text-xs placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#D4AF85] focus:ring-1 focus:ring-[#D4AF85]/40 text-right transition"
+                />
               </div>
 
               <div>
