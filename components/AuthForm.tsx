@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   IdCard,
 } from "lucide-react";
+import { login, register, ApiError } from "@/lib/api";
 
 interface AuthFormProps {
   initialMode?: "login" | "signup";
@@ -54,9 +55,10 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
     setSuccessMessage(null);
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     if (!loginIdentifier.trim()) {
       setErrorMessage("يرجى إدخال البريد الإلكتروني أو رقم الهاتف.");
@@ -68,34 +70,42 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
     }
 
     setIsLoading(true);
-    // Simulate authentication delay
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage("تم تسجيل الدخول بنجاح! جاري تحويلك...");
+    try {
+      const response = await login({
+        identifier: loginIdentifier.trim(),
+        password: loginPassword,
+      });
+
+      setSuccessMessage(`أهلاً بك، ${response.user.fullName}! جاري تحويلك...`);
       setTimeout(() => {
         router.push("/");
-      }, 1200);
-    }, 1000);
+      }, 1000);
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     if (!signupFullName.trim()) {
       setErrorMessage("يرجى إدخال الاسم الكامل.");
       return;
     }
-    if (!signupNationalId.trim() || signupNationalId.trim().length < 8) {
-      setErrorMessage("يرجى إدخال الرقم المدني / الهوية الوطنية بشكل صحيح.");
-      return;
-    }
-    if (!signupEmail.trim() || !signupEmail.includes("@")) {
-      setErrorMessage("يرجى إدخال بريد إلكتروني صحيح.");
-      return;
-    }
     if (!signupPhone.trim() || signupPhone.length < 8) {
       setErrorMessage("يرجى إدخال رقم هاتف صحيح.");
+      return;
+    }
+    if (signupEmail.trim() && !signupEmail.includes("@")) {
+      setErrorMessage("يرجى إدخال بريد إلكتروني صحيح.");
       return;
     }
     if (signupPassword.length < 6) {
@@ -112,14 +122,27 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
     }
 
     setIsLoading(true);
-    // Simulate account creation
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage("تم إنشاء حسابك بنجاح! جاري تحويلك...");
+    try {
+      const response = await register({
+        fullName: signupFullName.trim(),
+        phone: signupPhone.trim(),
+        email: signupEmail.trim() || undefined,
+        password: signupPassword,
+      });
+
+      setSuccessMessage(`تم إنشاء حسابك بنجاح، أهلاً بك ${response.user.fullName}! جاري تحويلك...`);
       setTimeout(() => {
         router.push("/");
-      }, 1200);
-    }, 1200);
+      }, 1000);
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("تعذر إنشاء الحساب، يرجى المحاولة لاحقاً.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

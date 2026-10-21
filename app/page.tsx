@@ -270,8 +270,12 @@ export default function Home() {
               className="group flex items-center transition-all active:scale-95 shrink-0"
               aria-label="جامع الحق"
             >
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] group-hover:border-[#D4AF85] flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-                <Landmark className="w-5 h-5 text-[#D4AF85] drop-shadow-[0_0_8px_rgba(212,175,133,0.5)] group-hover:scale-110 transition-transform" />
+              <div className="w-10 h-10 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1 flex items-center justify-center transition-all shadow-[0_4px_14px_rgba(212,175,133,0.35)] group-hover:scale-105">
+                <img
+                  src="/image-removebg-preview (10).png"
+                  alt="شعار جامع الحق"
+                  className="w-full h-full object-contain"
+                />
               </div>
             </Link>
 
@@ -540,7 +544,7 @@ export default function Home() {
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Logo in Landmark - Icon Only */}
+            {/* Mosque Logo in Navbar */}
             <Link
               href="/"
               style={{
@@ -550,8 +554,12 @@ export default function Home() {
               className="group flex items-center transition-all active:scale-95 shrink-0"
               aria-label="جامع الحق"
             >
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] group-hover:border-[#D4AF85] flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
-                <Landmark className="h-6 w-6 lg:h-7 lg:w-7 text-[#D4AF85] drop-shadow-[0_0_10px_rgba(212,175,133,0.5)] group-hover:scale-110 transition-transform" />
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1.5 flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(212,175,133,0.35)] group-hover:scale-105 group-hover:border-[#FFF0C8]">
+                <img
+                  src="/image-removebg-preview (10).png"
+                  alt="شعار جامع الحق"
+                  className="w-full h-full object-contain"
+                />
               </div>
             </Link>
 
@@ -947,7 +955,13 @@ export default function Home() {
               onClick={() => setSidebarOpen(false)}
               className="flex flex-col items-center gap-1 group"
             >
-              <Landmark className="h-7 w-7 text-[#D4AF85] drop-shadow-sm mb-1" />
+              <div className="w-14 h-14 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1.5 flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(212,175,133,0.35)] group-hover:scale-105 mb-2">
+                <img
+                  src="/image-removebg-preview (10).png"
+                  alt="شعار جامع الحق"
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <span className="font-aref text-3xl font-bold text-white tracking-wide group-hover:text-[#D4AF85] transition-colors drop-shadow-md">
                 جامع الحق
               </span>
