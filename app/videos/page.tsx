@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import YouTubePlayer, { extractYouTubeId, getYouTubeThumbnail } from "@/components/YouTubePlayer";
 import {
@@ -42,24 +42,53 @@ export default function VideosPage() {
   const [customLinkInput, setCustomLinkInput] = useState("");
   const [customLinkError, setCustomLinkError] = useState<string | null>(null);
 
-  // Hardcoded initial list of YouTube videos (will later come from backend/admin dashboard)
-  const [videoList, setVideoList] = useState<VideoItem[]>([
-    {
-      id: "dkeu6gi3mAc",
-      title: "السبت الممتاز | نجم الجيل | مع ويجز | THE GOATS",
-      desc: "لقاء ممتع وحصري من برنامج السبت الممتاز مع النجم تامر حسني وويجز، متاح للمشاهدة مباشرة عبر المشغل المدمج في الموقع بجودة عالية.",
-      category: "lessons",
-      categoryName: "حوارات وبرامج",
-      youtubeUrl: "https://youtu.be/dkeu6gi3mAc?si=yUSf8JfNVktQWeYD",
-      duration: "45:02",
-      date: "أكتوبر 2026",
-      views: "2,027,645",
-      isFeatured: true,
-    },
-  ]);
-
-  const [activeVideo, setActiveVideo] = useState<VideoItem>(videoList[0]);
+  // Videos fetched dynamically from PostgreSQL backend
+  const [videoList, setVideoList] = useState<VideoItem[]>([]);
+  const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
   const [autoPlayActive, setAutoPlayActive] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch dynamic videos from PostgreSQL backend
+  useEffect(() => {
+    async function loadBackendVideos() {
+      try {
+        setLoading(true);
+        const res = await fetch("http://localhost:8080/api/v1/videos", {
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const mapped: VideoItem[] = data.map((v: any) => ({
+              id: v.youtubeId || String(v.id),
+              title: v.title,
+              desc: v.description || "مقطع مرئي ومحتوى متاح للمشاهدة مباشرة عبر المشغل المدمج في الموقع بجودة عالية.",
+              category: (v.category as any) || "lessons",
+              categoryName: v.categoryName || "دروس ومواعظ",
+              youtubeUrl: v.youtubeUrl,
+              poster: v.customPoster,
+              duration: v.duration || "غير محدد",
+              date: "أكتوبر 2026",
+              views: v.viewsCount || "جديد",
+              isFeatured: v.isFeatured,
+            }));
+            setVideoList(mapped);
+            if (mapped.length > 0) {
+              const featured = mapped.find((m) => m.isFeatured) || mapped[0];
+              setActiveVideo(featured);
+            } else {
+              setActiveVideo(null);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Backend videos not reached:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBackendVideos();
+  }, []);
 
   const categories = [
     { id: "all", label: "جميع المرئيات" },
@@ -132,6 +161,17 @@ export default function VideosPage() {
             استمع وشاهد خطب الجمعة المباركة والدروس الدينية مباشرة عبر مشغل يوتيوب المدمج داخل الموقع.
           </p>
 
+          {/* Direct Link to Admin Dashboard */}
+          <div className="mt-4 flex items-center justify-center">
+            <Link
+              href="/admin/videos"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0D1A2D] hover:bg-[#122849] border border-[#D4AF85]/60 hover:border-[#D4AF85] text-[#FFF2D2] text-xs font-bold transition shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#D4AF85]" />
+              <span>لوحة تحكم المشرف (إضافة وإدارة الفيديوهات)</span>
+            </Link>
+          </div>
+
           {/* Quick YouTube Link Tester Bar (Interactive demo of how admin dashboard will work) */}
           <form
             onSubmit={handleLoadCustomLink}
@@ -198,46 +238,66 @@ export default function VideosPage() {
       {/* Main Video Showcase */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
         {/* Featured Video Player Box using YouTubePlayer */}
-        <section className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-12">
-          {/* YouTube Player Frame */}
-          <div className="w-full bg-black">
-            <YouTubePlayer
-              key={activeVideo.id}
-              url={activeVideo.youtubeUrl}
-              title={activeVideo.title}
-              customPoster={activeVideo.poster}
-              duration={activeVideo.duration}
-              autoPlay={autoPlayActive}
-            />
+        {loading ? (
+          <div className="p-16 text-center rounded-3xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] mb-12">
+            <span className="text-xs text-[#8A9BB3]">جاري تحميل الفيديوهات من قاعدة البيانات...</span>
           </div>
-
-          {/* Video Metadata */}
-          <div className="p-5 sm:p-7">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63]">
-                  {activeVideo.categoryName}
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
-                  <Clock className="w-3.5 h-3.5 text-[#D4AF85]" />
-                  {activeVideo.duration}
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
-                  <Eye className="w-3.5 h-3.5 text-[#D4AF85]" />
-                  {activeVideo.views} مشاهدة
-                </span>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-black font-aref text-[#FAF7F0] leading-tight">
-                {activeVideo.title}
-              </h2>
-
-              <p className="text-xs sm:text-sm text-[#FAF7F0]/90 leading-relaxed">
-                {activeVideo.desc}
-              </p>
+        ) : activeVideo ? (
+          <section className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-12">
+            {/* YouTube Player Frame */}
+            <div className="w-full bg-black">
+              <YouTubePlayer
+                key={activeVideo.id}
+                url={activeVideo.youtubeUrl}
+                title={activeVideo.title}
+                customPoster={activeVideo.poster}
+                duration={activeVideo.duration}
+                autoPlay={autoPlayActive}
+              />
             </div>
+
+            {/* Video Metadata */}
+            <div className="p-5 sm:p-7">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63]">
+                    {activeVideo.categoryName}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
+                    <Clock className="w-3.5 h-3.5 text-[#D4AF85]" />
+                    {activeVideo.duration}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-[#8A9BB3]">
+                    <Eye className="w-3.5 h-3.5 text-[#D4AF85]" />
+                    {activeVideo.views} مشاهدة
+                  </span>
+                </div>
+
+                <h2 className="text-xl sm:text-2xl font-black font-aref text-[#FAF7F0] leading-tight">
+                  {activeVideo.title}
+                </h2>
+
+                <p className="text-xs sm:text-sm text-[#FAF7F0]/90 leading-relaxed">
+                  {activeVideo.desc}
+                </p>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <div className="p-12 text-center rounded-3xl bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] mb-12 space-y-3">
+            <VideoIcon className="w-12 h-12 text-[#D4AF85] mx-auto opacity-70" />
+            <h3 className="text-lg font-bold text-[#FAF7F0]">لا توجد فيديوهات مضافة حالياً في الموقع</h3>
+            <p className="text-xs text-[#8A9BB3] max-w-md mx-auto">
+              تم حذف أو عدم إضافة أي فيديوهات بعد. يمكنك الدخول إلى لوحة تحكم المشرف لإضافة روابط فيديوهات جديدة.
+            </p>
+            <Link
+              href="/admin/videos"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] text-xs font-bold transition shadow-md"
+            >
+              الانتقال إلى لوحة تحكم المرئيات لإضافة فيديو
+            </Link>
           </div>
-        </section>
+        )}
 
         {/* Video Catalog Grid */}
         <section>
@@ -253,72 +313,78 @@ export default function VideosPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => {
-              const isCurrent = activeVideo.id === video.id;
-              const videoId = extractYouTubeId(video.youtubeUrl);
-              const thumbUrl =
-                video.poster ||
-                (videoId ? getYouTubeThumbnail(videoId, "hq") : "/landing_last_frame.jpg");
+          {filteredVideos.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#8A9BB3] bg-[#0A1628] rounded-2xl border border-[#1E3A63]">
+              لا توجد مرئيات مطابقة في القائمة حالياً.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVideos.map((video) => {
+                const isCurrent = activeVideo ? activeVideo.id === video.id : false;
+                const videoId = extractYouTubeId(video.youtubeUrl);
+                const thumbUrl =
+                  video.poster ||
+                  (videoId ? getYouTubeThumbnail(videoId, "hq") : "/landing_last_frame.jpg");
 
-              return (
-                <div
-                  key={video.id}
-                  onClick={() => handleSelectVideo(video)}
-                  className={`group cursor-pointer bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between ${
-                    isCurrent
-                      ? "border-[#D4AF85] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] scale-[1.02]"
-                      : "border-[#1E3A63]/80 hover:border-[#D4AF85]/70 hover:shadow-[0_10px_25px_rgba(18,40,73,0.4)]"
-                  }`}
-                >
-                  {/* Thumbnail Frame */}
-                  <div className="relative aspect-video w-full overflow-hidden bg-black">
-                    <img
-                      src={thumbUrl}
-                      alt={video.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                return (
+                  <div
+                    key={video.id}
+                    onClick={() => handleSelectVideo(video)}
+                    className={`group cursor-pointer bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+                      isCurrent
+                        ? "border-[#D4AF85] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] scale-[1.02]"
+                        : "border-[#1E3A63]/80 hover:border-[#D4AF85]/70 hover:shadow-[0_10px_25px_rgba(18,40,73,0.4)]"
+                    }`}
+                  >
+                    {/* Thumbnail Frame */}
+                    <div className="relative aspect-video w-full overflow-hidden bg-black">
+                      <img
+                        src={thumbUrl}
+                        alt={video.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
-                    {/* Play Button Overlay */}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] flex items-center justify-center shadow-[0_0_15px_rgba(212,175,133,0.4)] group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5 fill-[#FFF2D2] text-[#FFF2D2] ml-0.5" />
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+                        <div className="w-12 h-12 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] flex items-center justify-center shadow-[0_0_15px_rgba(212,175,133,0.4)] group-hover:scale-110 transition-transform">
+                          <Play className="w-5 h-5 fill-[#FFF2D2] text-[#FFF2D2] ml-0.5" />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Duration badge */}
-                    <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[#FAF7F0] text-[10px] font-mono font-bold border border-[#1E3A63]/60">
-                      {video.duration}
-                    </span>
+                      {/* Duration badge */}
+                      <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[#FAF7F0] text-[10px] font-mono font-bold border border-[#1E3A63]/60">
+                        {video.duration}
+                      </span>
 
-                    {/* Category pill */}
-                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#050A14]/85 backdrop-blur-md text-[#D4AF85] text-[10px] font-semibold border border-[#1E3A63]">
-                      {video.categoryName}
-                    </span>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-4 flex flex-col justify-between flex-1">
-                    <div>
-                      <h4 className="font-bold text-sm text-[#FAF7F0] group-hover:text-[#D4AF85] transition-colors line-clamp-2 leading-snug mb-1.5">
-                        {video.title}
-                      </h4>
-                      <p className="text-xs text-[#8A9BB3] line-clamp-2 leading-relaxed mb-3">
-                        {video.desc}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-[#1E3A63]/60 flex items-center justify-between text-[11px] text-[#8A9BB3]">
-                      <span>{video.date}</span>
-                      <span className="text-[#D4AF85] font-bold group-hover:translate-x-[-4px] transition-transform flex items-center gap-1">
-                        تشغيل الآن ←
+                      {/* Category pill */}
+                      <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#050A14]/85 backdrop-blur-md text-[#D4AF85] text-[10px] font-semibold border border-[#1E3A63]">
+                        {video.categoryName}
                       </span>
                     </div>
+
+                    {/* Card Content */}
+                    <div className="p-4 flex flex-col justify-between flex-1">
+                      <div>
+                        <h4 className="font-bold text-sm text-[#FAF7F0] group-hover:text-[#D4AF85] transition-colors line-clamp-2 leading-snug mb-1.5">
+                          {video.title}
+                        </h4>
+                        <p className="text-xs text-[#8A9BB3] line-clamp-2 leading-relaxed mb-3">
+                          {video.desc}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#1E3A63]/60 flex items-center justify-between text-[11px] text-[#8A9BB3]">
+                        <span>{video.date}</span>
+                        <span className="text-[#D4AF85] font-bold group-hover:translate-x-[-4px] transition-transform flex items-center gap-1">
+                          تشغيل الآن ←
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Hall Reservation CTA Banner */}
