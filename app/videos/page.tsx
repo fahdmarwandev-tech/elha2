@@ -1,34 +1,31 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
+import YouTubePlayer, { extractYouTubeId, getYouTubeThumbnail } from "@/components/YouTubePlayer";
 import {
-  Play,
-  Pause,
   Video as VideoIcon,
   Film,
-  RotateCcw,
-  Maximize2,
   Calendar,
   Search,
   Sparkles,
   Clock,
   Eye,
+  Play,
+  Link as LinkIcon,
   CheckCircle2,
-  ArrowLeft,
-  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import QuickBookingModal from "@/components/QuickBookingModal";
 
-interface VideoItem {
+export interface VideoItem {
   id: string;
   title: string;
   desc: string;
   category: "khutbah" | "lessons" | "recitations" | "tours";
   categoryName: string;
-  src: string;
-  poster: string;
+  youtubeUrl: string; // The YouTube video link (from admin or hardcoded)
+  poster?: string;    // Optional custom image; if omitted, automatically uses YouTube's HQ frame
   duration: string;
   date: string;
   views: string;
@@ -38,34 +35,22 @@ interface VideoItem {
 export default function VideosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeVideo, setActiveVideo] = useState<VideoItem>({
-    id: "friday-khutbah-1",
-    title: "خطبة الجمعة: فضل عمارة بيوت الله وسكينة القلوب في رحاب الإيمان",
-    desc: "خطبة جمعة مباركة من منبر جامع الحق تتناول أهمية تعمير المساجد بالطاعة، وحلقات العلم، وأثرها في تماسك المجتمع وطمأنينة النفس.",
-    category: "khutbah",
-    categoryName: "خطب الجمعة",
-    src: "/1014.mp4",
-    poster: "/landing_last_frame.jpg",
-    duration: "28:15",
-    date: "أكتوبر 2026",
-    views: "14,800",
-    isFeatured: true,
-  });
-
-  const [isPlaying, setIsPlaying] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [bookingType, setBookingType] = useState<"3aza" | "katbketab">("katbketab");
-  const mainVideoRef = useRef<HTMLVideoElement>(null);
 
-  const videoList: VideoItem[] = [
+  // Custom link preview input state (so user can test ANY YouTube link right away)
+  const [customLinkInput, setCustomLinkInput] = useState("");
+  const [customLinkError, setCustomLinkError] = useState<string | null>(null);
+
+  // Hardcoded initial list of YouTube videos (will later come from backend/admin dashboard)
+  const [videoList, setVideoList] = useState<VideoItem[]>([
     {
       id: "friday-khutbah-1",
       title: "خطبة الجمعة: فضل عمارة بيوت الله وسكينة القلوب في رحاب الإيمان",
       desc: "خطبة جمعة مباركة من منبر جامع الحق تتناول أهمية تعمير المساجد بالطاعة، وحلقات العلم، وأثرها في تماسك المجتمع وطمأنينة النفس.",
       category: "khutbah",
       categoryName: "خطب الجمعة",
-      src: "/1014.mp4",
-      poster: "/landing_last_frame.jpg",
+      youtubeUrl: "https://www.youtube.com/watch?v=02V_53c1w1E",
       duration: "28:15",
       date: "أكتوبر 2026",
       views: "14,800",
@@ -77,8 +62,7 @@ export default function VideosPage() {
       desc: "درس إيماني ضمن السلسلة الأسبوعية لشرح كتاب الله وتفسير آياته، مع بيان هدايات القرآن في تهذيب السلوك وبناء الأسرة الصالحة.",
       category: "lessons",
       categoryName: "دروس دينية",
-      src: "/1014.mp4",
-      poster: "/golden-hour-mosque-cream-fade.png",
+      youtubeUrl: "https://www.youtube.com/watch?v=kYI6rM2W2gY",
       duration: "35:40",
       date: "أكتوبر 2026",
       views: "9,640",
@@ -89,11 +73,21 @@ export default function VideosPage() {
       desc: "توجيهات نبوية شريفة من منبر جامع الحق تحث على التراحم وبر الوالدين وإفشاء السلام والتكافل بين أبناء المجتمع الواحد.",
       category: "khutbah",
       categoryName: "خطب الجمعة",
-      src: "/1012(1).mp4",
-      poster: "/Illuminated Mosque at Dusk.png",
+      youtubeUrl: "https://www.youtube.com/watch?v=1xKfZ8p2x0g",
       duration: "24:50",
       date: "سبتمبر 2026",
       views: "11,200",
+    },
+    {
+      id: "recitation-kahf",
+      title: "تلاوة خاشعة عطرة: سورة الكهف بصوت ندي من رحاب المسجد",
+      desc: "تلاوة مباركة لسورة الكهف الشريفة تنشر السكينة والطمأنينة، مسجلة بجودة عالية من داخل محراب جامع الحق.",
+      category: "recitations",
+      categoryName: "تلاوات خاشعة",
+      youtubeUrl: "https://www.youtube.com/watch?v=sB6R32z71Ww",
+      duration: "22:15",
+      date: "سبتمبر 2026",
+      views: "18,400",
     },
     {
       id: "lesson-seerah",
@@ -101,23 +95,10 @@ export default function VideosPage() {
       desc: "محاضرة دينية جامعة تستعرض محطات ملهمة من حياة المصطفى ﷺ وأصحابه الكرام، وما يستفاد منها في واقعنا المعاصر.",
       category: "lessons",
       categoryName: "دروس دينية",
-      src: "/1014.mp4",
-      poster: "/golden-mosque-courtyard.png",
+      youtubeUrl: "https://www.youtube.com/watch?v=3nQniw5v3aM",
       duration: "42:10",
       date: "سبتمبر 2026",
       views: "8,750",
-    },
-    {
-      id: "lesson-tazkiyah",
-      title: "درس ديني: تزكية النفوس وفضائل الأعمال الصالحة في حياة المسلم",
-      desc: "شرح مفصل لسبل تزكية النفس وسلامة الصدر، والاستقامة على الطاعات ونيل محبة الله ورضوانه.",
-      category: "lessons",
-      categoryName: "دروس دينية",
-      src: "/1014.mp4",
-      poster: "/masjid_enhanced.png",
-      duration: "31:20",
-      date: "أكتوبر 2026",
-      views: "12,300",
     },
     {
       id: "khutbah-solidarity",
@@ -125,18 +106,21 @@ export default function VideosPage() {
       desc: "خطبة جمعة من منبر جامع الحق تتناول قيم الإيثار والمواساة وإعانة المحتاجين، وبناء مجتمع إيماني متماسك.",
       category: "khutbah",
       categoryName: "خطب الجمعة",
-      src: "/1012(1).mp4",
-      poster: "/mobile_last_frame.jpg",
+      youtubeUrl: "https://www.youtube.com/watch?v=Qy419vHZs1g",
       duration: "26:45",
       date: "سبتمبر 2026",
       views: "15,100",
     },
-  ];
+  ]);
+
+  const [activeVideo, setActiveVideo] = useState<VideoItem>(videoList[0]);
+  const [autoPlayActive, setAutoPlayActive] = useState(false);
 
   const categories = [
     { id: "all", label: "جميع المرئيات" },
     { id: "khutbah", label: "خطب الجمعة" },
     { id: "lessons", label: "دروس دينية ومحاضرات" },
+    { id: "recitations", label: "تلاوات خاشعة" },
   ];
 
   const filteredVideos = videoList.filter((item) => {
@@ -149,29 +133,38 @@ export default function VideosPage() {
 
   const handleSelectVideo = (video: VideoItem) => {
     setActiveVideo(video);
-    setIsPlaying(true);
-    if (mainVideoRef.current) {
-      mainVideoRef.current.src = video.src;
-      mainVideoRef.current.poster = video.poster;
-      mainVideoRef.current.play().catch(() => {});
-    }
-    window.scrollTo({ top: 120, behavior: "smooth" });
+    setAutoPlayActive(true);
+    window.scrollTo({ top: 220, behavior: "smooth" });
   };
 
-  const togglePlay = () => {
-    if (!mainVideoRef.current) return;
-    if (isPlaying) {
-      mainVideoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      mainVideoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-    }
-  };
+  // Allows pasting ANY YouTube link to instantly preview it in the player
+  const handleLoadCustomLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCustomLinkError(null);
 
-  const handleReplay = () => {
-    if (!mainVideoRef.current) return;
-    mainVideoRef.current.currentTime = 0;
-    mainVideoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+    const videoId = extractYouTubeId(customLinkInput);
+    if (!videoId) {
+      setCustomLinkError("يرجى إدخال رابط يوتيوب صحيح (مثال: https://www.youtube.com/watch?v=...)");
+      return;
+    }
+
+    const newVideo: VideoItem = {
+      id: `custom-${Date.now()}`,
+      title: "فيديو مخصص تجريبي من الرابط المدخل",
+      desc: "تم تحميل هذا الفيديو مباشرة من الرابط الذي أدخلته، دون تنزيل ملفات، باستخدام مشغل يوتيوب الرسمي المدمج.",
+      category: "lessons",
+      categoryName: "فيديو مضاف",
+      youtubeUrl: customLinkInput.trim(),
+      duration: "--:--",
+      date: "الآن",
+      views: "جديد",
+    };
+
+    setVideoList((prev) => [newVideo, ...prev]);
+    setActiveVideo(newVideo);
+    setAutoPlayActive(true);
+    setCustomLinkInput("");
+    window.scrollTo({ top: 220, behavior: "smooth" });
   };
 
   return (
@@ -191,8 +184,37 @@ export default function VideosPage() {
           </h1>
 
           <p className="text-[#8A9BB3] text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
-            استمع وشاهد خطب الجمعة المباركة، والدروس والمحاضرات الدينية الإيمانية من محراب ومنبر جامع الحق.
+            استمع وشاهد خطب الجمعة المباركة والدروس الدينية مباشرة عبر مشغل يوتيوب المدمج داخل الموقع.
           </p>
+
+          {/* Quick YouTube Link Tester Bar (Interactive demo of how admin dashboard will work) */}
+          <form
+            onSubmit={handleLoadCustomLink}
+            className="mt-6 max-w-3xl mx-auto bg-[#070F1E]/90 border border-[#D4AF85]/40 rounded-2xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
+          >
+            <div className="relative flex-1 w-full">
+              <LinkIcon className="w-4 h-4 text-[#D4AF85] absolute right-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={customLinkInput}
+                onChange={(e) => {
+                  setCustomLinkInput(e.target.value);
+                  setCustomLinkError(null);
+                }}
+                placeholder="جرّب وضع أي رابط يوتيوب هنا لعرضه في الموقع فوراً..."
+                className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-[#050A14] border border-[#1E3A63] text-xs text-[#FAF7F0] placeholder:text-[#8A9BB3]/60 focus:outline-none focus:border-[#D4AF85] transition"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] hover:border-[#FFF0C8] text-[#FFF2D2] text-xs font-bold transition shadow-md whitespace-nowrap active:scale-95"
+            >
+              عرض الفيديو في الموقع
+            </button>
+          </form>
+          {customLinkError && (
+            <p className="text-xs text-red-400 mt-2 font-semibold">{customLinkError}</p>
+          )}
 
           {/* Search & Categories Bar */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
@@ -203,7 +225,7 @@ export default function VideosPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في خطب الجمعة أو الدروس والمحاضرات..."
+                placeholder="ابحث في خطب الجمعة أو الدروس..."
                 className="w-full pr-10 pl-4 py-2.5 rounded-full bg-[#050C18] border border-[#1E3A63] text-xs text-[#FAF7F0] placeholder:text-[#8A9BB3]/50 focus:outline-none focus:border-[#D4AF85] focus:ring-1 focus:ring-[#D4AF85]/40 transition"
               />
             </div>
@@ -230,18 +252,17 @@ export default function VideosPage() {
 
       {/* Main Video Showcase */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
-        {/* Featured Video Player Box */}
+        {/* Featured Video Player Box using YouTubePlayer */}
         <section className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-12">
-          <div className="relative aspect-video w-full bg-black group overflow-hidden">
-            <video
-              ref={mainVideoRef}
-              src={activeVideo.src}
-              poster={activeVideo.poster}
-              controls
-              playsInline
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              className="w-full h-full object-cover"
+          {/* YouTube Player Frame */}
+          <div className="w-full bg-black">
+            <YouTubePlayer
+              key={activeVideo.id}
+              url={activeVideo.youtubeUrl}
+              title={activeVideo.title}
+              customPoster={activeVideo.poster}
+              duration={activeVideo.duration}
+              autoPlay={autoPlayActive}
             />
           </div>
 
@@ -283,13 +304,17 @@ export default function VideosPage() {
               </span>
             </h3>
             <span className="text-xs text-[#8A9BB3]">
-              اضغط على أي فيديو لتشغيله في المشغل الرئيسي
+              اضغط على أي فيديو لتشغيله في المشغل الرئيسي أعلاه
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVideos.map((video) => {
               const isCurrent = activeVideo.id === video.id;
+              const videoId = extractYouTubeId(video.youtubeUrl);
+              const thumbUrl =
+                video.poster ||
+                (videoId ? getYouTubeThumbnail(videoId, "hq") : "/landing_last_frame.jpg");
 
               return (
                 <div
@@ -301,10 +326,10 @@ export default function VideosPage() {
                       : "border-[#1E3A63]/80 hover:border-[#D4AF85]/70 hover:shadow-[0_10px_25px_rgba(18,40,73,0.4)]"
                   }`}
                 >
-                  {/* Thumbnail Container */}
+                  {/* Thumbnail Frame */}
                   <div className="relative aspect-video w-full overflow-hidden bg-black">
                     <img
-                      src={video.poster}
+                      src={thumbUrl}
                       alt={video.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -379,16 +404,11 @@ export default function VideosPage() {
               }}
               className="px-6 py-3.5 rounded-full bg-[#0A1628] hover:bg-[#122849] text-[#FAF7F0] border border-[#1E3A63] hover:border-[#D4AF85]/60 font-bold text-xs text-center transition"
             >
-              حجز سريع الآن
+              حجز موعد مباشر
             </button>
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#1E3A63]/60 bg-[#050A14] py-8 text-center text-xs text-[#8A9BB3]">
-        <p>© جامع الحق والمجلس العام — مكتبة المرئيات والتوثيق.</p>
-      </footer>
 
       {/* Quick Booking Modal */}
       <QuickBookingModal
