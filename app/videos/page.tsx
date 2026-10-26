@@ -46,14 +46,14 @@ export default function VideosPage() {
   const [videoList, setVideoList] = useState<VideoItem[]>([
     {
       id: "dkeu6gi3mAc",
-      title: "قصة إيمانية وموعظة مؤثرة من رحاب جامع الحق",
-      desc: "مقطع مرئي وموعظة دينية من رحاب جامع الحق، متاح للمشاهدة مباشرة عبر المشغل المدمج في الموقع بجودة عالية.",
+      title: "السبت الممتاز | نجم الجيل | مع ويجز | THE GOATS",
+      desc: "لقاء ممتع وحصري من برنامج السبت الممتاز مع النجم تامر حسني وويجز، متاح للمشاهدة مباشرة عبر المشغل المدمج في الموقع بجودة عالية.",
       category: "lessons",
-      categoryName: "دروس ومواعظ",
+      categoryName: "حوارات وبرامج",
       youtubeUrl: "https://youtu.be/dkeu6gi3mAc?si=yUSf8JfNVktQWeYD",
-      duration: "15:20",
+      duration: "45:02",
       date: "أكتوبر 2026",
-      views: "1,200",
+      views: "2,027,645",
       isFeatured: true,
     },
   ]);

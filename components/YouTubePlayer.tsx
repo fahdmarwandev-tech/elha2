@@ -97,9 +97,10 @@ export default function YouTubePlayer({
     >
       {isPlaying ? (
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
           title={title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
           className="w-full h-full border-0 absolute inset-0 z-10"
         />
@@ -132,7 +133,15 @@ export default function YouTubePlayer({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(4,8,18,0.7)_100%)]" />
 
           {/* Golden Mosque Play Button */}
-          <div className="relative z-20 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPlaying(true);
+            }}
+            className="relative z-20 flex flex-col items-center gap-3 cursor-pointer group/btn focus:outline-none"
+            aria-label="تشغيل الفيديو"
+          >
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[linear-gradient(135deg,#0E203A_0%,#183561_60%,#265394_100%)] border-2 border-[#D4AF85] p-0.5 flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(212,175,133,0.4)] group-hover:shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_35px_rgba(255,240,200,0.7)] group-hover:scale-110 group-hover:border-[#FFF0C8] transition-all duration-300">
               <div className="w-full h-full rounded-full flex items-center justify-center bg-[#070F1E]/80 backdrop-blur-sm">
                 <Play className="w-7 h-7 sm:w-9 sm:h-9 text-[#FFF2D2] fill-[#D4AF85] translate-x-0.5 group-hover:fill-[#FFF2D2] transition-colors" />
@@ -141,7 +150,7 @@ export default function YouTubePlayer({
             <span className="text-xs sm:text-sm font-bold text-[#FFF2D2] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] opacity-90 group-hover:opacity-100 transition-opacity">
               انقر للتشغيل
             </span>
-          </div>
+          </button>
 
           {/* Duration Badge if available */}
           {duration && (
