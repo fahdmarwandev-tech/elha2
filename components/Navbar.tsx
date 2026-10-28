@@ -58,20 +58,18 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
     <>
       <header className="sticky top-0 left-0 right-0 z-50 bg-[#060D1A]/95 backdrop-blur-md border-b border-[#1E3A63]/60 text-[#FAF7F0] transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
+          <div className="flex items-center justify-between h-20 sm:h-24 gap-2">
             {/* Mosque Logo Only */}
             <Link
               href="/"
-              className="flex items-center group shrink-0"
+              className="flex items-center group shrink-0 py-1"
               aria-label="الرئيسية - جامع الحق"
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1 flex items-center justify-center group-hover:border-[#FFF0C8] group-hover:scale-105 transition-all shadow-[0_4px_14px_rgba(212,175,133,0.35)]">
-                <img
-                  src="/image-removebg-preview (10).png"
-                  alt="شعار جامع الحق"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <img
+                src="/logo-gold.png"
+                alt="جامع الحق"
+                className="h-16 sm:h-20 md:h-24 w-auto max-h-[88px] object-contain group-hover:scale-105 transition-all duration-300 drop-shadow-[0_2px_14px_rgba(212,175,133,0.4)]"
+              />
             </Link>
 
             {/* Desktop Navigation Links - The 3 requested links only */}

@@ -270,13 +270,11 @@ export default function Home() {
               className="group flex items-center transition-all active:scale-95 shrink-0"
               aria-label="جامع الحق"
             >
-              <div className="w-10 h-10 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1 flex items-center justify-center transition-all shadow-[0_4px_14px_rgba(212,175,133,0.35)] group-hover:scale-105">
-                <img
-                  src="/image-removebg-preview (10).png"
-                  alt="شعار جامع الحق"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <img
+                src="/logo-gold.png"
+                alt="جامع الحق"
+                className="h-14 sm:h-18 w-auto max-h-[72px] object-contain drop-shadow-[0_2px_12px_rgba(212,175,133,0.4)] group-hover:scale-105 transition-all"
+              />
             </Link>
 
             {/* The 3 Links: Smooth, luxury typography (Center in RTL) */}
@@ -554,13 +552,11 @@ export default function Home() {
               className="group flex items-center transition-all active:scale-95 shrink-0"
               aria-label="جامع الحق"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1.5 flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(212,175,133,0.35)] group-hover:scale-105 group-hover:border-[#FFF0C8]">
-                <img
-                  src="/image-removebg-preview (10).png"
-                  alt="شعار جامع الحق"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <img
+                src="/logo-gold.png"
+                alt="جامع الحق"
+                className="h-20 sm:h-24 lg:h-32 w-auto max-h-[115px] object-contain drop-shadow-[0_4px_18px_rgba(212,175,133,0.4)] group-hover:scale-105 transition-all duration-300"
+              />
             </Link>
 
             {/* Desktop Nav links - 3 requested links with smooth elegant typography */}
@@ -955,13 +951,11 @@ export default function Home() {
               onClick={() => setSidebarOpen(false)}
               className="flex flex-col items-center gap-1 group"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#FAF7F0] border border-[#D4AF85] p-1.5 flex items-center justify-center transition-all shadow-[0_4px_16px_rgba(212,175,133,0.35)] group-hover:scale-105 mb-2">
-                <img
-                  src="/image-removebg-preview (10).png"
-                  alt="شعار جامع الحق"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <img
+                src="/logo-gold.png"
+                alt="جامع الحق"
+                className="h-24 sm:h-28 md:h-32 w-auto max-h-[120px] object-contain drop-shadow-[0_4px_18px_rgba(212,175,133,0.45)] group-hover:scale-105 transition-all duration-300 mb-2"
+              />
               <span className="font-aref text-3xl font-bold text-white tracking-wide group-hover:text-[#D4AF85] transition-colors drop-shadow-md">
                 جامع الحق
               </span>

@@ -16,15 +16,67 @@ import {
   HeartHandshake,
   ShieldCheck,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+
+const HOUR_BLOCKS = [
+  { value: "13:00", nextHour: "14:00", timeOnly: "01:00", period: "ظهراً", fullLabel: "01:00 ظهراً", endLabel: "02:00 ظهراً" },
+  { value: "14:00", nextHour: "15:00", timeOnly: "02:00", period: "ظهراً", fullLabel: "02:00 ظهراً", endLabel: "03:00 عصراً" },
+  { value: "15:00", nextHour: "16:00", timeOnly: "03:00", period: "عصراً", fullLabel: "03:00 عصراً", endLabel: "04:00 عصراً" },
+  { value: "16:00", nextHour: "17:00", timeOnly: "04:00", period: "عصراً", fullLabel: "04:00 عصراً", endLabel: "05:00 مساءً" },
+  { value: "17:00", nextHour: "18:00", timeOnly: "05:00", period: "مساءً", fullLabel: "05:00 مساءً", endLabel: "06:00 مساءً" },
+  { value: "18:00", nextHour: "19:00", timeOnly: "06:00", period: "مساءً", fullLabel: "06:00 مساءً", endLabel: "07:00 مساءً" },
+  { value: "19:00", nextHour: "20:00", timeOnly: "07:00", period: "مساءً", fullLabel: "07:00 مساءً", endLabel: "08:00 مساءً" },
+  { value: "20:00", nextHour: "21:00", timeOnly: "08:00", period: "مساءً", fullLabel: "08:00 مساءً", endLabel: "09:00 مساءً" },
+  { value: "21:00", nextHour: "22:00", timeOnly: "09:00", period: "مساءً", fullLabel: "09:00 مساءً", endLabel: "10:00 مساءً" },
+  { value: "22:00", nextHour: "23:00", timeOnly: "10:00", period: "مساءً", fullLabel: "10:00 مساءً", endLabel: "11:00 مساءً" },
+  { value: "23:00", nextHour: "24:00", timeOnly: "11:00", period: "ليلاً", fullLabel: "11:00 ليلاً", endLabel: "12:00 منتصف الليل" },
+  { value: "24:00", nextHour: "01:00", timeOnly: "12:00", period: "ليلاً", fullLabel: "12:00 منتصف الليل", endLabel: "01:00 ص" },
+];
 
 export default function BookingPage() {
   const [bookingType, setBookingType] = useState<"katbketab" | "3aza">("katbketab");
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [selectedDay, setSelectedDay] = useState<number>(20);
-  const [selectedSlot, setSelectedSlot] = useState<string>("عشاء");
+  const [selectedHours, setSelectedHours] = useState<string[]>([
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00",
+  ]);
   const [selectedHall, setSelectedHall] = useState<string>("قاعة المجلس العام");
+
+  const toggleHour = (val: string) => {
+    setSelectedHours((prev) => {
+      if (prev.includes(val)) {
+        if (prev.length === 1) return prev; // Keep at least one hour
+        return prev.filter((h) => h !== val).sort();
+      } else {
+        return [...prev, val].sort();
+      }
+    });
+  };
+
+  const sortedHours = [...selectedHours].sort();
+  const count = sortedHours.length;
+  const countText =
+    count === 1 ? "ساعة واحدة" : count === 2 ? "ساعتان" : `${count} ساعات`;
+
+  const earliest = sortedHours[0];
+  const latest = sortedHours[sortedHours.length - 1];
+  const earliestBlock = HOUR_BLOCKS.find((b) => b.value === earliest);
+  const latestBlock = HOUR_BLOCKS.find((b) => b.value === latest);
+
+  const isContiguous = sortedHours.every((val, idx) => {
+    if (idx === 0) return true;
+    const prevBlock = HOUR_BLOCKS.find((b) => b.value === sortedHours[idx - 1]);
+    return prevBlock && prevBlock.nextHour === val;
+  });
+
+  const formattedTimeRange = isContiguous
+    ? `من ${earliestBlock?.fullLabel || earliest} حتى ${latestBlock?.endLabel || latest}`
+    : sortedHours.map((h) => HOUR_BLOCKS.find((b) => b.value === h)?.fullLabel || h).join(" ، ");
 
   // Form inputs
   const [fullName, setFullName] = useState("");
@@ -161,9 +213,9 @@ export default function BookingPage() {
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#1E3A63]/60 pb-2">
-                <span className="text-[#8EA3BF]">الفترة والقاعة:</span>
+                <span className="text-[#8EA3BF]">الوقت والقاعة:</span>
                 <span className="font-bold text-[#FAF7F0]">
-                  {timeSlots.find((s) => s.id === selectedSlot)?.title} • {selectedHall}
+                  {formattedTimeRange} ({countText}) • {selectedHall}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#1E3A63]/60 pb-2">
@@ -321,43 +373,72 @@ export default function BookingPage() {
 
             {/* Step 2 & Step 3: Time Slots & Hall (Next to the calendar) */}
             <div className="lg:col-span-5 space-y-6">
-              {/* Step 2: Time Slots (Image 1 - "this part next to the calendar") */}
+              {/* Step 2: Custom Hours Multi-Select (Grid only as requested) */}
               <div className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-[28px] p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
-                <h2 className="text-lg sm:text-xl font-bold font-aref flex items-center mb-3">
-                  <span className="text-[#FFF2D2] font-mono font-black ml-2 drop-shadow-[0_0_12px_rgba(212,175,133,0.5)]">
-                    2.
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold font-aref flex items-center">
+                    <span className="text-[#FFF2D2] font-mono font-black ml-2 drop-shadow-[0_0_12px_rgba(212,175,133,0.5)]">
+                      2.
+                    </span>
+                    <span className="text-[#FFF2D2] font-black drop-shadow-[0_0_10px_rgba(212,175,133,0.35)]">
+                      اختر ساعات الحجز المناسبة
+                    </span>
+                  </h2>
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#050C18] border border-[#D4AF85]/50 text-[#D4AF85] flex items-center gap-1.5 shadow-inner">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D4AF85]" />
+                    <span>تحديد أكثر من ساعة</span>
                   </span>
-                  <span className="text-[#FFF2D2] font-black drop-shadow-[0_0_10px_rgba(212,175,133,0.35)]">
-                    اختر الفترة الزمنية المناسبة
-                  </span>
-                </h2>
+                </div>
 
-                <div className="space-y-3">
-                  {timeSlots.map((slot) => {
-                    const isSelected = selectedSlot === slot.id;
-                    return (
-                      <button
-                        key={slot.id}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot.id)}
-                        className={`w-full p-3.5 sm:p-4 rounded-2xl border text-right transition-all duration-300 flex items-center justify-between ${
-                          isSelected
-                            ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border-[#D4AF85] text-[#FFF2D2] font-bold shadow-[0_6px_20px_rgba(0,0,0,0.7),0_0_15px_rgba(212,175,133,0.25)] ring-1 ring-[#D4AF85]"
-                            : "bg-[#060D1A] border-[#1E3A63] text-[#8EA3BF] hover:border-[#D4AF85]/50 hover:bg-[#0D1A2E] hover:text-[#FAF7F0]"
-                        }`}
-                      >
-                        <div>
-                          <span className="block text-sm font-bold text-[#FAF7F0] mb-0.5">
-                            {slot.title}
+                {/* Duration Highlight Banner */}
+                <div className="p-4 rounded-2xl border border-[#D4AF85]/80 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] shadow-[0_8px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(212,175,133,0.25)] ring-1 ring-[#D4AF85]/40 flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="w-10 h-10 rounded-full bg-[#050C18] border border-[#D4AF85] flex items-center justify-center shrink-0 shadow-inner">
+                      <Clock className="w-5 h-5 text-[#D4AF85]" />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] text-[#8EA3BF]">الساعات المحجوزة:</span>
+                      <span className="block text-sm sm:text-base font-black text-[#FFF2D2] drop-shadow-sm">
+                        {formattedTimeRange}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-3.5 py-1.5 rounded-full bg-[#050C18] border border-[#D4AF85] text-xs font-black text-[#D4AF85] shadow-inner whitespace-nowrap">
+                    إجمالي المدة: {countText}
+                  </div>
+                </div>
+
+                {/* Interactive Hourly Multi-Select Grid (The exact component user requested) */}
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#8EA3BF] mb-3 font-semibold">
+                    <span>انقر على أي ساعة لاختيارها (يمكنك اختيار عدة ساعات):</span>
+                    <span className="text-[11px] text-[#D4AF85]">الساعات المظللة هي فترة حجزك</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
+                    {HOUR_BLOCKS.map((block) => {
+                      const isSelected = selectedHours.includes(block.value);
+                      return (
+                        <button
+                          key={block.value}
+                          type="button"
+                          onClick={() => toggleHour(block.value)}
+                          className={`py-3 px-2 rounded-2xl text-center transition-all duration-200 cursor-pointer select-none flex flex-col items-center justify-center gap-0.5 ${
+                            isSelected
+                              ? "bg-[linear-gradient(to_left,#0A1628_0%,#122849_50%,#1E447B_100%)] border-2 border-[#D4AF85] text-[#FFF2D2] shadow-[0_0_16px_rgba(212,175,133,0.35)] ring-1 ring-[#D4AF85] scale-[1.03]"
+                              : "bg-[#050C18] border border-[#1E3A63]/80 text-[#8EA3BF] hover:border-[#D4AF85]/50 hover:text-[#FAF7F0] hover:bg-[#091527]"
+                          }`}
+                        >
+                          <span className="block text-sm sm:text-base font-black font-mono tracking-wider">
+                            {block.timeOnly}
                           </span>
-                          <span className="block text-[11px] text-[#8EA3BF]">{slot.desc}</span>
-                        </div>
-                        <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${isSelected ? "text-[#FFF2D2] bg-[#050C18] border border-[#D4AF85]/60" : "text-[#D4AF85] bg-[#081220]"}`}>
-                          {slot.time}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span className={`block text-[10px] font-bold ${isSelected ? "text-[#D4AF85]" : "text-[#8EA3BF]"}`}>
+                            {block.period}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -532,7 +613,7 @@ export default function BookingPage() {
                   <div className="flex justify-between">
                     <span>الموعد المحدد:</span>
                     <span className="font-bold text-[#D4AF85]">
-                      اليوم {selectedDay} من {currentMonth.name} - {timeSlots.find((s) => s.id === selectedSlot)?.title}
+                      اليوم {selectedDay} من {currentMonth.name} - {formattedTimeRange} ({countText})
                     </span>
                   </div>
                   <div className="flex justify-between">

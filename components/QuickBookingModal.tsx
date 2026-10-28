@@ -24,6 +24,21 @@ interface QuickBookingModalProps {
   initialType?: "3aza" | "katbketab";
 }
 
+const HOUR_BLOCKS = [
+  { value: "13:00", nextHour: "14:00", timeOnly: "01:00", period: "ظهراً", fullLabel: "01:00 ظهراً", endLabel: "02:00 ظهراً" },
+  { value: "14:00", nextHour: "15:00", timeOnly: "02:00", period: "ظهراً", fullLabel: "02:00 ظهراً", endLabel: "03:00 عصراً" },
+  { value: "15:00", nextHour: "16:00", timeOnly: "03:00", period: "عصراً", fullLabel: "03:00 عصراً", endLabel: "04:00 عصراً" },
+  { value: "16:00", nextHour: "17:00", timeOnly: "04:00", period: "عصراً", fullLabel: "04:00 عصراً", endLabel: "05:00 مساءً" },
+  { value: "17:00", nextHour: "18:00", timeOnly: "05:00", period: "مساءً", fullLabel: "05:00 مساءً", endLabel: "06:00 مساءً" },
+  { value: "18:00", nextHour: "19:00", timeOnly: "06:00", period: "مساءً", fullLabel: "06:00 مساءً", endLabel: "07:00 مساءً" },
+  { value: "19:00", nextHour: "20:00", timeOnly: "07:00", period: "مساءً", fullLabel: "07:00 مساءً", endLabel: "08:00 مساءً" },
+  { value: "20:00", nextHour: "21:00", timeOnly: "08:00", period: "مساءً", fullLabel: "08:00 مساءً", endLabel: "09:00 مساءً" },
+  { value: "21:00", nextHour: "22:00", timeOnly: "09:00", period: "مساءً", fullLabel: "09:00 مساءً", endLabel: "10:00 مساءً" },
+  { value: "22:00", nextHour: "23:00", timeOnly: "10:00", period: "مساءً", fullLabel: "10:00 مساءً", endLabel: "11:00 مساءً" },
+  { value: "23:00", nextHour: "24:00", timeOnly: "11:00", period: "ليلاً", fullLabel: "11:00 ليلاً", endLabel: "12:00 منتصف الليل" },
+  { value: "24:00", nextHour: "01:00", timeOnly: "12:00", period: "ليلاً", fullLabel: "12:00 منتصف الليل", endLabel: "01:00 ص" },
+];
+
 export default function QuickBookingModal({
   isOpen,
   onClose,
@@ -32,13 +47,49 @@ export default function QuickBookingModal({
   const [bookingType, setBookingType] = useState<"3aza" | "katbketab">(initialType);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0); // 0 = current month, 1 = next month
   const [selectedDay, setSelectedDay] = useState<number>(18);
-  const [selectedSlot, setSelectedSlot] = useState<string>("عشاء");
+  const [selectedHours, setSelectedHours] = useState<string[]>([
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00",
+  ]);
   const [selectedHall, setSelectedHall] = useState<string>("قاعة المجلس العام");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const toggleHour = (val: string) => {
+    setSelectedHours((prev) => {
+      if (prev.includes(val)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((h) => h !== val).sort();
+      } else {
+        return [...prev, val].sort();
+      }
+    });
+  };
+
+  const sortedHours = [...selectedHours].sort();
+  const count = sortedHours.length;
+  const countText =
+    count === 1 ? "ساعة واحدة" : count === 2 ? "ساعتان" : `${count} ساعات`;
+
+  const earliest = sortedHours[0];
+  const latest = sortedHours[sortedHours.length - 1];
+  const earliestBlock = HOUR_BLOCKS.find((b) => b.value === earliest);
+  const latestBlock = HOUR_BLOCKS.find((b) => b.value === latest);
+
+  const isContiguous = sortedHours.every((val, idx) => {
+    if (idx === 0) return true;
+    const prevBlock = HOUR_BLOCKS.find((b) => b.value === sortedHours[idx - 1]);
+    return prevBlock && prevBlock.nextHour === val;
+  });
+
+  const formattedTimeRange = isContiguous
+    ? `من ${earliestBlock?.fullLabel || earliest} حتى ${latestBlock?.endLabel || latest}`
+    : sortedHours.map((h) => HOUR_BLOCKS.find((b) => b.value === h)?.fullLabel || h).join(" ، ");
 
   if (!isOpen) return null;
 
@@ -134,9 +185,9 @@ export default function QuickBookingModal({
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#1E3A63]/50 pb-2">
-                <span className="text-[#8A9BB3]">الفترة والقاعة:</span>
+                <span className="text-[#8A9BB3]">الوقت والقاعة:</span>
                 <span className="font-bold text-[#FAF7F0]">
-                  فترة {selectedSlot} • {selectedHall}
+                  {formattedTimeRange} ({countText}) • {selectedHall}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#1E3A63]/50 pb-2">
@@ -315,27 +366,44 @@ export default function QuickBookingModal({
               </div>
             </div>
 
-            {/* Time Slot Picker */}
+            {/* Custom Hours Multi-Select Grid */}
             <div className="mb-4">
-              <label className="block text-xs font-black text-[#FFF2D2] mb-2 text-right drop-shadow-sm">
-                الفترة الزمنية المطلوبة:
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {timeSlots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    onClick={() => setSelectedSlot(slot.id)}
-                    className={`p-2.5 rounded-xl border text-center transition ${
-                      selectedSlot === slot.id
-                        ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border-[#D4AF85] text-[#FFF2D2] font-bold shadow-[0_0_15px_rgba(212,175,133,0.25)] ring-1 ring-[#D4AF85]"
-                        : "bg-[#050C18] border-[#1E3A63] text-[#8A9BB3] hover:bg-[#0D1A2D] hover:text-[#FAF7F0]"
-                    }`}
-                  >
-                    <span className="text-xs block font-bold">{slot.label}</span>
-                    <span className={`text-[10px] block mt-0.5 ${selectedSlot === slot.id ? "text-[#D4AF85]" : "text-[#8A9BB3]"}`}>{slot.time}</span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-black text-[#FFF2D2] drop-shadow-sm flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#D4AF85]" />
+                  <span>اختر ساعات الحجز:</span>
+                </label>
+                <span className="text-[10px] font-bold text-[#D4AF85] px-2.5 py-0.5 rounded-full bg-[#050C18] border border-[#D4AF85]/40">
+                  المدة: {countText}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 mb-2.5">
+                {HOUR_BLOCKS.map((block) => {
+                  const isSelected = selectedHours.includes(block.value);
+                  return (
+                    <button
+                      key={block.value}
+                      type="button"
+                      onClick={() => toggleHour(block.value)}
+                      className={`py-2 px-1 rounded-xl text-center transition-all cursor-pointer select-none flex flex-col items-center justify-center ${
+                        isSelected
+                          ? "bg-[linear-gradient(to_left,#0A1628_0%,#122849_50%,#1E447B_100%)] border border-[#D4AF85] text-[#FFF2D2] shadow-[0_0_10px_rgba(212,175,133,0.3)] ring-1 ring-[#D4AF85]"
+                          : "bg-[#050C18] border border-[#1E3A63]/80 text-[#8EA3BF] hover:border-[#D4AF85]/50 hover:text-[#FAF7F0]"
+                      }`}
+                    >
+                      <span className="block text-xs font-mono font-bold">{block.timeOnly}</span>
+                      <span className={`block text-[9px] ${isSelected ? "text-[#D4AF85]" : "text-[#8EA3BF]"}`}>
+                        {block.period}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Range pill */}
+              <div className="p-2 rounded-xl bg-[#091527] border border-[#1E3A63] text-center text-xs font-bold text-[#FFF2D2]">
+                {formattedTimeRange} ({countText})
               </div>
             </div>
 
