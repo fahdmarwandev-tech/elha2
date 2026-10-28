@@ -20,12 +20,13 @@ import QuickBookingModal from "@/components/QuickBookingModal";
 
 export interface VideoItem {
   id: string;
+  sourceType: "YOUTUBE" | "LOCAL";
   title: string;
   desc: string;
   category: "khutbah" | "lessons" | "recitations" | "tours";
   categoryName: string;
-  youtubeUrl: string; // The YouTube video link (from admin or hardcoded)
-  poster?: string;    // Optional custom image; if omitted, automatically uses YouTube's HQ frame
+  videoUrl: string; // The YouTube video link or uploaded file URL
+  poster?: string;
   duration: string;
   date: string;
   views: string;
@@ -48,26 +49,29 @@ export default function VideosPage() {
   const [autoPlayActive, setAutoPlayActive] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
   // Fetch dynamic videos from PostgreSQL backend
   useEffect(() => {
     async function loadBackendVideos() {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:8080/api/v1/videos", {
+        const res = await fetch(`${apiBase}/api/v1/videos`, {
           cache: "no-store",
         });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
             const mapped: VideoItem[] = data.map((v: any) => ({
-              id: v.youtubeId || String(v.id),
+              id: String(v.id),
+              sourceType: v.videoSourceType || (v.fileUrl ? "LOCAL" : "YOUTUBE"),
               title: v.title,
               desc: v.description || "مقطع مرئي ومحتوى متاح للمشاهدة مباشرة عبر المشغل المدمج في الموقع بجودة عالية.",
               category: (v.category as any) || "lessons",
               categoryName: v.categoryName || "دروس ومواعظ",
-              youtubeUrl: v.youtubeUrl,
+              videoUrl: (v.videoSourceType === "LOCAL" || v.fileUrl) ? v.fileUrl : (v.youtubeUrl || ""),
               poster: v.customPoster,
-              duration: v.duration || "غير محدد",
+              duration: (v.duration && v.duration !== "فيديو مباشر" && v.duration !== "غير محدد") ? v.duration : "00:00",
               date: "أكتوبر 2026",
               views: v.viewsCount || "جديد",
               isFeatured: v.isFeatured,
@@ -124,11 +128,12 @@ export default function VideosPage() {
 
     const newVideo: VideoItem = {
       id: `custom-${Date.now()}`,
+      sourceType: "YOUTUBE",
       title: "فيديو مخصص تجريبي من الرابط المدخل",
       desc: "تم تحميل هذا الفيديو مباشرة من الرابط الذي أدخلته، دون تنزيل ملفات، باستخدام مشغل يوتيوب الرسمي المدمج.",
       category: "lessons",
       categoryName: "فيديو مضاف",
-      youtubeUrl: customLinkInput.trim(),
+      videoUrl: customLinkInput.trim(),
       duration: "--:--",
       date: "الآن",
       views: "جديد",
@@ -244,11 +249,12 @@ export default function VideosPage() {
           </div>
         ) : activeVideo ? (
           <section className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-12">
-            {/* YouTube Player Frame */}
+            {/* YouTube / Direct Video Player Frame */}
             <div className="w-full bg-black">
               <YouTubePlayer
                 key={activeVideo.id}
-                url={activeVideo.youtubeUrl}
+                url={activeVideo.videoUrl}
+                sourceType={activeVideo.sourceType}
                 title={activeVideo.title}
                 customPoster={activeVideo.poster}
                 duration={activeVideo.duration}
@@ -321,7 +327,8 @@ export default function VideosPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVideos.map((video) => {
                 const isCurrent = activeVideo ? activeVideo.id === video.id : false;
-                const videoId = extractYouTubeId(video.youtubeUrl);
+                const isLocal = video.sourceType === "LOCAL";
+                const videoId = isLocal ? null : extractYouTubeId(video.videoUrl);
                 const thumbUrl =
                   video.poster ||
                   (videoId ? getYouTubeThumbnail(videoId, "hq") : "/landing_last_frame.jpg");
@@ -359,6 +366,11 @@ export default function VideosPage() {
                       {/* Category pill */}
                       <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#050A14]/85 backdrop-blur-md text-[#D4AF85] text-[10px] font-semibold border border-[#1E3A63]">
                         {video.categoryName}
+                      </span>
+
+                      {/* Source badge */}
+                      <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-[#050A14]/85 backdrop-blur-md text-[#FFF2D2] text-[9px] font-bold border border-[#1E3A63]">
+                        {isLocal ? "ملف MP4" : "يوتيوب"}
                       </span>
                     </div>
 

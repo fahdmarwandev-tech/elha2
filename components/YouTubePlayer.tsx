@@ -35,6 +35,7 @@ export function getYouTubeThumbnail(videoId: string, quality: "max" | "hq" = "ma
 
 interface YouTubePlayerProps {
   url: string;
+  sourceType?: "YOUTUBE" | "LOCAL";
   title?: string;
   customPoster?: string;
   duration?: string;
@@ -45,6 +46,7 @@ interface YouTubePlayerProps {
 
 export default function YouTubePlayer({
   url,
+  sourceType,
   title = "فيديو جامع الحق",
   customPoster,
   duration,
@@ -52,22 +54,65 @@ export default function YouTubePlayer({
   aspectRatio = "video",
   autoPlay = false,
 }: YouTubePlayerProps) {
-  const videoId = extractYouTubeId(url);
+  const isDirectVideo =
+    sourceType === "LOCAL" ||
+    url.startsWith("blob:") ||
+    url.includes("/uploads/") ||
+    /\.(mp4|webm|mov|mkv|avi|m4v)(\?.*)?$/i.test(url);
+
+  const videoId = isDirectVideo ? null : extractYouTubeId(url);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [thumbnailSrc, setThumbnailSrc] = useState<string>("");
+
+  // Resolve absolute URL for locally uploaded videos
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  const resolvedVideoUrl =
+    url.startsWith("/uploads/") ? `${apiBase}${url}` : url;
+
+  const [currentDuration, setCurrentDuration] = useState<string>(
+    duration && duration !== "فيديو مباشر" ? duration : ""
+  );
+
+  useEffect(() => {
+    if (duration && duration !== "فيديو مباشر") {
+      setCurrentDuration(duration);
+    }
+  }, [duration]);
+
+  // For direct videos, if duration is missing or generic, probe the file metadata
+  useEffect(() => {
+    if (isDirectVideo && resolvedVideoUrl && (!currentDuration || currentDuration === "فيديو مباشر")) {
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.src = resolvedVideoUrl;
+      probe.onloadedmetadata = () => {
+        const totalSec = Math.floor(probe.duration);
+        if (!isNaN(totalSec) && totalSec > 0) {
+          const hours = Math.floor(totalSec / 3600);
+          const mins = Math.floor((totalSec % 3600) / 60);
+          const secs = totalSec % 60;
+          const formatted =
+            hours > 0
+              ? `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+              : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+          setCurrentDuration(formatted);
+        }
+      };
+    }
+  }, [isDirectVideo, resolvedVideoUrl, currentDuration]);
 
   useEffect(() => {
     setIsPlaying(autoPlay);
     if (customPoster) {
       setThumbnailSrc(customPoster);
     } else if (videoId) {
-      // Default to maxres with automatic fallback to hq
       setThumbnailSrc(getYouTubeThumbnail(videoId, "max"));
+    } else {
+      setThumbnailSrc("/landing_last_frame.jpg");
     }
   }, [url, customPoster, autoPlay, videoId]);
 
   const handleThumbnailError = () => {
-    // If maxresdefault fails (404 on some videos), fallback to standard hqdefault
     if (videoId && thumbnailSrc.includes("maxresdefault")) {
       setThumbnailSrc(getYouTubeThumbnail(videoId, "hq"));
     }
@@ -80,7 +125,7 @@ export default function YouTubePlayer({
       ? "aspect-square"
       : "aspect-[21/9]";
 
-  if (!videoId) {
+  if (!isDirectVideo && !videoId) {
     return (
       <div
         className={`w-full ${aspectClass} bg-[#0A1628] rounded-2xl flex flex-col items-center justify-center p-6 text-center border border-red-500/30 ${className}`}
@@ -96,14 +141,24 @@ export default function YouTubePlayer({
       className={`relative w-full ${aspectClass} rounded-2xl overflow-hidden bg-black shadow-2xl border border-[#1E3A63]/60 group ${className}`}
     >
       {isPlaying ? (
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerPolicy="strict-origin-when-cross-origin"
-          allowFullScreen
-          className="w-full h-full border-0 absolute inset-0 z-10"
-        />
+        isDirectVideo ? (
+          <video
+            src={resolvedVideoUrl}
+            controls
+            autoPlay
+            playsInline
+            className="w-full h-full object-contain absolute inset-0 z-10 bg-black"
+          />
+        ) : (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            className="w-full h-full border-0 absolute inset-0 z-10"
+          />
+        )
       ) : (
         <div
           onClick={() => setIsPlaying(true)}
@@ -155,9 +210,9 @@ export default function YouTubePlayer({
           </div>
 
           {/* Duration Badge if available */}
-          {duration && (
-            <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-[#050B14]/85 border border-[#1E3A63]/80 backdrop-blur-sm text-[11px] font-bold text-[#FFF2D2] shadow-md">
-              {duration}
+          {currentDuration && (
+            <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-[#050B14]/85 border border-[#1E3A63]/80 backdrop-blur-sm text-[11px] font-bold text-[#FFF2D2] shadow-md font-mono">
+              {currentDuration}
             </div>
           )}
 
