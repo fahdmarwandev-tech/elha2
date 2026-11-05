@@ -18,6 +18,7 @@ import {
   Upload,
   FileVideo,
   Video as VideoIcon,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -303,13 +304,23 @@ export default function AdminVideosPage() {
             </p>
           </div>
 
-          <Link
-            href="/videos"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0D1A2D] hover:bg-[#122849] border border-[#D4AF85]/50 text-[#FFF2D2] text-xs font-bold transition shadow-md"
-          >
-            <ExternalLink className="w-4 h-4 text-[#D4AF85]" />
-            معاينة صفحة الزوار العامة
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/bookings"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4AF85] to-[#FFE8B8] text-[#0A1628] text-xs font-black transition shadow-md hover:scale-[1.02]"
+            >
+              <CalendarIcon className="w-4 h-4 text-[#0A1628]" />
+              إدارة الحجوزات والتقويم
+            </Link>
+
+            <Link
+              href="/videos"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0D1A2D] hover:bg-[#122849] border border-[#D4AF85]/50 text-[#FFF2D2] text-xs font-bold transition shadow-md"
+            >
+              <ExternalLink className="w-4 h-4 text-[#D4AF85]" />
+              معاينة صفحة الزوار
+            </Link>
+          </div>
         </div>
 
         {/* Status Alerts */}

@@ -143,6 +143,53 @@ export async function performTokenRefresh(): Promise<string | null> {
   return refreshPromise;
 }
 
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function scheduleProactiveTokenRefresh() {
+  if (typeof window === "undefined") return;
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
+
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!token || !refreshToken) return;
+
+  const claims = parseJwt(token);
+  if (!claims || typeof claims.exp !== "number") {
+    performTokenRefresh();
+    return;
+  }
+
+  // Proactively refresh 1 minute before access token expiry (or immediately if <= 1 min left)
+  const msUntilExpiry = claims.exp * 1000 - Date.now();
+  const refreshInMs = Math.max(msUntilExpiry - 60000, 5000);
+
+  refreshTimer = setTimeout(() => {
+    performTokenRefresh().then(() => {
+      scheduleProactiveTokenRefresh();
+    });
+  }, refreshInMs);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("auth:login", () => scheduleProactiveTokenRefresh());
+  window.addEventListener("auth:token_refreshed", () => scheduleProactiveTokenRefresh());
+  window.addEventListener("auth:logout", () => {
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+  });
+
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    scheduleProactiveTokenRefresh();
+  } else {
+    window.addEventListener("DOMContentLoaded", () => scheduleProactiveTokenRefresh());
+  }
+}
+
 export async function getValidAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") {
     return null;

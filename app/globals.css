@@ -59,3 +59,20 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #C49A6C;
 }
+
+/* Scrollport horizontal slider with edge mask gradient */
+.scrollport {
+  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  display: flex;
+  gap: 1.25rem;
+  align-items: start;
+  padding: 0.75rem 0.25rem;
+  scrollbar-width: none;
+}
+.scrollport::-webkit-scrollbar {
+  display: none;
+}
+
