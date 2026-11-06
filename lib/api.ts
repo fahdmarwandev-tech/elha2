@@ -336,7 +336,9 @@ export async function requestWithAuth<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const endpoint = path.startsWith("http") ? path : `${getApiBaseUrl()}${path.startsWith("/") ? "" : "/"}${path}`;
+  const endpoint = path.startsWith("http")
+    ? path
+    : `${getApiBaseUrl()}${path.startsWith("/") ? "" : "/"}${path}`;
 
   let response: Response;
   try {
@@ -383,4 +385,541 @@ export async function requestWithAuth<T>(
   }
 
   return data as T;
+}
+
+/**
+ * Public request helper for unauthenticated GET/POST endpoints
+ */
+export async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const endpoint = path.startsWith("http")
+    ? path
+    : `${getApiBaseUrl()}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      ...options,
+      headers,
+    });
+  } catch (err: unknown) {
+    throw new ApiError(
+      "تعذر الاتصال بالخادم، يرجى التأكد من اتصال الإنترنت.",
+      0,
+      { originalError: err }
+    );
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      data?.message || data?.error || `طلب غير ناجح (${response.status})`,
+      response.status,
+      data
+    );
+  }
+
+  return data as T;
+}
+
+/**
+ * Upload video with multipart/form-data and Bearer token
+ */
+export async function uploadVideoWithAuth(
+  path: string,
+  formData: FormData
+): Promise<VideoResponse> {
+  const token = await getValidAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const endpoint = path.startsWith("http")
+    ? path
+    : `${getApiBaseUrl()}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+  } catch (err: unknown) {
+    throw new ApiError(
+      "تعذر الاتصال بالخادم أثناء رفع الملف.",
+      0,
+      { originalError: err }
+    );
+  }
+
+  if (response.status === 401 && typeof window !== "undefined") {
+    const refreshedToken = await performTokenRefresh();
+    if (refreshedToken) {
+      headers["Authorization"] = `Bearer ${refreshedToken}`;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+      } catch (retryErr: unknown) {
+        throw new ApiError("تعذر الاتصال بالخادم بعد تجديد الجلسة.", 0, {
+          originalError: retryErr,
+        });
+      }
+    }
+  }
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(
+      data?.message || data?.error || `فشل رفع الملف (${response.status})`,
+      response.status,
+      data
+    );
+  }
+
+  return data as VideoResponse;
+}
+
+// ==========================================
+// Domain Interfaces
+// ==========================================
+
+export interface HallMediaResponse {
+  id: number;
+  mediaUrl: string;
+  title?: string;
+  subtitle?: string;
+  sortOrder?: number;
+}
+
+export interface HallResponse {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  capacity: number;
+  hourlyRate: number;
+  currency: string;
+  bufferHours: number;
+  openHour: number;
+  closeHour: number;
+  featuresJson: string;
+  isActive: boolean;
+  mediaList: HallMediaResponse[];
+}
+
+export interface UpdateHallConfigRequest {
+  name?: string;
+  description?: string;
+  capacity?: number;
+  hourlyRate?: number;
+  currency?: string;
+  bufferHours?: number;
+  openHour?: number;
+  closeHour?: number;
+  featuresJson?: string;
+}
+
+export interface HourSlotStatus {
+  hour: number;
+  formattedHour: string;
+  status: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT" | string;
+}
+
+export interface DayAvailabilityResponse {
+  date: string;
+  dayNumber: number;
+  status: "AVAILABLE" | "PARTIALLY_BOOKED" | "FULLY_BOOKED" | string;
+  hours: HourSlotStatus[];
+}
+
+export interface HourlyAvailabilityResponse {
+  hallId: number;
+  hallName: string;
+  year: number;
+  month: number;
+  bufferHours: number;
+  openHour: number;
+  closeHour: number;
+  days: DayAvailabilityResponse[];
+}
+
+export interface CreateBookingRequest {
+  hallId: number;
+  fullName: string;
+  nationalId: string;
+  phone: string;
+  secondaryPhone?: string;
+  email: string;
+  bookingType: string;
+  eventDate: string; // YYYY-MM-DD
+  startHour: number;
+  endHour: number;
+  notes?: string;
+}
+
+export interface BookingResponse {
+  id: number;
+  code: string;
+  hallId: number;
+  hallName: string;
+  userId?: number;
+  fullName: string;
+  nationalId: string;
+  phone: string;
+  secondaryPhone?: string;
+  email: string;
+  bookingType: string;
+  eventDate: string;
+  startHour: number;
+  endHour: number;
+  durationHours: number;
+  appliedBufferHours: number;
+  hourlyRate: number;
+  totalAmount: number;
+  currency: string;
+  notes?: string;
+  status: "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | string;
+  paymentExpiresAt?: string;
+  paymentId?: number;
+  paypalOrderId?: string;
+  paymentStatus?: string;
+  createdAt: string;
+}
+
+export interface BookingInitiationResponse {
+  booking: BookingResponse;
+  paypalOrderId: string;
+  approvalUrl: string;
+}
+
+export interface BlackoutResponse {
+  id: number;
+  hallId: number;
+  blackoutDate: string;
+  startHour?: number;
+  endHour?: number;
+  reason?: string;
+}
+
+export interface CreateBlackoutRequest {
+  hallId: number;
+  blackoutDate: string;
+  startHour?: number;
+  endHour?: number;
+  reason?: string;
+}
+
+export interface VideoResponse {
+  id: number;
+  videoSourceType: "YOUTUBE" | "LOCAL" | string;
+  youtubeUrl?: string;
+  youtubeId?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  title: string;
+  description?: string;
+  category: string;
+  categoryName?: string;
+  duration?: string;
+  viewsCount?: string;
+  customPoster?: string;
+  isFeatured?: boolean;
+  createdAt: string;
+}
+
+export interface CreateVideoRequest {
+  videoSourceType?: string;
+  youtubeUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  title?: string;
+  description?: string;
+  category: string;
+  categoryName?: string;
+  duration?: string;
+  viewsCount?: string;
+  customPoster?: string;
+  isFeatured?: boolean;
+}
+
+export interface CategoryResponse {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+export interface PrayerTimesResponse {
+  fajr: string;
+  sunrise: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+  manualOverride?: boolean;
+  effectiveDate?: string;
+  nextPrayer?: string;
+}
+
+export interface PrayerTimesUpdateRequest {
+  fajr: string;
+  sunrise: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+  manualOverride?: boolean;
+}
+
+export interface HistoryResponse {
+  mosqueName: string;
+  location: string;
+  inaugurationYear: number;
+  landArea: string;
+  worshippersCapacity: number;
+  majlisCapacity: number;
+  minarets: string;
+  gatesCount: number;
+  overview: string;
+  facilities: string[];
+  waqfProjects: string[];
+}
+
+export interface MessageResponse {
+  message: string;
+  success: boolean;
+}
+
+// ==========================================
+// API Client Functions
+// ==========================================
+
+// Halls
+export async function getHalls(): Promise<HallResponse[]> {
+  return request<HallResponse[]>("/api/v1/halls");
+}
+
+export async function getHallById(id: number): Promise<HallResponse> {
+  return request<HallResponse>(`/api/v1/halls/${id}`);
+}
+
+export async function updateHall(
+  id: number,
+  data: Partial<UpdateHallConfigRequest>
+): Promise<HallResponse> {
+  return requestWithAuth<HallResponse>(`/api/v1/halls/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// Availability
+export async function getHallAvailability(
+  hallId: number,
+  year: number,
+  month: number
+): Promise<HourlyAvailabilityResponse> {
+  return request<HourlyAvailabilityResponse>(
+    `/api/v1/bookings/availability?hallId=${hallId}&year=${year}&month=${month}`
+  );
+}
+
+// Bookings
+export async function createBooking(
+  data: CreateBookingRequest
+): Promise<BookingInitiationResponse> {
+  return requestWithAuth<BookingInitiationResponse>("/api/v1/bookings", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getBookingByCode(code: string): Promise<BookingResponse> {
+  return request<BookingResponse>(
+    `/api/v1/bookings/code/${encodeURIComponent(code)}`
+  );
+}
+
+export async function getAllBookingsAdmin(
+  status?: string,
+  date?: string
+): Promise<BookingResponse[]> {
+  const params = new URLSearchParams();
+  if (status && status !== "ALL") params.append("status", status);
+  if (date) {
+    params.append("fromDate", date);
+    params.append("toDate", date);
+  }
+  const queryString = params.toString() ? `?${params.toString()}` : "";
+  return requestWithAuth<BookingResponse[]>(`/api/v1/bookings${queryString}`);
+}
+
+export async function updateBookingStatus(
+  id: number,
+  status: string
+): Promise<BookingResponse> {
+  return requestWithAuth<BookingResponse>(
+    `/api/v1/bookings/${id}/status?status=${encodeURIComponent(status)}`,
+    {
+      method: "PUT",
+    }
+  );
+}
+
+export async function deleteBooking(id: number): Promise<void> {
+  return requestWithAuth<void>(`/api/v1/bookings/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// PayPal Payments
+export async function createPayPalOrder(
+  bookingId: number
+): Promise<BookingInitiationResponse> {
+  return request<BookingInitiationResponse>(
+    `/api/v1/payments/paypal/order/${bookingId}`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+export async function capturePayPalOrder(
+  orderId: string
+): Promise<BookingResponse> {
+  return request<BookingResponse>(
+    `/api/v1/payments/paypal/capture/${encodeURIComponent(orderId)}`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+// Blackouts
+export async function getBlackouts(
+  hallId?: number
+): Promise<BlackoutResponse[]> {
+  const query = hallId !== undefined ? `?hallId=${hallId}` : "";
+  return request<BlackoutResponse[]>(`/api/v1/blackouts${query}`);
+}
+
+export async function createBlackout(
+  data: CreateBlackoutRequest
+): Promise<BlackoutResponse> {
+  return requestWithAuth<BlackoutResponse>("/api/v1/blackouts", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteBlackout(id: number): Promise<void> {
+  return requestWithAuth<void>(`/api/v1/blackouts/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// Videos & Categories
+export async function getVideos(): Promise<VideoResponse[]> {
+  return request<VideoResponse[]>("/api/v1/videos");
+}
+
+export async function createVideo(
+  data: CreateVideoRequest
+): Promise<VideoResponse> {
+  return requestWithAuth<VideoResponse>("/api/v1/videos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function uploadVideo(formData: FormData): Promise<VideoResponse> {
+  return uploadVideoWithAuth("/api/v1/videos/upload", formData);
+}
+
+export async function setFeaturedVideo(id: number): Promise<VideoResponse> {
+  return requestWithAuth<VideoResponse>(`/api/v1/videos/${id}/featured`, {
+    method: "PUT",
+  });
+}
+
+export async function deleteVideo(id: number): Promise<MessageResponse> {
+  return requestWithAuth<MessageResponse>(`/api/v1/videos/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getCategories(): Promise<CategoryResponse[]> {
+  return request<CategoryResponse[]>("/api/v1/media-categories");
+}
+
+export async function createCategory(
+  data: Partial<CategoryResponse>
+): Promise<CategoryResponse> {
+  return requestWithAuth<CategoryResponse>("/api/v1/media-categories", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  return requestWithAuth<void>(`/api/v1/media-categories/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// Content & Prayer Times
+export async function getPrayerTimes(): Promise<PrayerTimesResponse> {
+  return request<PrayerTimesResponse>("/api/v1/content/prayer-times");
+}
+
+export async function updatePrayerTimes(
+  data: PrayerTimesUpdateRequest
+): Promise<PrayerTimesResponse> {
+  return requestWithAuth<PrayerTimesResponse>("/api/v1/content/prayer-times", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getHistory(): Promise<HistoryResponse> {
+  return request<HistoryResponse>("/api/v1/content/history");
+}
+
+// Auth
+export async function forgotPassword(
+  identifier: string
+): Promise<MessageResponse> {
+  return request<MessageResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ identifier }),
+  });
+}
+
+export async function resetPassword(
+  identifier: string,
+  otpCode: string,
+  newPassword: string
+): Promise<MessageResponse> {
+  return request<MessageResponse>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ identifier, otpCode, newPassword }),
+  });
 }

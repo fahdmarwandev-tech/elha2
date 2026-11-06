@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import MajlisShaderBackground from "@/components/MajlisShaderBackground";
 import {
@@ -21,47 +21,62 @@ import {
   Camera,
   Maximize2,
   X,
+  CreditCard,
+  Printer,
+  AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  getHalls,
+  getHallAvailability,
+  createBooking,
+  capturePayPalOrder,
+  getStoredUser,
+  HallResponse,
+  HourlyAvailabilityResponse,
+  BookingResponse,
+  BookingInitiationResponse,
+  DayAvailabilityResponse,
+} from "@/lib/api";
 
-const HOUR_BLOCKS = [
-  { value: "13:00", nextHour: "14:00", timeOnly: "01:00", period: "ظهراً", fullLabel: "01:00 ظهراً", endLabel: "02:00 ظهراً" },
-  { value: "14:00", nextHour: "15:00", timeOnly: "02:00", period: "ظهراً", fullLabel: "02:00 ظهراً", endLabel: "03:00 عصراً" },
-  { value: "15:00", nextHour: "16:00", timeOnly: "03:00", period: "عصراً", fullLabel: "03:00 عصراً", endLabel: "04:00 عصراً" },
-  { value: "16:00", nextHour: "17:00", timeOnly: "04:00", period: "عصراً", fullLabel: "04:00 عصراً", endLabel: "05:00 مساءً" },
-  { value: "17:00", nextHour: "18:00", timeOnly: "05:00", period: "مساءً", fullLabel: "05:00 مساءً", endLabel: "06:00 مساءً" },
-  { value: "18:00", nextHour: "19:00", timeOnly: "06:00", period: "مساءً", fullLabel: "06:00 مساءً", endLabel: "07:00 مساءً" },
-  { value: "19:00", nextHour: "20:00", timeOnly: "07:00", period: "مساءً", fullLabel: "07:00 مساءً", endLabel: "08:00 مساءً" },
-  { value: "20:00", nextHour: "21:00", timeOnly: "08:00", period: "مساءً", fullLabel: "08:00 مساءً", endLabel: "09:00 مساءً" },
-  { value: "21:00", nextHour: "22:00", timeOnly: "09:00", period: "مساءً", fullLabel: "09:00 مساءً", endLabel: "10:00 مساءً" },
-  { value: "22:00", nextHour: "23:00", timeOnly: "10:00", period: "مساءً", fullLabel: "10:00 مساءً", endLabel: "11:00 مساءً" },
-  { value: "23:00", nextHour: "24:00", timeOnly: "11:00", period: "ليلاً", fullLabel: "11:00 ليلاً", endLabel: "12:00 منتصف الليل" },
-  { value: "24:00", nextHour: "01:00", timeOnly: "12:00", period: "ليلاً", fullLabel: "12:00 منتصف الليل", endLabel: "01:00 ص" },
-];
+function formatHourLabel(h: number): string {
+  if (h === 0 || h === 24) return "12:00 منتصف الليل";
+  if (h === 12) return "12:00 ظهراً";
+  const hour12 = h > 12 ? h - 12 : h;
+  const period = h >= 12 ? (h >= 17 ? "مساءً" : (h >= 15 ? "عصراً" : "ظهراً")) : (h >= 4 ? "صباحاً" : "ليلاً");
+  return `${String(hour12).padStart(2, "0")}:00 ${period}`;
+}
 
 export default function BookingPage() {
   const [bookingType, setBookingType] = useState<"katbketab" | "3aza">("katbketab");
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+  const [activeHall, setActiveHall] = useState<HallResponse>({
+    id: 1,
+    name: "قاعة المجلس العام",
+    slug: "main-majlis-hall",
+    description: "قاعة المجلس العام مجهزة بالكامل لكافة مناسبات عقد القران ومجالس العزاء",
+    capacity: 500,
+    hourlyRate: 25,
+    currency: "ر.ع",
+    bufferHours: 1,
+    openHour: 13,
+    closeHour: 24,
+    featuresJson: "[]",
+    isActive: true,
+    mediaList: [],
+  });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const type = params.get("type");
-      if (type === "3aza" || type === "katbketab") {
-        setBookingType(type);
-      }
-    }
-  }, []);
-  const [selectedDay, setSelectedDay] = useState<number>(20);
-  const [selectedHours, setSelectedHours] = useState<string[]>([
-    "18:00",
-    "19:00",
-    "20:00",
-    "21:00",
-  ]);
-  const [selectedHall, setSelectedHall] = useState<string>("قاعة المجلس العام");
+  // Calendar year and month navigation
+  const [currentYear, setCurrentYear] = useState<number>(2026);
+  const [currentMonth, setCurrentMonth] = useState<number>(11); // 1-12
+  const [selectedDay, setSelectedDay] = useState<number>(6);
+  const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
 
-  // صور الجامع والمجلس (تمت إضافة الصور الجديدة المرفوعة)
+  // Start Hour and End Hour range selector
+  const [startHour, setStartHour] = useState<number>(18);
+  const [endHour, setEndHour] = useState<number>(22);
+
+  // Gallery
   const [galleryImages] = useState([
     {
       id: "1",
@@ -97,16 +112,129 @@ export default function BookingPage() {
   const [showGallery, setShowGallery] = useState(true);
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
 
-  const toggleHour = (val: string) => {
-    setSelectedHours((prev) => {
-      if (prev.includes(val)) {
-        if (prev.length === 1) return prev; // Keep at least one hour
-        return prev.filter((h) => h !== val).sort();
-      } else {
-        return [...prev, val].sort();
+  // Client form inputs
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [secondaryPhone, setSecondaryPhone] = useState("");
+  const [nationalId, setNationalId] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Booking Flow States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingInitiation, setPendingInitiation] = useState<BookingInitiationResponse | null>(null);
+  const [confirmedBooking, setConfirmedBooking] = useState<BookingResponse | null>(null);
+  const [isCapturingPayment, setIsCapturingPayment] = useState(false);
+
+  // Load URL query params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get("type");
+      if (type === "3aza" || type === "katbketab") {
+        setBookingType(type);
       }
-    });
-  };
+    }
+    const user = getStoredUser();
+    if (user) {
+      if (user.fullName) setFullName(user.fullName);
+      if (user.phone) setPhone(user.phone);
+      if (user.email) setEmail(user.email);
+    }
+  }, []);
+
+  // Fetch active halls from backend
+  useEffect(() => {
+    getHalls()
+      .then((halls) => {
+        if (halls && halls.length > 0) {
+          const primary = halls[0];
+          setActiveHall(primary);
+          if (primary.openHour !== undefined && primary.closeHour !== undefined) {
+            setStartHour(Math.max(primary.openHour, 18));
+            setEndHour(Math.min(primary.closeHour, 22));
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load halls, using default hall configuration", err);
+      });
+  }, []);
+
+  // Fetch availability for current month & hall
+  useEffect(() => {
+    if (!activeHall?.id) return;
+    getHallAvailability(activeHall.id, currentYear, currentMonth)
+      .then((res) => {
+        setMonthAvailability(res);
+      })
+      .catch((err) => {
+        console.warn("Could not load availability:", err);
+      });
+  }, [activeHall?.id, currentYear, currentMonth]);
+
+  // Calendar calculations
+  const daysInMonth = useMemo(() => {
+    return new Date(currentYear, currentMonth, 0).getDate();
+  }, [currentYear, currentMonth]);
+
+  const startDayOffset = useMemo(() => {
+    return new Date(currentYear, currentMonth - 1, 1).getDay();
+  }, [currentYear, currentMonth]);
+
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+  const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
+
+  // Availability lookup for each day
+  const daysAvailabilityMap = useMemo(() => {
+    const map = new Map<number, DayAvailabilityResponse>();
+    if (monthAvailability?.days) {
+      monthAvailability.days.forEach((d) => {
+        map.set(d.dayNumber, d);
+      });
+    }
+    return map;
+  }, [monthAvailability]);
+
+  // Selected Day's availability
+  const selectedDayAvailability = useMemo(() => {
+    return daysAvailabilityMap.get(selectedDay);
+  }, [daysAvailabilityMap, selectedDay]);
+
+  // Dynamic calculation of duration and price
+  const durationHours = Math.max(0, endHour - startHour);
+  const totalPrice = durationHours * (activeHall.hourlyRate || 25);
+  const durationText =
+    durationHours === 1
+      ? "ساعة واحدة"
+      : durationHours === 2
+      ? "ساعتان"
+      : `${durationHours} ساعات`;
+
+  // Start hour options within hall limits
+  const startHourOptions = useMemo(() => {
+    const open = activeHall.openHour !== undefined ? activeHall.openHour : 13;
+    const close = activeHall.closeHour !== undefined ? activeHall.closeHour : 24;
+    const opts: number[] = [];
+    for (let h = open; h < close; h++) {
+      opts.push(h);
+    }
+    return opts;
+  }, [activeHall.openHour, activeHall.closeHour]);
+
+  // End hour options (strictly > startHour)
+  const endHourOptions = useMemo(() => {
+    const close = activeHall.closeHour !== undefined ? activeHall.closeHour : 24;
+    const opts: number[] = [];
+    for (let h = startHour + 1; h <= close; h++) {
+      opts.push(h);
+    }
+    return opts;
+  }, [startHour, activeHall.closeHour]);
 
   const handleButtonMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -116,143 +244,83 @@ export default function BookingPage() {
     e.currentTarget.style.setProperty("--my", `${y}px`);
   };
 
-  const sortedHours = [...selectedHours].sort();
-  const count = sortedHours.length;
-  const countText =
-    count === 1 ? "ساعة واحدة" : count === 2 ? "ساعتان" : `${count} ساعات`;
-
-  const earliest = sortedHours[0];
-  const latest = sortedHours[sortedHours.length - 1];
-  const earliestBlock = HOUR_BLOCKS.find((b) => b.value === earliest);
-  const latestBlock = HOUR_BLOCKS.find((b) => b.value === latest);
-
-  const isContiguous = sortedHours.every((val, idx) => {
-    if (idx === 0) return true;
-    const prevBlock = HOUR_BLOCKS.find((b) => b.value === sortedHours[idx - 1]);
-    return prevBlock && prevBlock.nextHour === val;
-  });
-
-  const formattedTimeRange = isContiguous
-    ? `من ${earliestBlock?.fullLabel || earliest} حتى ${latestBlock?.endLabel || latest}`
-    : sortedHours.map((h) => HOUR_BLOCKS.find((b) => b.value === h)?.fullLabel || h).join(" ، ");
-
-  // Form inputs
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [secondaryPhone, setSecondaryPhone] = useState("");
-  const [nationalId, setNationalId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [reservationCode, setReservationCode] = useState("");
-
-  const months = [
-    { name: "أكتوبر 2026", daysInMonth: 31, startDayOffset: 4 },
-    { name: "نوفمبر 2026", daysInMonth: 30, startDayOffset: 0 },
-    { name: "ديسمبر 2026", daysInMonth: 31, startDayOffset: 2 },
-  ];
-
-  const currentMonth = months[currentMonthIndex];
-  const bookedDays = [2, 6, 12, 19, 26];
-  const partiallyBookedDays = [4, 10, 15, 23];
-
-  const timeSlots = [
-    {
-      id: "عصر",
-      title: "فترة العصر",
-      time: "من 03:45 عصراً حتى 05:30 مساءً",
-      desc: "مناسبة هادئة في أوقات النهار",
-    },
-    {
-      id: "مغرب",
-      title: "فترة المغرب",
-      time: "من 06:00 مساءً حتى 07:30 مساءً",
-      desc: "ما بين صلاتي المغرب والعشاء",
-    },
-    {
-      id: "عشاء",
-      title: "فترة العشاء والمساء",
-      time: "من 08:00 مساءً حتى 11:30 ليلاً",
-      desc: "الفترة الرئيسية للمناسبات الكبرى",
-    },
-  ];
-
-  const hall = {
-    id: "قاعة المجلس",
-    name: "قاعة المجلس العام",
-    capacity: "تتسع حتى 500 فرد",
-    image: "/landing_last_frame.jpg",
-    features: ["مدخل خاص مستقل", "تكييف مركزي متطور", "نظام صوت رقمي نقي", "شاشات عرض LED", "خدمة ضيافة وتجهيز"],
-    suitability: "مجهزة بالكامل لكافة مناسبات عقد القران ومجالس العزاء",
-  };
-
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  // Handle Booking Form Submit
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !phone.trim() || !nationalId.trim() || !email.trim()) return;
-    const code = `DAR-${Math.floor(100000 + Math.random() * 900000)}`;
-    setReservationCode(code);
+    setErrorMessage(null);
+
+    if (!fullName.trim() || !phone.trim() || !nationalId.trim() || !email.trim()) {
+      setErrorMessage("يرجى ملء جميع الحقول الإلزامية المطلوبة.");
+      return;
+    }
+
+    if (endHour <= startHour) {
+      setErrorMessage("ساعة الانتهاء يجب أن تكون بعد ساعة البدء.");
+      return;
+    }
+
+    const eventDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
 
     try {
-      const monthNum = String(currentMonthIndex + 10).padStart(2, "0");
-      const dayNum = String(selectedDay).padStart(2, "0");
-      const newBooking = {
-        id: `b_${Date.now()}`,
-        code,
+      setIsSubmitting(true);
+      const res = await createBooking({
+        hallId: activeHall.id,
         fullName: fullName.trim(),
         nationalId: nationalId.trim(),
         phone: phone.trim(),
-        secondaryPhone: secondaryPhone.trim(),
+        secondaryPhone: secondaryPhone.trim() || undefined,
         email: email.trim(),
         bookingType,
-        date: `2026-${monthNum}-${dayNum}`,
-        monthIndex: currentMonthIndex,
-        day: selectedDay,
-        monthName: currentMonth.name,
-        hours: selectedHours,
-        timeFormatted: formattedTimeRange,
-        hoursCountText: countText,
-        hallName: selectedHall,
-        notes: notes.trim(),
-        status: "CONFIRMED",
-        createdAt: new Date().toISOString(),
-      };
-      const existingStr = typeof window !== "undefined" ? localStorage.getItem("game3_bookings") : null;
-      const existing = existingStr ? JSON.parse(existingStr) : [];
-      localStorage.setItem("game3_bookings", JSON.stringify([newBooking, ...existing]));
-    } catch (err) {
-      console.error("Failed to store booking:", err);
-    }
+        eventDate,
+        startHour,
+        endHour,
+        notes: notes.trim() || undefined,
+      });
 
-    setIsSubmitted(true);
-    window.scrollTo({ top: 200, behavior: "smooth" });
+      setPendingInitiation(res);
+      window.scrollTo({ top: 150, behavior: "smooth" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "فشل تسجيل الحجز، يرجى مراجعة البيانات والمحاولة مجدداً.";
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Mock or Live PayPal capture
+  const handleCapturePayPal = async () => {
+    if (!pendingInitiation) return;
+    try {
+      setIsCapturingPayment(true);
+      const confirmed = await capturePayPalOrder(pendingInitiation.paypalOrderId);
+      setConfirmedBooking(confirmed);
+      setPendingInitiation(null);
+      window.scrollTo({ top: 100, behavior: "smooth" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "فشل تأكيد عملية الدفع عبر بايبال.";
+      setErrorMessage(msg);
+    } finally {
+      setIsCapturingPayment(false);
+    }
   };
 
   return (
     <div className="relative min-h-screen bg-[#040812] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#D4AF85] selection:text-[#0B1220] overflow-x-hidden">
-      {/* Interactive WebGL Shader Background with Majlis Hall photo */}
       <MajlisShaderBackground imageSrc="/majlis-hall.jpg" />
-
       <Navbar />
 
-      {/* Main Reservation Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 sm:pt-12 sm:pb-24 w-full flex-1">
-        {/* Toggle Occasion Type (Liquid Glass) */}
-        <div data-glass-card="true" className="glass-card max-w-md mx-auto grid grid-cols-2 gap-3 mb-12 sm:mb-16 p-1.5 bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)]">
+        {/* Toggle Occasion Type */}
+        <div data-glass-card="true" className="glass-card max-w-md mx-auto grid grid-cols-2 gap-3 mb-10 sm:mb-14 p-1.5 bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
           <button
             onClick={() => setBookingType("katbketab")}
             onMouseMove={handleButtonMouseMove}
             className={`relative group overflow-hidden py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer ${
               bookingType === "katbketab"
-                ? "bg-gradient-to-r from-[#D4AF85]/40 via-white/20 to-[#1E447B]/60 backdrop-blur-xl border border-[#FFF0C8] text-[#FFF9E6] font-black shadow-[0_4px_20px_rgba(212,175,133,0.45),inset_0_1px_2px_rgba(255,255,255,0.7)] scale-[1.02]"
-                : "bg-white/[0.06] hover:bg-white/[0.16] backdrop-blur-md border border-white/10 hover:border-white/30 text-white/80 hover:text-white"
+                ? "bg-gradient-to-r from-[#D4AF85]/40 via-white/20 to-[#1E447B]/60 backdrop-blur-xl border border-[#FFF0C8] text-[#FFF9E6] font-black shadow-lg scale-[1.02]"
+                : "bg-white/[0.06] hover:bg-white/[0.16] border border-white/10 text-white/80"
             }`}
           >
-            <span
-              className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              style={{
-                background: "radial-gradient(circle 80px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.15) 50%, transparent 80%)",
-              }}
-            />
             <HeartHandshake className="w-4 h-4 text-[#D4AF85] relative z-10" />
             <span className="relative z-10">حجز عقد قران</span>
           </button>
@@ -261,530 +329,544 @@ export default function BookingPage() {
             onMouseMove={handleButtonMouseMove}
             className={`relative group overflow-hidden py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer ${
               bookingType === "3aza"
-                ? "bg-gradient-to-r from-[#D4AF85]/40 via-white/20 to-[#1E447B]/60 backdrop-blur-xl border border-[#FFF0C8] text-[#FFF9E6] font-black shadow-[0_4px_20px_rgba(212,175,133,0.45),inset_0_1px_2px_rgba(255,255,255,0.7)] scale-[1.02]"
-                : "bg-white/[0.06] hover:bg-white/[0.16] backdrop-blur-md border border-white/10 hover:border-white/30 text-white/80 hover:text-white"
+                ? "bg-gradient-to-r from-[#D4AF85]/40 via-white/20 to-[#1E447B]/60 backdrop-blur-xl border border-[#FFF0C8] text-[#FFF9E6] font-black shadow-lg scale-[1.02]"
+                : "bg-white/[0.06] hover:bg-white/[0.16] border border-white/10 text-white/80"
             }`}
           >
-            <span
-              className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              style={{
-                background: "radial-gradient(circle 80px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.15) 50%, transparent 80%)",
-              }}
-            />
             <Building2 className="w-4 h-4 text-[#D4AF85] relative z-10" />
-            <span className="relative z-10">حجز عزاء</span>
-            <span className="relative z-10 text-[10px] hidden sm:inline text-[#D4AF85]/90">(دار التعازي)</span>
+            <span className="relative z-10">حجز عزاء (دار العزاء)</span>
           </button>
         </div>
 
-        {isSubmitted ? (
-          /* Confirmation State (Liquid Glass) */
-          <div data-glass-card="true" className="glass-card max-w-2xl mx-auto bg-slate-950/35 backdrop-blur-xl border border-white/25 rounded-3xl p-6 sm:p-10 text-center shadow-[0_25px_60px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.4)] relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-red-950/50 border border-red-500/50 text-red-200 text-xs sm:text-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="text-white/60 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
-            <div className="w-20 h-20 rounded-full bg-white/[0.12] border-2 border-[#FFE8B8] text-[#FFE8B8] flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(212,175,133,0.5),inset_0_1px_2px_rgba(255,255,255,0.6)]">
-              <CheckCircle2 className="w-10 h-10 text-[#FFE8B8]" />
+        {/* STEP A: PayPal Payment Gateway Modal / Confirmation */}
+        {pendingInitiation && (
+          <div data-glass-card="true" className="glass-card max-w-2xl mx-auto bg-slate-950/40 backdrop-blur-xl border border-white/25 rounded-3xl p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] text-center space-y-6 relative overflow-hidden">
+            <div className="w-16 h-16 rounded-full bg-[#D4AF85]/20 border-2 border-[#FFE8B8] text-[#FFE8B8] flex items-center justify-center mx-auto shadow-lg">
+              <CreditCard className="w-8 h-8 text-[#FFE8B8]" />
             </div>
 
-            <span className="text-xs font-bold px-3.5 py-1 bg-white/[0.1] text-[#FFE8B8] rounded-full border border-white/30 backdrop-blur-md">
-              تم إرسال بريد التأكيد بنجاح
-            </span>
-
-            <h2 className="text-2xl sm:text-3xl font-black font-sans bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent mt-4 mb-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-              {bookingType === "katbketab"
-                ? "بارك الله لكما وبارك عليكما وجمع بينكما في خير"
-                : "عظم الله أجركم ورحم ميتكم وألهمكم الصبر والسلوان"}
-            </h2>
-
-            <p className="text-[#DCE6F2] text-xs sm:text-sm leading-relaxed mb-6">
-              تم تثبيت طلبك في جدول حجوزات المجلس وإرسال رسالة التأكيد وتفاصيل الحجز إلى بريدك الإلكتروني:
-              <strong className="block text-[#FFE8B8] font-mono text-sm sm:text-base mt-2 dir-ltr">
-                {email}
-              </strong>
-              كود الحجز المرجعي:
-              <span className="inline-block text-xl font-mono font-bold text-white mr-1 mt-1 drop-shadow-sm">
-                {reservationCode}
+            <div>
+              <span className="px-3.5 py-1 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                بانتظار سداد رسوم الحجز (PayPal)
               </span>
-            </p>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#FFF2D2] mt-3">
+                تأكيد حجز المجلس عبر PayPal
+              </h2>
+              <p className="text-xs text-[#DCE6F2] mt-1">
+                رقم الحجز المرجعي: <strong className="text-white font-mono">{pendingInitiation.booking.code}</strong>
+              </p>
+            </div>
 
-            {/* Summary Details */}
-            <div className="bg-white/[0.06] backdrop-blur-xl border border-white/20 rounded-2xl p-5 text-right text-xs space-y-3 mb-8 shadow-inner">
-              <div className="flex justify-between border-b border-white/15 pb-2">
-                <span className="text-[#DCE6F2]">نوع المناسبة:</span>
-                <span className="font-bold text-[#FFF2D2]">
-                  {bookingType === "katbketab" ? "عقد قران" : "مجلس عزاء وتأبين"}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/15 pb-2">
-                <span className="text-[#DCE6F2]">التاريخ المحدد:</span>
+            <div className="bg-white/[0.06] border border-white/20 rounded-2xl p-5 text-right text-xs space-y-3">
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">القاعة والمناسبة:</span>
                 <span className="font-bold text-white">
-                  اليوم {selectedDay} من {currentMonth.name}
+                  {pendingInitiation.booking.hallName} • {bookingType === "katbketab" ? "عقد قران" : "عزاء"}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/15 pb-2">
-                <span className="text-[#DCE6F2]">الوقت والقاعة:</span>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">التاريخ والوقت:</span>
                 <span className="font-bold text-white">
-                  {formattedTimeRange} ({countText}) • {selectedHall}
+                  {pendingInitiation.booking.eventDate} (من {pendingInitiation.booking.startHour}:00 حتى {pendingInitiation.booking.endHour}:00)
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/15 pb-2">
-                <span className="text-[#DCE6F2]">صاحب الحجز:</span>
-                <span className="font-bold text-white">
-                  {fullName} ({phone})
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/15 pb-2">
-                <span className="text-[#DCE6F2]">البريد الإلكتروني:</span>
-                <span className="font-bold text-white font-mono dir-ltr">
-                  {email}
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">فاصل التجهيز المخصص تلقائياً:</span>
+                <span className="font-bold text-[#FFE8B8]">
+                  {pendingInitiation.booking.appliedBufferHours} ساعة قبل وبعد الحجز
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#DCE6F2]">الرقم المدني:</span>
-                <span className="font-bold text-white font-mono">
-                  {nationalId}
+                <span className="text-[#8EA3BF]">إجمالي الرسوم المستحقة:</span>
+                <span className="font-black text-emerald-400 font-mono text-base">
+                  {pendingInitiation.booking.totalAmount} {pendingInitiation.booking.currency || "ر.ع"}
                 </span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a
-                href={`mailto:${email}`}
-                onMouseMove={handleButtonMouseMove}
-                className="relative group overflow-hidden w-full py-3.5 rounded-full bg-gradient-to-r from-[#D4AF85]/85 via-[#FFE8B8]/90 to-[#C59B63]/85 text-[#0A1628] font-black text-xs flex items-center justify-center gap-2 border border-white shadow-[0_8px_25px_rgba(212,175,133,0.4)] transition"
-              >
-                <Mail className="w-4 h-4 text-[#0A1628] relative z-10" />
-                <span className="relative z-10">فتح البريد الإلكتروني لمراجعة التأكيد</span>
-              </a>
+            {/* PayPal Action Buttons */}
+            <div className="space-y-3">
               <button
-                onClick={() => setIsSubmitted(false)}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs backdrop-blur-md transition cursor-pointer"
+                onClick={handleCapturePayPal}
+                disabled={isCapturingPayment}
+                className="w-full py-4 rounded-full bg-gradient-to-r from-[#D4AF85] via-[#FFE8B8] to-[#C59B63] text-[#0A1628] font-black text-sm shadow-[0_8px_25px_rgba(212,175,133,0.4)] hover:scale-[1.01] active:scale-95 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                تعديل أو حجز جديد
+                {isCapturingPayment ? (
+                  <span>جاري تسجيل وتأكيد الدفع عبر PayPal...</span>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5 text-[#0A1628]" />
+                    <span>سداد الرسوم وتأكيد الحجز فورياً (Sandbox Capture)</span>
+                  </>
+                )}
               </button>
+
+              {pendingInitiation.approvalUrl && (
+                <a
+                  href={pendingInitiation.approvalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-3 rounded-full bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-xs font-bold transition"
+                >
+                  فتح بوابة الدفع عبر موقع PayPal المباشر ↗
+                </a>
+              )}
             </div>
           </div>
-        ) : (
-          /* Main Interactive Reservation Steps */
-          <div className="space-y-12 sm:space-y-16">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-10 xl:gap-14 items-start">
-              {/* Calendar Widget (Step 1) */}
-              <div className="lg:col-span-7">
-              {/* Step 1: Calendar Widget (Crystal-Clear Liquid Glass) */}
-              <div
-                data-glass-card="true"
-                onMouseMove={handleButtonMouseMove}
-                className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45),inset_0_1px_2px_rgba(255,255,255,0.35)] text-[#FAF7F0] relative overflow-hidden"
-              >
-                {/* Top specular edge reflection */}
-                <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent pointer-events-none" />
+        )}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/15">
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                      <span className="text-[#FFE8B8] font-mono font-black ml-2 drop-shadow-[0_0_10px_rgba(212,175,133,0.5)]">1.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                        اختر تاريخ المناسبة من التقويم
-                      </span>
-                    </h2>
-                    <p className="text-xs text-[#DCE6F2] mt-0.5">
-                      اضغط على اليوم المطلوب لتحديده ومتابعة الحجز
-                    </p>
-                  </div>
+        {/* STEP B: CONFIRMED BOOKING VOUCHER (DAR-XXXXXX) */}
+        {confirmedBooking && (
+          <div data-glass-card="true" className="glass-card max-w-2xl mx-auto bg-slate-950/40 backdrop-blur-xl border border-white/25 rounded-3xl p-6 sm:p-10 text-center shadow-[0_25px_60px_rgba(0,0,0,0.5)] relative overflow-hidden space-y-6">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center mx-auto shadow-lg animate-bounce">
+              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+            </div>
 
-                  {/* Month controls */}
-                  <div className="flex items-center gap-1.5 bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl px-2 py-1 self-start sm:self-auto shadow-inner">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentMonthIndex((prev) => Math.max(0, prev - 1))}
-                      disabled={currentMonthIndex === 0}
-                      className="p-1.5 rounded-lg hover:bg-white/20 disabled:opacity-30 text-[#FFE8B8] hover:text-[#FFF2D2] transition shadow-sm cursor-pointer"
-                      title="الشهر السابق"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs font-bold font-sans text-[#FFF2D2] px-3 min-w-[95px] text-center drop-shadow-sm">
-                      {currentMonth.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCurrentMonthIndex((prev) => Math.min(months.length - 1, prev + 1))
-                      }
-                      disabled={currentMonthIndex === months.length - 1}
-                      className="p-1.5 rounded-lg hover:bg-white/20 disabled:opacity-30 text-[#D4AF85] hover:text-[#FFF2D2] transition shadow-sm cursor-pointer"
-                      title="الشهر التالي"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  </div>
+            <div>
+              <span className="text-xs font-bold px-3.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
+                الحجز مؤكد ومسجل رسمياً (CONFIRMED)
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#FFF2D2] mt-3">
+                {confirmedBooking.bookingType === "katbketab"
+                  ? "بارك الله لكما وبارك عليكما وجمع بينكما في خير"
+                  : "عظم الله أجركم وأحسن عزاءكم ورحم ميتكم"}
+              </h2>
+              <p className="text-[#DCE6F2] text-xs sm:text-sm mt-1">
+                تم اعتماد وتأكيد حجزكم في مجلس جامع الحق وتم إرسال تفاصيل السند إلى بريدك الإلكتروني:
+                <strong className="block text-[#FFE8B8] font-mono text-sm mt-1 dir-ltr">{confirmedBooking.email}</strong>
+              </p>
+            </div>
+
+            {/* Official Voucher Card */}
+            <div className="bg-white/[0.06] border border-white/20 rounded-2xl p-6 text-right text-xs space-y-3 shadow-inner">
+              <div className="flex justify-between items-center border-b border-white/15 pb-3">
+                <div>
+                  <span className="text-[#8EA3BF] block text-[10px]">كود السند المرجعي</span>
+                  <span className="text-xl font-mono font-bold text-white">{confirmedBooking.code}</span>
                 </div>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  الحالة: مؤكد CONFIRMED
+                </span>
+              </div>
 
-                {/* Weekday names */}
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#FFE8B8] mb-3 py-2.5 bg-white/[0.06] backdrop-blur-md border border-white/15 rounded-xl shadow-inner">
-                  <span>الأحد</span>
-                  <span>الإثنين</span>
-                  <span>الثلاثاء</span>
-                  <span>الأربعاء</span>
-                  <span>الخميس</span>
-                  <span>الجمعة</span>
-                  <span>السبت</span>
-                </div>
-
-                {/* Day Buttons with liquid glass cursor shine */}
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: currentMonth.startDayOffset }).map((_, i) => (
-                    <div key={`offset-${i}`} className="h-10 sm:h-12" />
-                  ))}
-
-                  {Array.from({ length: currentMonth.daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const isBooked = bookedDays.includes(day);
-                    const isPartiallyBooked = partiallyBookedDays.includes(day);
-                    const isSelected = selectedDay === day;
-
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        disabled={isBooked}
-                        onClick={() => setSelectedDay(day)}
-                        onMouseMove={handleButtonMouseMove}
-                        className={`relative group overflow-hidden h-10 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
-                          isSelected
-                            ? "bg-gradient-to-br from-[#D4AF85]/55 via-white/30 to-[#122849]/70 backdrop-blur-xl border-2 border-[#FFF0C8] text-[#FFF9E6] font-black shadow-[0_0_20px_rgba(212,175,133,0.6),inset_0_1px_2px_rgba(255,255,255,0.9)] scale-105 z-10"
-                            : isBooked
-                            ? "bg-black/30 backdrop-blur-sm text-white/30 cursor-not-allowed line-through border border-white/5"
-                            : isPartiallyBooked
-                            ? "bg-amber-400/[0.12] hover:bg-amber-400/[0.25] backdrop-blur-md text-[#FFF3D6] border border-amber-300/40 hover:border-amber-300/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.2)] hover:scale-105"
-                            : "bg-white/[0.08] hover:bg-white/[0.22] backdrop-blur-md text-white border border-white/20 hover:border-white/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_12px_rgba(0,0,0,0.25)] hover:scale-105"
-                        }`}
-                      >
-                        {/* Moving liquid glass reflection inside the button */}
-                        {!isBooked && (
-                          <span
-                            className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            style={{
-                              background: "radial-gradient(circle 50px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.55), rgba(212,175,133,0.2) 50%, transparent 80%)",
-                            }}
-                          />
-                        )}
-                        <span className="relative z-10">{day}</span>
-                        {isPartiallyBooked && !isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_8px_rgba(251,191,36,0.9)] z-10" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Legend */}
-                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 pt-4 border-t border-white/15 text-xs text-[#DCE6F2]">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#D4AF85] to-[#1E447B] border border-white shadow-[0_0_8px_rgba(212,175,133,0.6)]" />
-                    <span className="text-[#FFF2D2] font-semibold">المحدد ({selectedDay} {currentMonth.name})</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-white/20 border border-white/40" />
-                    <span>متاح للحجز</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                    <span>متاح جزئياً</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-black/40 border border-white/20" />
-                    <span className="text-white/40">محجوز</span>
-                  </span>
-                </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">اسم القاعة:</span>
+                <span className="font-bold text-white">{confirmedBooking.hallName}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">صاحب الحجز:</span>
+                <span className="font-bold text-white">{confirmedBooking.fullName}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">الرقم المدني:</span>
+                <span className="font-bold text-white font-mono">{confirmedBooking.nationalId}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">الهاتف:</span>
+                <span className="font-bold text-white font-mono dir-ltr">{confirmedBooking.phone}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">تاريخ المناسبة:</span>
+                <span className="font-bold text-white font-mono">{confirmedBooking.eventDate}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">الساعات المحجوزة:</span>
+                <span className="font-bold text-white">
+                  من {confirmedBooking.startHour}:00 حتى {confirmedBooking.endHour}:00 ({confirmedBooking.durationHours} ساعات)
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">فترة التجهيز المطبقة (Buffer):</span>
+                <span className="font-bold text-[#FFE8B8]">
+                  {confirmedBooking.appliedBufferHours} ساعة مخصصة تلقائياً قبل وبعد الحجز
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-[#8EA3BF]">المبلغ الإجمالي المدفوع:</span>
+                <span className="font-black text-emerald-400 font-mono text-base">
+                  {confirmedBooking.totalAmount} {confirmedBooking.currency || "ر.ع"}
+                </span>
               </div>
             </div>
 
-            {/* Step 2 & Step 3: Time Slots & Hall (Liquid Glass) */}
-            <div className="lg:col-span-5 space-y-10 sm:space-y-14">
-              {/* Step 2: Custom Hours Multi-Select (Liquid Glass) */}
-              <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45),inset_0_1px_2px_rgba(255,255,255,0.35)] relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+            {/* Print Voucher & Reset Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => window.print()}
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#D4AF85] via-[#FFE8B8] to-[#C59B63] text-[#0A1628] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg hover:scale-[1.01] active:scale-95 transition cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-[#0A1628]" />
+                <span>طباعة / تحميل سند الحجز الرسمي</span>
+              </button>
 
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                    <span className="text-[#FFE8B8] font-mono font-black ml-2 drop-shadow-[0_0_12px_rgba(212,175,133,0.5)]">
-                      2.
-                    </span>
-                    <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                      اختر ساعات الحجز المناسبة
-                    </span>
-                  </h2>
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/[0.08] backdrop-blur-md border border-white/25 text-[#FFF2D2] flex items-center gap-1.5 shadow-inner">
-                    <Sparkles className="w-3.5 h-3.5 text-[#FFE8B8]" />
-                    <span>تحديد أكثر من ساعة</span>
-                  </span>
-                </div>
+              <button
+                onClick={() => {
+                  setConfirmedBooking(null);
+                  setPendingInitiation(null);
+                }}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs transition cursor-pointer"
+              >
+                تسجيل حجز جديد
+              </button>
+            </div>
+          </div>
+        )}
 
-                {/* Duration Highlight Banner */}
-                <div className="p-4 rounded-2xl border border-white/30 bg-gradient-to-r from-white/[0.12] via-white/[0.06] to-white/[0.1] backdrop-blur-xl shadow-[0_8px_25px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.4)] flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="w-10 h-10 rounded-full bg-white/[0.1] border border-white/30 flex items-center justify-center shrink-0 shadow-inner">
-                      <Clock className="w-5 h-5 text-[#D4AF85]" />
-                    </div>
+        {/* STEP C: ACTIVE RESERVATION WIZARD */}
+        {!pendingInitiation && !confirmedBooking && (
+          <div className="space-y-12 sm:space-y-16">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-10 xl:gap-14 items-start">
+              {/* Step 1: Calendar Widget */}
+              <div className="lg:col-span-7">
+                <div
+                  data-glass-card="true"
+                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-[#FAF7F0] relative overflow-hidden"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/15">
                     <div>
-                      <span className="block text-[11px] text-[#DCE6F2]">الساعات المحجوزة:</span>
-                      <span className="block text-sm sm:text-base font-black text-[#FFF2D2] drop-shadow-sm">
-                        {formattedTimeRange}
+                      <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                        <span className="text-[#FFE8B8] font-mono font-black ml-2">1.</span>
+                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent">
+                          اختر تاريخ المناسبة من التقويم
+                        </span>
+                      </h2>
+                      <p className="text-xs text-[#DCE6F2] mt-0.5">
+                        اضغط على اليوم المطلوب لتحديده والاطلاع على فترات الحجز المتاحة
+                      </p>
+                    </div>
+
+                    {/* Month Controls */}
+                    <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/20 rounded-xl px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentMonth === 1) {
+                            setCurrentMonth(12);
+                            setCurrentYear((y) => y - 1);
+                          } else {
+                            setCurrentMonth((m) => m - 1);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-white/20 text-[#FFE8B8] transition cursor-pointer"
+                        title="الشهر السابق"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs font-bold text-[#FFF2D2] px-3 min-w-[105px] text-center">
+                        {currentMonthName}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentMonth === 12) {
+                            setCurrentMonth(1);
+                            setCurrentYear((y) => y + 1);
+                          } else {
+                            setCurrentMonth((m) => m + 1);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-white/20 text-[#D4AF85] transition cursor-pointer"
+                        title="الشهر التالي"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="px-3.5 py-1.5 rounded-full bg-white/[0.12] border border-white/30 text-xs font-black text-[#FFE8B8] shadow-inner whitespace-nowrap">
-                    إجمالي المدة: {countText}
-                  </div>
-                </div>
 
-                {/* Interactive Hourly Multi-Select Grid with liquid glass mouse shine */}
-                <div>
-                  <div className="flex items-center justify-between text-xs text-[#DCE6F2] mb-3 font-semibold">
-                    <span>انقر على أي ساعة لاختيارها (يمكنك اختيار عدة ساعات):</span>
-                    <span className="text-[11px] text-[#FFE8B8]">الساعات المظللة هي فترة حجزك</span>
+                  {/* Weekday names */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#FFE8B8] mb-3 py-2.5 bg-white/[0.06] rounded-xl">
+                    <span>الأحد</span>
+                    <span>الإثنين</span>
+                    <span>الثلاثاء</span>
+                    <span>الأربعاء</span>
+                    <span>الخميس</span>
+                    <span>الجمعة</span>
+                    <span>السبت</span>
                   </div>
 
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
-                    {HOUR_BLOCKS.map((block) => {
-                      const isSelected = selectedHours.includes(block.value);
+                  {/* Day Buttons with backend live availability status */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: startDayOffset }).map((_, i) => (
+                      <div key={`offset-${i}`} className="h-10 sm:h-12" />
+                    ))}
+
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                      const day = i + 1;
+                      const dayData = daysAvailabilityMap.get(day);
+                      const isFullyBooked = dayData?.status === "FULLY_BOOKED";
+                      const isPartiallyBooked = dayData?.status === "PARTIALLY_BOOKED";
+                      const isSelected = selectedDay === day;
+
                       return (
                         <button
-                          key={block.value}
+                          key={day}
                           type="button"
-                          onClick={() => toggleHour(block.value)}
+                          disabled={isFullyBooked}
+                          onClick={() => setSelectedDay(day)}
                           onMouseMove={handleButtonMouseMove}
-                          className={`relative group overflow-hidden py-3 px-2 rounded-2xl text-center transition-all duration-200 cursor-pointer select-none flex flex-col items-center justify-center gap-0.5 ${
+                          className={`relative group overflow-hidden h-10 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
                             isSelected
-                              ? "bg-gradient-to-b from-[#D4AF85]/55 via-white/30 to-[#1E447B]/70 backdrop-blur-xl border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-[0_0_20px_rgba(212,175,133,0.55),inset_0_1px_2px_rgba(255,255,255,0.85)] scale-[1.04]"
-                              : "bg-white/[0.08] hover:bg-white/[0.22] backdrop-blur-md border border-white/20 hover:border-white/60 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_4px_12px_rgba(0,0,0,0.2)]"
+                              ? "bg-gradient-to-br from-[#D4AF85]/55 via-white/30 to-[#122849]/70 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
+                              : isFullyBooked
+                              ? "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
+                              : isPartiallyBooked
+                              ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25]"
+                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
                           }`}
                         >
-                          <span
-                            className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            style={{
-                              background: "radial-gradient(circle 50px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.55), rgba(212,175,133,0.2) 50%, transparent 80%)",
-                            }}
-                          />
-                          <span className="relative z-10 block text-sm sm:text-base font-black font-mono tracking-wider">
-                            {block.timeOnly}
-                          </span>
-                          <span className={`relative z-10 block text-[10px] font-bold ${isSelected ? "text-[#FFE8B8]" : "text-[#DCE6F2]"}`}>
-                            {block.period}
-                          </span>
+                          <span className="relative z-10">{day}</span>
+                          {isPartiallyBooked && !isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                          )}
                         </button>
                       );
                     })}
                   </div>
+
+                  {/* Legend */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 pt-4 border-t border-white/15 text-xs text-[#DCE6F2]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#D4AF85] to-[#1E447B] border border-white" />
+                      <span className="text-[#FFF2D2] font-semibold">المحدد ({selectedDay} {currentMonthName})</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-white/20 border border-white/40" />
+                      <span>متاح بالكامل</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-amber-400" />
+                      <span>متاح جزئياً</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-black/50 border border-white/20" />
+                      <span className="text-white/40">محجوز / مغلق</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Step 3: Single Hall Showcase (Liquid Glass) */}
-              <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45),inset_0_1px_2px_rgba(255,255,255,0.35)] relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+              {/* Step 2 & Step 3: Proper Start Hour -> End Hour Range Selector with Buffer Notice */}
+              <div className="lg:col-span-5 space-y-8">
+                {/* Step 2: Proper Start Hour -> End Hour Range Selector */}
+                <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] relative overflow-hidden space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                      <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                        تحديد فترة وساعات الحجز
+                      </span>
+                    </h2>
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#D4AF85]/20 text-[#FFE8B8] border border-[#D4AF85]/30">
+                      {activeHall.hourlyRate} {activeHall.currency || "ر.ع"} / ساعة
+                    </span>
+                  </div>
 
-                <h2 className="text-lg sm:text-xl font-black font-sans flex items-center mb-3">
-                  <span className="text-[#FFE8B8] font-mono font-black ml-2 drop-shadow-[0_0_12px_rgba(212,175,133,0.5)]">
-                    3.
-                  </span>
-                  <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                    اختيار قاعة المجلس
-                  </span>
-                </h2>
-
-                <div className="p-4 sm:p-5 rounded-2xl border border-white/30 bg-gradient-to-r from-white/[0.12] via-white/[0.06] to-white/[0.1] backdrop-blur-xl shadow-[0_8px_25px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.4)]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full border-2 border-[#FFE8B8] bg-[#D4AF85] flex items-center justify-center shrink-0 shadow-md">
-                      <CheckCircle2 className="w-4 h-4 text-[#050B14]" />
-                    </div>
+                  {/* Start Hour -> End Hour Range Selectors */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-base sm:text-lg font-bold text-[#FFF2D2]">
-                          {hall.name}
-                        </h3>
-                        <span className="text-[11px] px-3 py-0.5 rounded-full bg-white/[0.1] text-[#FFE8B8] border border-white/25 font-semibold shadow-inner">
-                          {hall.capacity}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#DCE6F2] mt-1.5">{hall.suitability}</p>
+                      <label className="block text-xs font-bold text-[#DCE6F2] mb-1.5">
+                        وقت بدء الفعالية *
+                      </label>
+                      <select
+                        value={startHour}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setStartHour(val);
+                          if (endHour <= val) {
+                            setEndHour(Math.min(activeHall.closeHour || 24, val + 2));
+                          }
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#D4AF85] transition"
+                      >
+                        {startHourOptions.map((h) => (
+                          <option key={h} value={h} className="bg-[#050A14]">
+                            {formatHourLabel(h)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#DCE6F2] mb-1.5">
+                        وقت انتهاء الفعالية *
+                      </label>
+                      <select
+                        value={endHour}
+                        onChange={(e) => setEndHour(Number(e.target.value))}
+                        className="w-full px-3 py-2.5 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#D4AF85] transition"
+                      >
+                        {endHourOptions.map((h) => (
+                          <option key={h} value={h} className="bg-[#050A14]">
+                            {formatHourLabel(h)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-white/15">
-                    <div className="flex flex-wrap gap-2">
-                      {hall.features.map((f, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[11px] bg-white/[0.08] backdrop-blur-md border border-white/15 px-2.5 py-1 rounded-lg text-[#FFE8B8] font-medium"
-                        >
-                          • {f}
-                        </span>
-                      ))}
+                  {/* Turnaround Buffer Notice Requirement */}
+                  <div className="p-3.5 rounded-2xl bg-[#D4AF85]/10 border border-[#D4AF85]/30 text-xs text-[#FFE8B8] space-y-1">
+                    <div className="flex items-center gap-2 font-bold">
+                      <Sparkles className="w-4 h-4 text-[#FFE8B8] shrink-0" />
+                      <span>تجهيز واستراحة تلقائية (Buffer):</span>
                     </div>
+                    <p className="text-[11px] text-[#DCE6F2] leading-relaxed">
+                      ملاحظة: يتم تخصيص وقت استراحة وفاصل تجهيز (بفر) تلقائي قبل وبعد الحجز لضمان النظافة والترتيب
+                      ({activeHall.bufferHours || 1} ساعة تلقائياً).
+                    </p>
+                  </div>
 
+                  {/* Dynamic Price Calculation */}
+                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[11px] text-[#8EA3BF]">إجمالي مدة الحجز:</span>
+                      <span className="text-sm font-bold text-white">
+                        {durationText} (من {formatHourLabel(startHour)} إلى {formatHourLabel(endHour)})
+                      </span>
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-[11px] text-[#8EA3BF]">إجمالي الرسوم:</span>
+                      <span className="text-lg font-black text-emerald-400 font-mono">
+                        {totalPrice} {activeHall.currency || "ر.ع"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3: Hall Overview */}
+                <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                      <span className="text-[#FFE8B8] font-mono font-black ml-2">3.</span>
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                        قاعة المجلس المعتمدة
+                      </span>
+                    </h2>
+                    <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-[#FFE8B8] border border-white/20 font-bold">
+                      تتسع حتى {activeHall.capacity} فرد
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#DCE6F2] leading-relaxed">
+                    {activeHall.description || "قاعة المجلس العام مجهزة بأحدث وسائل التكييف، الصوتيات الرقمية، وشاشات العرض."}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/15">
+                    <span className="text-[11px] text-[#FFE8B8]">
+                      ساعات الاستقبال: من {activeHall.openHour}:00 حتى {activeHall.closeHour}:00
+                    </span>
                     <button
                       type="button"
                       onClick={() => setShowGallery((prev) => !prev)}
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden px-3.5 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.18] border border-white/20 hover:border-[#D4AF85] text-xs font-bold text-[#FFF2D2] flex items-center gap-2 transition cursor-pointer self-end sm:self-auto shadow-inner"
+                      className="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
                     >
-                      <Camera className="w-3.5 h-3.5 text-[#D4AF85]" />
-                      <span>{showGallery ? "إخفاء صور الجامع" : "استعراض صور الجامع والمجلس"}</span>
-                      <span className="text-[10px] bg-[#D4AF85]/20 text-[#FFE8B8] px-2 py-0.5 rounded-full border border-[#D4AF85]/40 font-mono">
-                        {galleryImages.length}
-                      </span>
+                      {showGallery ? "إخفاء الصور" : "عرض صور القاعة"}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Option to see Mosque & Majlis Images (Scrollport) - FULL WIDTH ON LAPTOP & MOBILE */}
-          {showGallery && (
-            <div
-              data-glass-card="true"
-              className="w-full glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45),inset_0_1px_2px_rgba(255,255,255,0.35)] relative overflow-hidden transition-all duration-300"
-            >
-              <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/15">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
+            {/* Gallery Section */}
+            {showGallery && (
+              <div data-glass-card="true" className="w-full glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-4">
+                <div className="flex items-center justify-between border-b border-white/15 pb-4">
+                  <h3 className="text-xl sm:text-2xl font-black text-[#FFF2D2] flex items-center gap-2">
                     <Camera className="w-5 h-5 text-[#D4AF85]" />
-                  </div>
+                    <span>معرض صور جامع الحق والمجلس العام</span>
+                  </h3>
+                  <span className="text-xs text-[#8EA3BF]">اسحب أفقياً للتنقل بين الصور</span>
+                </div>
+
+                <div className="scrollport">
+                  {galleryImages.map((img) => (
+                    <div
+                      key={img.id}
+                      onClick={() => setSelectedLightboxImage(img.src)}
+                      className="relative group shrink-0 w-72 sm:w-96 aspect-[16/10] rounded-2xl overflow-hidden border border-white/20 hover:border-[#D4AF85] shadow-lg cursor-pointer transition hover:scale-[1.02]"
+                    >
+                      <img src={img.src} alt={img.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 flex flex-col justify-end">
+                        <span className="text-sm font-bold text-white">{img.title}</span>
+                        <span className="text-xs text-[#D4AF85] mt-1 flex items-center gap-1">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>انقر للتكبير</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Client Info & Submit */}
+            <div className="max-w-4xl mx-auto">
+              <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-6">
+                <div className="border-b border-white/15 pb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl sm:text-2xl font-black font-sans bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                      صور الجامع والمجلس العام
-                    </h3>
-                    <p className="text-xs text-[#DCE6F2] mt-0.5">
-                      معرض صور تفاعلي لمرافق وتجهيزات صرح جامع الحق وقاعة المجلس العام
+                    <h2 className="text-xl sm:text-2xl font-black font-sans flex items-center">
+                      <span className="text-[#FFE8B8] font-mono font-black ml-2.5">4.</span>
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                        بيانات صاحب الحجز واعتماد الطلب
+                      </span>
+                    </h2>
+                    <p className="text-xs text-[#8EA3BF] mt-1">
+                      الخطوة النهائية لتسجيل الحجز والانتقال لبوابة السداد
                     </p>
                   </div>
+                  <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                    الإجمالي: {totalPrice} {activeHall.currency || "ر.ع"}
+                  </span>
                 </div>
-                <span className="text-xs text-[#DCE6F2] font-semibold bg-white/[0.08] px-4 py-1.5 rounded-full border border-white/20 shadow-inner self-start sm:self-auto">
-                  اسحب أفقياً للتنقل بين الصور
-                </span>
-              </div>
 
-              {/* Scrollport Container with linear gradient mask across full laptop width */}
-              <div className="scrollport">
-                {galleryImages.map((img) => (
-                  <div
-                    key={img.id}
-                    onClick={() => setSelectedLightboxImage(img.src)}
-                    onMouseMove={handleButtonMouseMove}
-                    className="relative group shrink-0 w-72 sm:w-96 md:w-[420px] lg:w-[480px] aspect-[16/10] rounded-2xl overflow-hidden border border-white/20 hover:border-[#D4AF85] shadow-[0_12px_32px_rgba(0,0,0,0.6)] cursor-pointer transition-all duration-300 hover:scale-[1.02]"
-                  >
-                    <img
-                      src={img.src}
-                      alt={img.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 flex flex-col justify-end">
-                      <span className="text-sm sm:text-base font-bold text-white drop-shadow-md">
-                        {img.title}
-                      </span>
-                      {img.subtitle && (
-                        <span className="text-xs text-[#DCE6F2]/90 mt-1 line-clamp-1">
-                          {img.subtitle}
-                        </span>
-                      )}
-                      <span className="text-xs text-[#D4AF85] mt-1.5 flex items-center gap-1.5 font-medium">
-                        <Maximize2 className="w-4 h-4" />
-                        <span>انقر للتكبير والمشاهدة بدقة عالية</span>
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Personal Details Form (The LAST thing) */}
-          <div className="mt-14 sm:mt-20 max-w-4xl mx-auto">
-            <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45),inset_0_1px_2px_rgba(255,255,255,0.35)] relative overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
-
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/15">
-                <h2 className="text-xl sm:text-2xl font-black font-sans flex items-center">
-                  <span className="text-[#FFE8B8] font-mono font-black ml-2.5 drop-shadow-[0_0_12px_rgba(212,175,133,0.5)]">
-                    4.
-                  </span>
-                  <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                    بيانات صاحب الحجز
-                  </span>
-                </h2>
-                <span className="text-xs text-[#FFE8B8] font-semibold bg-white/[0.08] backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-inner">
-                  الخطوة الأخيرة لإتمام الحجز
-                </span>
-              </div>
-
-              <form onSubmit={handleBookingSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Full Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                      الاسم الثلاثي أو الرباعي *
-                    </label>
-                    <div
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden rounded-xl"
-                    >
+                <form onSubmit={handleBookingSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                        الاسم الثلاثي أو الرباعي *
+                      </label>
                       <input
                         type="text"
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="أدخل اسم صاحب الحجز"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                      />
-                      <span
-                        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                        style={{
-                          background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                       />
                     </div>
-                  </div>
 
-                  {/* National ID (Requested!) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                      الرقم المدني / الهوية الوطنية *
-                    </label>
-                    <div
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden rounded-xl"
-                    >
+                    <div>
+                      <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                        الرقم المدني / الهوية الوطنية *
+                      </label>
                       <input
                         type="text"
                         required
                         value={nationalId}
                         onChange={(e) => setNationalId(e.target.value)}
-                        placeholder="أدخل الرقم المدني أو رقم الهوية"
+                        placeholder="أدخل الرقم المدني"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                      />
-                      <span
-                        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                        style={{
-                          background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                       />
                     </div>
-                  </div>
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                      البريد الإلكتروني (لاستلام التأكيد) *
-                    </label>
-                    <div
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden rounded-xl"
-                    >
+                    <div>
+                      <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                        البريد الإلكتروني (لاستلام السند والتأكيد) *
+                      </label>
                       <input
                         type="email"
                         required
@@ -792,26 +874,14 @@ export default function BookingPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@example.com"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                      />
-                      <span
-                        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                        style={{
-                          background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                       />
                     </div>
-                  </div>
 
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                      رقم الهاتف للتواصل *
-                    </label>
-                    <div
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden rounded-xl"
-                    >
+                    <div>
+                      <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                        رقم الهاتف للتواصل *
+                      </label>
                       <input
                         type="tel"
                         required
@@ -819,53 +889,29 @@ export default function BookingPage() {
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="968XXXXXXXX"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                      />
-                      <span
-                        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                        style={{
-                          background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                       />
                     </div>
-                  </div>
 
-                  {/* Secondary Phone */}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                      رقم هاتف إضافي (اختياري)
-                    </label>
-                    <div
-                      onMouseMove={handleButtonMouseMove}
-                      className="relative group overflow-hidden rounded-xl"
-                    >
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                        رقم هاتف إضافي (اختياري)
+                      </label>
                       <input
                         type="tel"
                         value={secondaryPhone}
                         onChange={(e) => setSecondaryPhone(e.target.value)}
-                        placeholder="اختياري"
+                        placeholder="رقم للتواصل الإضافي"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                      />
-                      <span
-                        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                        style={{
-                          background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* Notes */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
-                    {bookingType === "katbketab" ? "اسما العروسين" : "اسم المتوفى رحمه الله"}
-                  </label>
-                  <div
-                    onMouseMove={handleButtonMouseMove}
-                    className="relative group overflow-hidden rounded-xl"
-                  >
+                  <div>
+                    <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
+                      {bookingType === "katbketab" ? "اسما العروسين وملاحظات الحفل" : "اسم المتوفى رحمه الله وملاحظات العزاء"}
+                    </label>
                     <input
                       type="text"
                       value={notes}
@@ -875,63 +921,56 @@ export default function BookingPage() {
                           ? "مثال: اسم العروسين، طلب مأذون..."
                           : "مثال: المرحوم بإذن الله فلان الفلاني..."
                       }
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.16] backdrop-blur-xl border border-white/25 focus:border-[#FFE8B8] text-white text-xs placeholder:text-white/40 focus:outline-none text-right shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition relative z-10"
-                    />
-                    <span
-                      className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-20"
-                      style={{
-                        background: "radial-gradient(circle 90px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), rgba(212,175,133,0.18) 50%, transparent 80%)",
-                      }}
+                      className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
                     />
                   </div>
-                </div>
 
-                {/* Summary Box */}
-                <div className="p-4 rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/20 text-xs text-[#DCE6F2] space-y-2">
-                  <div className="flex justify-between">
-                    <span>المناسبة:</span>
-                    <span className="font-bold text-[#FFF2D2]">
-                      {bookingType === "katbketab" ? "عقد قران" : "عزاء"}
-                    </span>
+                  {/* Summary Box */}
+                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 text-xs text-[#DCE6F2] space-y-2">
+                    <div className="flex justify-between">
+                      <span>المناسبة وتاريخها:</span>
+                      <span className="font-bold text-[#FFF2D2]">
+                        {bookingType === "katbketab" ? "عقد قران" : "عزاء"} • اليوم {selectedDay} من {currentMonthName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>الساعات المحجوزة:</span>
+                      <span className="font-bold text-[#FFE8B8]">
+                        من {formatHourLabel(startHour)} إلى {formatHourLabel(endHour)} ({durationText})
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>فترة التجهيز المخصصة (Buffer):</span>
+                      <span className="font-bold text-[#FFE8B8]">
+                        {activeHall.bufferHours || 1} ساعة قبل وبعد الحجز
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-white/10 pt-2">
+                      <span className="font-bold">المبلغ المطلوب سداده:</span>
+                      <span className="font-black text-emerald-400 text-sm font-mono">
+                        {totalPrice} {activeHall.currency || "ر.ع"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>الموعد المحدد:</span>
-                    <span className="font-bold text-[#FFE8B8]">
-                      اليوم {selectedDay} من {currentMonth.name} - {formattedTimeRange} ({countText})
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>القاعة:</span>
-                    <span className="font-bold text-[#FFF2D2]">{selectedHall}</span>
-                  </div>
-                </div>
 
-                <button
-                  type="submit"
-                  onMouseMove={handleButtonMouseMove}
-                  className="relative group overflow-hidden w-full py-4 rounded-full bg-gradient-to-r from-[#D4AF85]/90 via-[#FFE8B8]/95 to-[#C59B63]/90 hover:from-[#FFE8B8] hover:to-[#D4AF85] text-[#0A1628] text-sm sm:text-base font-black border border-white shadow-[0_10px_35px_rgba(212,175,133,0.45),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:scale-[1.01] active:scale-95 transition-all duration-300 cursor-pointer tracking-wide"
-                >
-                  <span
-                    className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    style={{
-                      background: "radial-gradient(circle 120px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.7), transparent 70%)",
-                    }}
-                  />
-                  <span className="relative z-10">تأكيد وتسجيل الحجز الآن</span>
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    onMouseMove={handleButtonMouseMove}
+                    className="relative group overflow-hidden w-full py-4 rounded-full bg-gradient-to-r from-[#D4AF85]/90 via-[#FFE8B8]/95 to-[#C59B63]/90 text-[#0A1628] text-sm sm:text-base font-black border border-white shadow-lg hover:scale-[1.01] active:scale-95 transition-all duration-300 cursor-pointer disabled:opacity-50"
+                  >
+                    <span className="relative z-10">
+                      {isSubmitting ? "جاري تسجيل الحجز..." : "تأكيد وتسجيل الحجز ومتابعة الدفع عبر PayPal"}
+                    </span>
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
           </div>
         )}
       </main>
 
-      {/* Footer Note */}
-      <footer className="border-t border-[#1E3A63]/50 bg-[#040810] py-8 text-center text-xs text-[#8EA3BF]">
-        <p>© جامع الحق والمجلس العام — خدمة المجتمع والسكينة الإيمانية.</p>
-      </footer>
-
-      {/* Image Lightbox Modal */}
+      {/* Lightbox Modal */}
       {selectedLightboxImage && (
         <div
           onClick={() => setSelectedLightboxImage(null)}
@@ -939,8 +978,7 @@ export default function BookingPage() {
         >
           <button
             onClick={() => setSelectedLightboxImage(null)}
-            className="absolute top-4 left-4 sm:top-6 sm:left-6 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition cursor-pointer z-10"
-            title="إغلاق"
+            className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition cursor-pointer z-10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -948,24 +986,8 @@ export default function BookingPage() {
             src={selectedLightboxImage}
             alt="صورة مكبرة"
             onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-[82vh] rounded-2xl object-contain border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.9)]"
+            className="max-w-full max-h-[82vh] rounded-2xl object-contain border border-white/20 shadow-2xl"
           />
-          {(() => {
-            const currentImg = galleryImages.find((img) => img.src === selectedLightboxImage);
-            return currentImg ? (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="mt-3 px-5 py-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-center text-xs sm:text-sm font-bold text-[#FFF2D2] shadow-lg max-w-lg"
-              >
-                <span>{currentImg.title}</span>
-                {currentImg.subtitle && (
-                  <span className="text-[#DCE6F2]/80 font-normal mr-2">
-                    — {currentImg.subtitle}
-                  </span>
-                )}
-              </div>
-            ) : null;
-          })()}
         </div>
       )}
     </div>

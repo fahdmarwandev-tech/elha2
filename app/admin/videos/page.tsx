@@ -19,29 +19,21 @@ import {
   FileVideo,
   Video as VideoIcon,
   Calendar as CalendarIcon,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  getVideos,
+  createVideo,
+  uploadVideo,
+  setFeaturedVideo,
+  deleteVideo,
+  getCategories,
+  VideoResponse,
+  CategoryResponse,
+} from "@/lib/api";
 
-interface VideoData {
-  id: number;
-  videoSourceType: "YOUTUBE" | "LOCAL";
-  youtubeUrl?: string;
-  youtubeId?: string;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  title: string;
-  description?: string;
-  category: string;
-  categoryName: string;
-  duration?: string;
-  viewsCount?: string;
-  customPoster?: string;
-  isFeatured?: boolean;
-  createdAt?: string;
-}
-
-const CATEGORY_OPTIONS = [
+const DEFAULT_CATEGORY_OPTIONS = [
   { id: "lessons", name: "دروس ومواعظ" },
   { id: "khutbah", name: "خطب الجمعة" },
   { id: "recitations", name: "تلاوات خاشعة" },
@@ -51,7 +43,8 @@ const CATEGORY_OPTIONS = [
 
 export default function AdminVideosPage() {
   const [activeTab, setActiveTab] = useState<"YOUTUBE" | "LOCAL">("YOUTUBE");
-  const [videos, setVideos] = useState<VideoData[]>([]);
+  const [videos, setVideos] = useState<VideoResponse[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>(DEFAULT_CATEGORY_OPTIONS);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -71,28 +64,38 @@ export default function AdminVideosPage() {
   const [detectedDuration, setDetectedDuration] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
   // Live preview video ID for YouTube
   const detectedYouTubeId = extractYouTubeId(youtubeUrl);
 
-  const fetchVideos = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/api/v1/videos`, { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        setVideos(data);
+      const [fetchedVideos, fetchedCategories] = await Promise.allSettled([
+        getVideos(),
+        getCategories(),
+      ]);
+
+      if (fetchedVideos.status === "fulfilled" && Array.isArray(fetchedVideos.value)) {
+        setVideos(fetchedVideos.value);
+      }
+
+      if (fetchedCategories.status === "fulfilled" && Array.isArray(fetchedCategories.value) && fetchedCategories.value.length > 0) {
+        setCategories(
+          fetchedCategories.value.map((c) => ({
+            id: c.slug || String(c.id),
+            name: c.name,
+          }))
+        );
       }
     } catch (err) {
-      console.error("Error connecting to backend:", err);
+      console.error("Error loading videos or categories:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVideos();
+    loadData();
   }, []);
 
   // Handle local file selection, create temporary preview and auto-detect duration
@@ -135,7 +138,7 @@ export default function AdminVideosPage() {
     e.preventDefault();
     setStatusMessage(null);
 
-    const categoryObj = CATEGORY_OPTIONS.find((c) => c.id === category);
+    const categoryObj = categories.find((c) => c.id === category);
     const catName = categoryObj ? categoryObj.name : "دروس ومواعظ";
 
     if (activeTab === "YOUTUBE") {
@@ -149,8 +152,7 @@ export default function AdminVideosPage() {
 
       try {
         setSubmitting(true);
-        // Backend automatically detects exact YouTube duration, view count, and title
-        const payload = {
+        await createVideo({
           videoSourceType: "YOUTUBE",
           youtubeUrl: youtubeUrl.trim(),
           title: title.trim() || undefined,
@@ -158,32 +160,19 @@ export default function AdminVideosPage() {
           category,
           categoryName: catName,
           isFeatured,
-        };
-
-        const res = await fetch(`${apiBase}/api/v1/videos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
         });
 
-        if (res.ok) {
-          setStatusMessage({
-            type: "success",
-            text: "تم إضافة فيديو اليوتيوب بنجاح في قاعدة البيانات!",
-          });
-          resetForm();
-          fetchVideos();
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          setStatusMessage({
-            type: "error",
-            text: errData.error || "فشل حفظ الفيديو في قاعدة البيانات.",
-          });
-        }
-      } catch (err) {
+        setStatusMessage({
+          type: "success",
+          text: "تم إضافة فيديو اليوتيوب بنجاح في قاعدة البيانات!",
+        });
+        resetForm();
+        loadData();
+      } catch (err: unknown) {
+        const errorText = err instanceof Error ? err.message : "فشل حفظ الفيديو في قاعدة البيانات.";
         setStatusMessage({
           type: "error",
-          text: "تعذر الاتصال بالخادم. تأكد من تشغيل الـ Backend.",
+          text: errorText,
         });
       } finally {
         setSubmitting(false);
@@ -210,29 +199,19 @@ export default function AdminVideosPage() {
         formData.append("viewsCount", "0");
         formData.append("isFeatured", String(isFeatured));
 
-        const res = await fetch(`${apiBase}/api/v1/videos/upload`, {
-          method: "POST",
-          body: formData,
-        });
+        await uploadVideo(formData);
 
-        if (res.ok) {
-          setStatusMessage({
-            type: "success",
-            text: "تم رفع وتخزين ملف الفيديو بنجاح في الموقع وقاعدة البيانات!",
-          });
-          resetForm();
-          fetchVideos();
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          setStatusMessage({
-            type: "error",
-            text: errData.error || "فشل رفع ملف الفيديو إلى السيرفر.",
-          });
-        }
-      } catch (err) {
+        setStatusMessage({
+          type: "success",
+          text: "تم رفع وتخزين ملف الفيديو بنجاح في الموقع وقاعدة البيانات!",
+        });
+        resetForm();
+        loadData();
+      } catch (err: unknown) {
+        const errorText = err instanceof Error ? err.message : "فشل رفع ملف الفيديو إلى السيرفر.";
         setStatusMessage({
           type: "error",
-          text: "تعذر الاتصال بالخادم لرفع الفيديو.",
+          text: errorText,
         });
       } finally {
         setSubmitting(false);
@@ -262,25 +241,34 @@ export default function AdminVideosPage() {
     }
 
     try {
-      const res = await fetch(`${apiBase}/api/v1/videos/${id}`, {
-        method: "DELETE",
+      await deleteVideo(id);
+      setVideos((prev) => prev.filter((v) => v.id !== id));
+      setStatusMessage({
+        type: "success",
+        text: "تم حذف الفيديو بنجاح.",
       });
-      if (res.ok) {
-        setVideos((prev) => prev.filter((v) => v.id !== id));
-        setStatusMessage({
-          type: "success",
-          text: "تم حذف الفيديو بنجاح.",
-        });
-      } else {
-        setStatusMessage({
-          type: "error",
-          text: "فشل حذف الفيديو من قاعدة البيانات.",
-        });
-      }
-    } catch (err) {
+    } catch (err: unknown) {
+      const errorText = err instanceof Error ? err.message : "تعذر الاتصال بالخادم لحذف الفيديو.";
       setStatusMessage({
         type: "error",
-        text: "تعذر الاتصال بالخادم لحذف الفيديو.",
+        text: errorText,
+      });
+    }
+  };
+
+  const handleToggleFeatured = async (id: number) => {
+    try {
+      const updated = await setFeaturedVideo(id);
+      setVideos((prev) => prev.map((v) => (v.id === id ? updated : v)));
+      setStatusMessage({
+        type: "success",
+        text: "تم تحديث حالة الفيديو المميز بنجاح.",
+      });
+    } catch (err: unknown) {
+      const errorText = err instanceof Error ? err.message : "فشل تحديث الفيديو المميز.";
+      setStatusMessage({
+        type: "error",
+        text: errorText,
       });
     }
   };
@@ -518,7 +506,7 @@ export default function AdminVideosPage() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#050A14] border border-[#1E3A63] text-xs text-[#FAF7F0] focus:outline-none focus:border-[#D4AF85] transition"
                 >
-                  {CATEGORY_OPTIONS.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id} className="bg-[#050A14]">
                       {c.name}
                     </option>
@@ -590,7 +578,7 @@ export default function AdminVideosPage() {
               الفيديوهات المخزنة حالياً في قاعدة البيانات ({videos.length})
             </h3>
             <button
-              onClick={fetchVideos}
+              onClick={loadData}
               className="text-xs text-[#D4AF85] hover:underline"
             >
               إعادة تحميل القائمة ↻
@@ -655,13 +643,26 @@ export default function AdminVideosPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleDelete(v.id)}
-                      className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 transition shrink-0"
-                      title="حذف نهائياً"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleToggleFeatured(v.id)}
+                        className={`p-2 rounded-xl border transition cursor-pointer ${
+                          v.isFeatured
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30"
+                            : "bg-white/5 text-white/50 border-white/10 hover:text-amber-300 hover:border-amber-500/30"
+                        }`}
+                        title={v.isFeatured ? "إلغاء التمييز" : "تعيين كفيديو مميز"}
+                      >
+                        <Star className={`w-4 h-4 ${v.isFeatured ? "fill-amber-300 text-amber-300" : ""}`} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(v.id)}
+                        className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 transition shrink-0 cursor-pointer"
+                        title="حذف نهائياً"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}

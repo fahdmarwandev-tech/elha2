@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import AuthForm from "@/components/AuthForm";
 import type { Metadata } from "next";
 

@@ -21,6 +21,20 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import QuickBookingModal from "@/components/QuickBookingModal";
 import AboutMosque from "@/components/AboutMosque";
+import { getPrayerTimes } from "@/lib/api";
+
+function formatPrayerTime(timeStr: string): string {
+  if (!timeStr) return "";
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const isPM = hours >= 12;
+  if (hours > 12) hours -= 12;
+  if (hours === 0) hours = 12;
+  const period = isPM ? "م" : "ص";
+  return `${String(hours).padStart(2, "0")}:${minutes} ${period}`;
+}
 
 function MosqueDomeIcon({ className = "w-6 h-6" }: { className?: string }) {
   return (
@@ -172,14 +186,33 @@ export default function Home() {
     }
   }, []);
 
-  const prayerTimes = [
-    { name: "الفجر", time: "04:45 ص", isNext: true },
-    { name: "الشروق", time: "06:05 ص", isNext: false },
-    { name: "الظهر", time: "12:15 م", isNext: false },
-    { name: "العصر", time: "03:30 م", isNext: false },
-    { name: "المغرب", time: "06:10 م", isNext: false },
-    { name: "العشاء", time: "07:40 م", isNext: false },
-  ];
+  const [prayerTimes, setPrayerTimes] = useState([
+    { key: "FAJR", name: "الفجر", time: "04:45 ص", isNext: true },
+    { key: "SUNRISE", name: "الشروق", time: "06:05 ص", isNext: false },
+    { key: "DHUHR", name: "الظهر", time: "12:15 م", isNext: false },
+    { key: "ASR", name: "العصر", time: "03:30 م", isNext: false },
+    { key: "MAGHRIB", name: "المغرب", time: "06:10 م", isNext: false },
+    { key: "ISHA", name: "العشاء", time: "07:40 م", isNext: false },
+  ]);
+
+  useEffect(() => {
+    getPrayerTimes()
+      .then((data) => {
+        if (!data) return;
+        const next = (data.nextPrayer || "FAJR").toUpperCase();
+        setPrayerTimes([
+          { key: "FAJR", name: "الفجر", time: formatPrayerTime(data.fajr), isNext: next === "FAJR" },
+          { key: "SUNRISE", name: "الشروق", time: formatPrayerTime(data.sunrise), isNext: next === "SUNRISE" },
+          { key: "DHUHR", name: "الظهر", time: formatPrayerTime(data.dhuhr), isNext: next === "DHUHR" },
+          { key: "ASR", name: "العصر", time: formatPrayerTime(data.asr), isNext: next === "ASR" },
+          { key: "MAGHRIB", name: "المغرب", time: formatPrayerTime(data.maghrib), isNext: next === "MAGHRIB" },
+          { key: "ISHA", name: "العشاء", time: formatPrayerTime(data.isha), isNext: next === "ISHA" },
+        ]);
+      })
+      .catch((err) => {
+        console.warn("Could not fetch prayer times, using default times", err);
+      });
+  }, []);
 
   return (
     <>
@@ -205,7 +238,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/1012(1).mp4" type="video/mp4" />
+              <source src={process.env.NEXT_PUBLIC_MOBILE_HERO_VIDEO || "/1012(1).mp4"} type="video/mp4" />
             </video>
 
             {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}
@@ -482,7 +515,7 @@ export default function Home() {
               onEnded={handleVideoEnded}
               className="h-full w-full object-cover object-center"
             >
-              <source src="/1014.mp4" type="video/mp4" />
+              <source src={process.env.NEXT_PUBLIC_DESKTOP_HERO_VIDEO || "/1014.mp4"} type="video/mp4" />
             </video>
 
             {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}

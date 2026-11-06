@@ -1,0 +1,55 @@
+name: Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build & Deploy
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine Target API URL
+        id: api_url
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "URL=${{ secrets.NEXT_PUBLIC_API_URL_PROD || secrets.NEXT_PUBLIC_API_URL || 'https://api.game3alhaq.com' }}" >> $GITHUB_OUTPUT
+          else
+            echo "URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || secrets.NEXT_PUBLIC_API_URL || 'https://api-dev.game3alhaq.com' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build static export
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ steps.api_url.outputs.URL }}
+
+      - name: Ensure Cloudflare Pages project exists
+        run: |
+          npx wrangler pages project create "${{ secrets.CLOUDFLARE_PROJECT_NAME || 'game3alhaq' }}" --production-branch main || echo "Project already exists or auto-creation completed."
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME || 'game3alhaq' }}
+          directory: 'out'
+          command: pages deploy out --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME || 'game3alhaq' }} --branch=${{ github.ref_name }} --commit-dirty=true
