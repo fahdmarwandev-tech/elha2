@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -71,8 +71,11 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
 
     setIsLoading(true);
     try {
+      const cleanIdentifier = loginIdentifier.includes("@")
+        ? loginIdentifier.trim().toLowerCase()
+        : loginIdentifier.trim();
       const response = await login({
-        identifier: loginIdentifier.trim(),
+        identifier: cleanIdentifier,
         password: loginPassword,
       });
 
@@ -126,7 +129,7 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
       const response = await register({
         fullName: signupFullName.trim(),
         phone: signupPhone.trim(),
-        email: signupEmail.trim() || undefined,
+        email: signupEmail.trim() ? signupEmail.trim().toLowerCase() : undefined,
         password: signupPassword,
       });
 
