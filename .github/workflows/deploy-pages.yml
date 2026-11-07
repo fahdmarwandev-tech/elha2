@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - develop
   workflow_dispatch:
 
 jobs:
@@ -28,9 +29,9 @@ jobs:
         id: api_url
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "URL=${{ secrets.NEXT_PUBLIC_API_URL_PROD || secrets.NEXT_PUBLIC_API_URL || 'https://api.game3alhaq.com' }}" >> $GITHUB_OUTPUT
+            echo "URL=${{ vars.NEXT_PUBLIC_API_URL_PROD || secrets.NEXT_PUBLIC_API_URL_PROD || vars.NEXT_PUBLIC_API_URL || secrets.NEXT_PUBLIC_API_URL || 'https://haq-api.abohashish.tech' }}" >> $GITHUB_OUTPUT
           else
-            echo "URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || secrets.NEXT_PUBLIC_API_URL || 'https://api-dev.game3alhaq.com' }}" >> $GITHUB_OUTPUT
+            echo "URL=${{ vars.NEXT_PUBLIC_API_URL_DEV || secrets.NEXT_PUBLIC_API_URL_DEV || vars.NEXT_PUBLIC_API_URL || secrets.NEXT_PUBLIC_API_URL || 'https://haq-devapi.abohashish.tech' }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Build static export
