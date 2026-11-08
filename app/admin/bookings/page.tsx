@@ -98,7 +98,7 @@ export default function AdminBookingsPage() {
     capacity: 500,
     hourlyRate: 25,
     bufferHours: 1,
-    openHour: 13,
+    openHour: 0,
     closeHour: 24,
     description: "قاعة المجلس العام مجهزة بالكامل للمناسبات ومجالس العزاء",
   });
@@ -140,7 +140,7 @@ export default function AdminBookingsPage() {
           capacity: primary.capacity || 500,
           hourlyRate: primary.hourlyRate || 25,
           bufferHours: primary.bufferHours !== undefined ? primary.bufferHours : 1,
-          openHour: primary.openHour !== undefined ? primary.openHour : 13,
+          openHour: primary.openHour !== undefined ? primary.openHour : 0,
           closeHour: primary.closeHour !== undefined ? primary.closeHour : 24,
           description: primary.description || "",
         });
@@ -285,17 +285,28 @@ export default function AdminBookingsPage() {
 
   const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
 
-  // Filtered Bookings for the current month by day
+  // Filtered Bookings for the current month by day (including multi-day 3aza ranges)
   const bookingsByDay = useMemo(() => {
     const map = new Map<number, BookingResponse[]>();
     const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
     bookings.forEach((b) => {
-      if (b.eventDate && b.eventDate.startsWith(monthPrefix)) {
-        const day = parseInt(b.eventDate.split("-")[2], 10);
-        if (!map.has(day)) {
-          map.set(day, []);
+      if (!b.eventDate) return;
+      const startIso = b.eventDate;
+      const endIso = b.endDate && b.endDate >= b.eventDate ? b.endDate : b.eventDate;
+      const [sy, sm, sd] = startIso.split("-").map(Number);
+      const [ey, em, ed] = endIso.split("-").map(Number);
+      const startDt = new Date(sy, sm - 1, sd);
+      const endDt = new Date(ey, em - 1, ed);
+      for (let d = new Date(startDt); d <= endDt; d.setDate(d.getDate() + 1)) {
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = d.getDate();
+        if (`${yy}-${mm}` === monthPrefix) {
+          if (!map.has(dd)) {
+            map.set(dd, []);
+          }
+          map.get(dd)!.push(b);
         }
-        map.get(day)!.push(b);
       }
     });
     return map;
@@ -678,8 +689,13 @@ export default function AdminBookingsPage() {
                             </span>
                             <h4 className="text-sm font-bold text-white mt-0.5">{b.fullName}</h4>
                             <p className="text-xs text-[#8EA3BF]">
-                              {b.bookingType === "katbketab" ? "عقد قران" : "عزاء"} • من {b.startHour}:00 حتى {b.endHour}:00 ({b.durationHours} ساعات)
+                              {b.bookingType === "katbketab" ? "عقد قران" : "عزاء (3 أيام)"} • من {b.startHour}:00 حتى {b.endHour}:00 ({b.durationHours} ساعات يومياً)
                             </p>
+                            {b.endDate && b.endDate !== b.eventDate && (
+                              <p className="text-[11px] text-sky-300 font-mono mt-0.5">
+                                الفترة: من {b.eventDate} إلى {b.endDate} ({b.daysCount || 3} أيام)
+                              </p>
+                            )}
                             <p className="text-[11px] text-[#FFE8B8]/80 mt-0.5">
                               فترة التجهيز المطبقة: {b.appliedBufferHours || 1} ساعة
                             </p>
@@ -828,7 +844,12 @@ export default function AdminBookingsPage() {
                             </span>
                           </td>
                           <td className="py-3.5 px-3 font-mono font-bold text-white">
-                            {b.eventDate}
+                            <span>{b.eventDate}</span>
+                            {b.endDate && b.endDate !== b.eventDate && (
+                              <span className="block text-[10px] text-sky-300">
+                                إلى {b.endDate} ({b.daysCount || 3} أيام)
+                              </span>
+                            )}
                           </td>
                           <td className="py-3.5 px-3 text-[#DCE6F2]">
                             <span>{b.startHour}:00 - {b.endHour}:00 ({b.durationHours} س)</span>
@@ -1187,7 +1208,11 @@ export default function AdminBookingsPage() {
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="text-[#8EA3BF]">تاريخ الفعالية:</span>
-                  <span className="font-bold text-white font-mono">{selectedBookingModal.eventDate}</span>
+                  <span className="font-bold text-white font-mono">
+                    {selectedBookingModal.endDate && selectedBookingModal.endDate !== selectedBookingModal.eventDate
+                      ? `من ${selectedBookingModal.eventDate} إلى ${selectedBookingModal.endDate} (${selectedBookingModal.daysCount || 3} أيام)`
+                      : selectedBookingModal.eventDate}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="text-[#8EA3BF]">الساعات المحجوزة:</span>

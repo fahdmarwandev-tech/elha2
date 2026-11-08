@@ -24,12 +24,12 @@ import {
   CreditCard,
   Printer,
   AlertCircle,
-  DollarSign,
+  Sun,
 } from "lucide-react";
-import Link from "next/link";
 import {
   getHalls,
   getHallAvailability,
+  getPrayerTimes,
   createBooking,
   capturePayPalOrder,
   getStoredUser,
@@ -41,11 +41,28 @@ import {
 } from "@/lib/api";
 
 function formatHourLabel(h: number): string {
-  if (h === 0 || h === 24) return "12:00 منتصف الليل";
+  if (h === 0) return "12:00 منتصف الليل (بداية اليوم)";
+  if (h === 24) return "12:00 منتصف الليل (نهاية اليوم)";
   if (h === 12) return "12:00 ظهراً";
   const hour12 = h > 12 ? h - 12 : h;
-  const period = h >= 12 ? (h >= 17 ? "مساءً" : (h >= 15 ? "عصراً" : "ظهراً")) : (h >= 4 ? "صباحاً" : "ليلاً");
+  const period = h >= 12 ? (h >= 17 ? "مساءً" : h >= 15 ? "عصراً" : "ظهراً") : h >= 4 ? "صباحاً" : "ليلاً";
   return `${String(hour12).padStart(2, "0")}:00 ${period}`;
+}
+
+function formatShortHour(h: number): string {
+  if (h === 0 || h === 24) return "12:00 ص";
+  if (h === 12) return "12:00 م";
+  const hour12 = h > 12 ? h - 12 : h;
+  const period = h >= 12 ? "م" : "ص";
+  return `${String(hour12).padStart(2, "0")}:00 ${period}`;
+}
+
+interface SelectedDateItem {
+  year: number;
+  month: number;
+  day: number;
+  iso: string;
+  label: string;
 }
 
 export default function BookingPage() {
@@ -59,7 +76,7 @@ export default function BookingPage() {
     hourlyRate: 25,
     currency: "ر.ع",
     bufferHours: 1,
-    openHour: 13,
+    openHour: 0,
     closeHour: 24,
     featuresJson: "[]",
     isActive: true,
@@ -71,10 +88,16 @@ export default function BookingPage() {
   const [currentMonth, setCurrentMonth] = useState<number>(11); // 1-12
   const [selectedDay, setSelectedDay] = useState<number>(6);
   const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
+  const [nextMonthAvailability, setNextMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
 
-  // Start Hour and End Hour range selector
+  // Maghrib cutoff for 3aza (default 18 = 06:00 PM)
+  const [maghribHour, setMaghribHour] = useState<number>(18);
+  const [maghribTimeStr, setMaghribTimeStr] = useState<string>("06:05 مساءً");
+
+  // Interactive Hour Grid range selector (startHour..endHour)
   const [startHour, setStartHour] = useState<number>(18);
   const [endHour, setEndHour] = useState<number>(22);
+  const [isPickingEndHour, setIsPickingEndHour] = useState<boolean>(false);
 
   // Gallery
   const [galleryImages] = useState([
@@ -127,7 +150,13 @@ export default function BookingPage() {
   const [confirmedBooking, setConfirmedBooking] = useState<BookingResponse | null>(null);
   const [isCapturingPayment, setIsCapturingPayment] = useState(false);
 
-  // Load URL query params
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+  const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
+
+  // Load URL query params & stored user
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -144,17 +173,36 @@ export default function BookingPage() {
     }
   }, []);
 
+  // Fetch prayer times to get Maghrib time accurately
+  useEffect(() => {
+    getPrayerTimes()
+      .then((pt) => {
+        if (pt?.maghrib) {
+          const clean = pt.maghrib.trim().split(" ")[0];
+          const parts = clean.split(":");
+          const h = parseInt(parts[0], 10);
+          const m = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+          if (!isNaN(h) && h >= 16 && h <= 20) {
+            setMaghribHour(h);
+            const h12 = h > 12 ? h - 12 : h;
+            setMaghribTimeStr(`${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} مساءً`);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Fetch active halls from backend
   useEffect(() => {
     getHalls()
       .then((halls) => {
         if (halls && halls.length > 0) {
           const primary = halls[0];
-          setActiveHall(primary);
-          if (primary.openHour !== undefined && primary.closeHour !== undefined) {
-            setStartHour(Math.max(primary.openHour, 18));
-            setEndHour(Math.min(primary.closeHour, 22));
-          }
+          setActiveHall({
+            ...primary,
+            openHour: 0,
+            closeHour: 24,
+          });
         }
       })
       .catch((err) => {
@@ -162,16 +210,25 @@ export default function BookingPage() {
       });
   }, []);
 
-  // Fetch availability for current month & hall
+  // Fetch availability for current month & next month (for 3-day 3aza rollover across month end)
   useEffect(() => {
     if (!activeHall?.id) return;
     getHallAvailability(activeHall.id, currentYear, currentMonth)
       .then((res) => {
         setMonthAvailability(res);
+        if (res?.maghribHour && res.maghribHour >= 16 && res.maghribHour <= 20) {
+          setMaghribHour(res.maghribHour);
+        }
       })
       .catch((err) => {
         console.warn("Could not load availability:", err);
       });
+
+    const nextM = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nextY = currentMonth === 12 ? currentYear + 1 : currentYear;
+    getHallAvailability(activeHall.id, nextY, nextM)
+      .then((res) => setNextMonthAvailability(res))
+      .catch(() => setNextMonthAvailability(null));
   }, [activeHall?.id, currentYear, currentMonth]);
 
   // Calendar calculations
@@ -183,58 +240,201 @@ export default function BookingPage() {
     return new Date(currentYear, currentMonth - 1, 1).getDay();
   }, [currentYear, currentMonth]);
 
-  const monthNames = [
-    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-  ];
-  const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
+  // Availability lookup by YYYY-MM-DD across current & next month
+  const availabilityByIsoDate = useMemo(() => {
+    const map = new Map<string, DayAvailabilityResponse>();
+    const addDays = (avail: HourlyAvailabilityResponse | null) => {
+      if (!avail?.days) return;
+      avail.days.forEach((d) => {
+        const iso = d.date || `${avail.year}-${String(avail.month).padStart(2, "0")}-${String(d.dayNumber).padStart(2, "0")}`;
+        map.set(iso, d);
+      });
+    };
+    addDays(monthAvailability);
+    addDays(nextMonthAvailability);
+    return map;
+  }, [monthAvailability, nextMonthAvailability]);
 
-  // Availability lookup for each day
-  const daysAvailabilityMap = useMemo(() => {
-    const map = new Map<number, DayAvailabilityResponse>();
-    if (monthAvailability?.days) {
-      monthAvailability.days.forEach((d) => {
-        map.set(d.dayNumber, d);
+  // Selected Dates: 1 day for katbketab, 3 consecutive days at once for 3aza
+  const daysCount = bookingType === "3aza" ? 3 : 1;
+
+  const selectedDates = useMemo<SelectedDateItem[]>(() => {
+    const list: SelectedDateItem[] = [];
+    for (let i = 0; i < daysCount; i++) {
+      const dt = new Date(currentYear, currentMonth - 1, selectedDay + i);
+      const y = dt.getFullYear();
+      const m = dt.getMonth() + 1;
+      const d = dt.getDate();
+      const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      list.push({
+        year: y,
+        month: m,
+        day: d,
+        iso,
+        label: `${d} ${monthNames[m - 1]} ${y}`,
       });
     }
-    return map;
-  }, [monthAvailability]);
+    return list;
+  }, [currentYear, currentMonth, selectedDay, daysCount]);
 
-  // Selected Day's availability
-  const selectedDayAvailability = useMemo(() => {
-    return daysAvailabilityMap.get(selectedDay);
-  }, [daysAvailabilityMap, selectedDay]);
+  // Allowed hour range based on bookingType:
+  // - katbketab: full 24 hours (0 to 24, slots 0..23)
+  // - 3aza: only until Maghrib time (0 to maghribHour, slots 0..maghribHour-1)
+  const maxAllowedEndHour = bookingType === "3aza" ? maghribHour : 24;
+
+  // Compute status of each hour (0 .. maxAllowedEndHour - 1) across all selectedDates
+  const visibleHourSlots = useMemo(() => {
+    const slots: {
+      hour: number;
+      status: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT";
+    }[] = [];
+
+    for (let h = 0; h < maxAllowedEndHour; h++) {
+      let combinedStatus: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT" = "AVAILABLE";
+
+      for (const sd of selectedDates) {
+        const dayAvail = availabilityByIsoDate.get(sd.iso);
+        if (!dayAvail) continue;
+        if (dayAvail.status === "FULLY_BOOKED" && (!dayAvail.hours || dayAvail.hours.length === 0)) {
+          combinedStatus = "BLACKOUT";
+          break;
+        }
+        const slotObj = dayAvail.hours?.find((s) => s.hour === h);
+        if (slotObj && slotObj.status !== "AVAILABLE") {
+          if (slotObj.status === "BOOKED") {
+            combinedStatus = "BOOKED";
+            break;
+          } else if (slotObj.status === "BLACKOUT") {
+            combinedStatus = "BLACKOUT";
+            break;
+          } else if (slotObj.status === "BUFFER") {
+            combinedStatus = "BUFFER";
+          }
+        }
+      }
+
+      slots.push({ hour: h, status: combinedStatus });
+    }
+    return slots;
+  }, [maxAllowedEndHour, selectedDates, availabilityByIsoDate]);
+
+  // Helper to check if a range [s, e) is completely available
+  const isRangeAvailable = (s: number, e: number): boolean => {
+    if (s < 0 || e > maxAllowedEndHour || s >= e) return false;
+    for (let h = s; h < e; h++) {
+      const slot = visibleHourSlots.find((item) => item.hour === h);
+      if (!slot || slot.status !== "AVAILABLE") return false;
+    }
+    return true;
+  };
+
+  // Auto-adjust startHour & endHour when switching bookingType or selectedDay if current selection is invalid
+  useEffect(() => {
+    setIsPickingEndHour(false);
+    if (isRangeAvailable(startHour, endHour)) {
+      return;
+    }
+
+    // Preferred default window: 9:00 AM - 12:00 PM for 3aza, 6:00 PM - 10:00 PM for katbketab
+    const prefStart = bookingType === "3aza" ? 9 : 18;
+    const prefEnd = bookingType === "3aza" ? Math.min(12, maxAllowedEndHour) : 22;
+
+    if (isRangeAvailable(prefStart, prefEnd)) {
+      setStartHour(prefStart);
+      setEndHour(prefEnd);
+      return;
+    }
+
+    // Otherwise find first available slot
+    const firstAvail = visibleHourSlots.find((s) => s.status === "AVAILABLE");
+    if (firstAvail) {
+      const s = firstAvail.hour;
+      let e = s + 1;
+      while (e < Math.min(s + 3, maxAllowedEndHour) && isRangeAvailable(s, e + 1)) {
+        e++;
+      }
+      setStartHour(s);
+      setEndHour(e);
+    }
+  }, [bookingType, maxAllowedEndHour, selectedDay, currentMonth, currentYear, visibleHourSlots]);
+
+  // Handle clicking an hour tile in the interactive grid (works just like selecting dates)
+  const handleHourTileClick = (clickedHour: number) => {
+    const slot = visibleHourSlots.find((s) => s.hour === clickedHour);
+    if (!slot || slot.status !== "AVAILABLE") return;
+
+    setErrorMessage(null);
+
+    if (!isPickingEndHour || clickedHour < startHour) {
+      // First click (or clicked an earlier hour): start a new selection at clickedHour
+      setStartHour(clickedHour);
+      setEndHour(clickedHour + 1);
+      setIsPickingEndHour(true);
+      return;
+    }
+
+    if (clickedHour === startHour) {
+      // Clicked same hour again: confirm 1-hour booking
+      setStartHour(clickedHour);
+      setEndHour(clickedHour + 1);
+      setIsPickingEndHour(false);
+      return;
+    }
+
+    // clickedHour > startHour: check if all hours in [startHour, clickedHour] are available
+    if (isRangeAvailable(startHour, clickedHour + 1)) {
+      setEndHour(clickedHour + 1);
+      setIsPickingEndHour(false);
+    } else {
+      // Blocked slot in between -> start fresh selection at clickedHour
+      setStartHour(clickedHour);
+      setEndHour(clickedHour + 1);
+      setIsPickingEndHour(true);
+    }
+  };
+
+  // Helper to check if a calendar day `day` can be selected
+  const getCalendarDayStatus = (day: number): "AVAILABLE" | "PARTIALLY_BOOKED" | "FULLY_BOOKED" => {
+    const checkCount = bookingType === "3aza" ? 3 : 1;
+    let anyPartial = false;
+
+    for (let i = 0; i < checkCount; i++) {
+      const dt = new Date(currentYear, currentMonth - 1, day + i);
+      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      const dayData = availabilityByIsoDate.get(iso);
+      if (!dayData) continue;
+
+      const relevantHours = (dayData.hours || []).filter((h) => h.hour < maxAllowedEndHour);
+      if (relevantHours.length > 0) {
+        const availCount = relevantHours.filter((h) => h.status === "AVAILABLE").length;
+        if (availCount === 0) return "FULLY_BOOKED";
+        if (availCount < relevantHours.length) anyPartial = true;
+      } else if (dayData.status === "FULLY_BOOKED") {
+        return "FULLY_BOOKED";
+      } else if (dayData.status === "PARTIALLY_BOOKED") {
+        anyPartial = true;
+      }
+    }
+
+    return anyPartial ? "PARTIALLY_BOOKED" : "AVAILABLE";
+  };
 
   // Dynamic calculation of duration and price
-  const durationHours = Math.max(0, endHour - startHour);
-  const totalPrice = durationHours * (activeHall.hourlyRate || 25);
-  const durationText =
-    durationHours === 1
+  const dailyDurationHours = Math.max(0, endHour - startHour);
+  const totalDurationHours = dailyDurationHours * daysCount;
+  const totalPrice = totalDurationHours * (activeHall.hourlyRate || 25);
+
+  const dailyDurationText =
+    dailyDurationHours === 1
       ? "ساعة واحدة"
-      : durationHours === 2
+      : dailyDurationHours === 2
       ? "ساعتان"
-      : `${durationHours} ساعات`;
+      : `${dailyDurationHours} ساعات`;
 
-  // Start hour options within hall limits
-  const startHourOptions = useMemo(() => {
-    const open = activeHall.openHour !== undefined ? activeHall.openHour : 13;
-    const close = activeHall.closeHour !== undefined ? activeHall.closeHour : 24;
-    const opts: number[] = [];
-    for (let h = open; h < close; h++) {
-      opts.push(h);
-    }
-    return opts;
-  }, [activeHall.openHour, activeHall.closeHour]);
-
-  // End hour options (strictly > startHour)
-  const endHourOptions = useMemo(() => {
-    const close = activeHall.closeHour !== undefined ? activeHall.closeHour : 24;
-    const opts: number[] = [];
-    for (let h = startHour + 1; h <= close; h++) {
-      opts.push(h);
-    }
-    return opts;
-  }, [startHour, activeHall.closeHour]);
+  const selectedDateSummaryText =
+    bookingType === "3aza" && selectedDates.length === 3
+      ? `من ${selectedDates[0].label} إلى ${selectedDates[2].label} (3 أيام متتالية)`
+      : `${selectedDates[0]?.label || ""}`;
 
   const handleButtonMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -259,7 +459,18 @@ export default function BookingPage() {
       return;
     }
 
-    const eventDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    if (bookingType === "3aza" && endHour > maghribHour) {
+      setErrorMessage(`لا يمكن حجز مجلس عزاء بعد وقت أذان المغرب (${formatShortHour(maghribHour)}).`);
+      return;
+    }
+
+    if (!isRangeAvailable(startHour, endHour)) {
+      setErrorMessage("الفترة الزمنية المحددة تتضمن ساعات محجوزة أو غير متاحة، يرجى اختيار ساعات متاحة.");
+      return;
+    }
+
+    const eventDate = selectedDates[0].iso;
+    const endDate = selectedDates[selectedDates.length - 1].iso;
 
     try {
       setIsSubmitting(true);
@@ -272,6 +483,8 @@ export default function BookingPage() {
         email: email.trim(),
         bookingType,
         eventDate,
+        endDate,
+        daysCount,
         startHour,
         endHour,
         notes: notes.trim() || undefined,
@@ -334,7 +547,7 @@ export default function BookingPage() {
             }`}
           >
             <Building2 className="w-4 h-4 text-[#D4AF85] relative z-10" />
-            <span className="relative z-10">حجز عزاء (دار العزاء)</span>
+            <span className="relative z-10">حجز عزاء (3 أيام)</span>
           </button>
         </div>
 
@@ -374,13 +587,21 @@ export default function BookingPage() {
               <div className="flex justify-between border-b border-white/10 pb-2">
                 <span className="text-[#8EA3BF]">القاعة والمناسبة:</span>
                 <span className="font-bold text-white">
-                  {pendingInitiation.booking.hallName} • {bookingType === "katbketab" ? "عقد قران" : "عزاء"}
+                  {pendingInitiation.booking.hallName} • {bookingType === "katbketab" ? "عقد قران" : "مجلس عزاء (3 أيام)"}
                 </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">التاريخ والوقت:</span>
+                <span className="text-[#8EA3BF]">التاريخ المحدد:</span>
                 <span className="font-bold text-white">
-                  {pendingInitiation.booking.eventDate} (من {pendingInitiation.booking.startHour}:00 حتى {pendingInitiation.booking.endHour}:00)
+                  {pendingInitiation.booking.endDate && pendingInitiation.booking.endDate !== pendingInitiation.booking.eventDate
+                    ? `من ${pendingInitiation.booking.eventDate} إلى ${pendingInitiation.booking.endDate} (${pendingInitiation.booking.daysCount || 3} أيام)`
+                    : pendingInitiation.booking.eventDate}
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">التوقيت اليومي:</span>
+                <span className="font-bold text-[#FFE8B8]">
+                  من {formatShortHour(pendingInitiation.booking.startHour)} حتى {formatShortHour(pendingInitiation.booking.endHour)}
                 </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
@@ -480,12 +701,16 @@ export default function BookingPage() {
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
                 <span className="text-[#8EA3BF]">تاريخ المناسبة:</span>
-                <span className="font-bold text-white font-mono">{confirmedBooking.eventDate}</span>
+                <span className="font-bold text-white font-mono">
+                  {confirmedBooking.endDate && confirmedBooking.endDate !== confirmedBooking.eventDate
+                    ? `من ${confirmedBooking.eventDate} إلى ${confirmedBooking.endDate} (${confirmedBooking.daysCount || 3} أيام)`
+                    : confirmedBooking.eventDate}
+                </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">الساعات المحجوزة:</span>
+                <span className="text-[#8EA3BF]">الساعات المحجوزة يومياً:</span>
                 <span className="font-bold text-white">
-                  من {confirmedBooking.startHour}:00 حتى {confirmedBooking.endHour}:00 ({confirmedBooking.durationHours} ساعات)
+                  من {formatShortHour(confirmedBooking.startHour)} حتى {formatShortHour(confirmedBooking.endHour)} ({confirmedBooking.durationHours} ساعات يومياً)
                 </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
@@ -530,7 +755,7 @@ export default function BookingPage() {
           <div className="space-y-12 sm:space-y-16">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-10 xl:gap-14 items-start">
               {/* Step 1: Calendar Widget */}
-              <div className="lg:col-span-7">
+              <div className="lg:col-span-6">
                 <div
                   data-glass-card="true"
                   className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-[#FAF7F0] relative overflow-hidden"
@@ -540,11 +765,15 @@ export default function BookingPage() {
                       <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
                         <span className="text-[#FFE8B8] font-mono font-black ml-2">1.</span>
                         <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">
-                          اختر تاريخ المناسبة من التقويم
+                          {bookingType === "3aza"
+                            ? "اختر تاريخ بداية العزاء (٣ أيام متتالية)"
+                            : "اختر تاريخ المناسبة من التقويم"}
                         </span>
                       </h2>
                       <p className="text-xs text-[#DCE6F2] mt-0.5">
-                        اضغط على اليوم المطلوب لتحديده والاطلاع على فترات الحجز المتاحة
+                        {bookingType === "3aza"
+                          ? "اضغط على اليوم الأول ليتم تحديد 3 أيام متتالية لمجلس العزاء تلقائياً"
+                          : "اضغط على اليوم المطلوب لتحديده والاطلاع على الساعات المتاحة"}
                       </p>
                     </div>
 
@@ -586,6 +815,19 @@ export default function BookingPage() {
                     </div>
                   </div>
 
+                  {/* 3-Day Selection Banner for 3aza */}
+                  {bookingType === "3aza" && (
+                    <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-[#D4AF85]/15 border border-[#D4AF85]/40 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 text-[#FFF2D2] font-bold">
+                        <CalendarIcon className="w-4 h-4 text-[#FFE8B8] shrink-0" />
+                        <span>تحديد 3 أيام متتالية للعزاء:</span>
+                      </div>
+                      <span className="font-bold text-[#FFE8B8]">
+                        {selectedDateSummaryText}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Weekday names */}
                   <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#FFE8B8] mb-3 py-2.5 bg-white/[0.06] rounded-xl">
                     <span>الأحد</span>
@@ -597,18 +839,22 @@ export default function BookingPage() {
                     <span>السبت</span>
                   </div>
 
-                  {/* Day Buttons with backend live availability status */}
+                  {/* Day Buttons with backend live availability status & 3-day selection highlight */}
                   <div className="grid grid-cols-7 gap-2">
                     {Array.from({ length: startDayOffset }).map((_, i) => (
-                      <div key={`offset-${i}`} className="h-10 sm:h-12" />
+                      <div key={`offset-${i}`} className="h-11 sm:h-12" />
                     ))}
 
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                       const day = i + 1;
-                      const dayData = daysAvailabilityMap.get(day);
-                      const isFullyBooked = dayData?.status === "FULLY_BOOKED";
-                      const isPartiallyBooked = dayData?.status === "PARTIALLY_BOOKED";
-                      const isSelected = selectedDay === day;
+                      const dayStatus = getCalendarDayStatus(day);
+                      const isFullyBooked = dayStatus === "FULLY_BOOKED";
+                      const isPartiallyBooked = dayStatus === "PARTIALLY_BOOKED";
+
+                      const selectedIdx = selectedDates.findIndex(
+                        (sd) => sd.year === currentYear && sd.month === currentMonth && sd.day === day
+                      );
+                      const isSelected = selectedIdx !== -1;
 
                       return (
                         <button
@@ -617,9 +863,9 @@ export default function BookingPage() {
                           disabled={isFullyBooked}
                           onClick={() => setSelectedDay(day)}
                           onMouseMove={handleButtonMouseMove}
-                          className={`relative group overflow-hidden h-10 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
+                          className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
                             isSelected
-                              ? "bg-gradient-to-br from-[#D4AF85]/55 via-white/30 to-[#122849]/70 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
+                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
                               : isFullyBooked
                               ? "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
                               : isPartiallyBooked
@@ -627,7 +873,12 @@ export default function BookingPage() {
                               : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
                           }`}
                         >
-                          <span className="relative z-10">{day}</span>
+                          <span className="relative z-10 leading-none">{day}</span>
+                          {isSelected && bookingType === "3aza" && (
+                            <span className="relative z-10 text-[9px] font-extrabold text-[#FFE8B8] mt-0.5 leading-none">
+                              اليوم {selectedIdx + 1}
+                            </span>
+                          )}
                           {isPartiallyBooked && !isSelected && (
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
                           )}
@@ -636,11 +887,22 @@ export default function BookingPage() {
                     })}
                   </div>
 
+                  {/* Spillover notice if Day 2 or Day 3 is in next month */}
+                  {bookingType === "3aza" &&
+                    selectedDates.some((sd) => sd.month !== currentMonth || sd.year !== currentYear) && (
+                      <div className="mt-3 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-[11px] text-[#FFE8B8] text-center">
+                        يمتد الحجز إلى الشهر التالي:{" "}
+                        {selectedDates.map((sd, idx) => `اليوم ${idx + 1} (${sd.label})`).join(" • ")}
+                      </div>
+                    )}
+
                   {/* Legend */}
                   <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 pt-4 border-t border-white/15 text-xs text-[#DCE6F2]">
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#D4AF85] to-[#1E447B] border border-white" />
-                      <span className="text-[#FFF2D2] font-semibold">المحدد ({selectedDay} {currentMonthName})</span>
+                      <span className="text-[#FFF2D2] font-semibold">
+                        {bookingType === "3aza" ? "الأيام الـ 3 المحددة" : `المحدد (${selectedDay} ${currentMonthName})`}
+                      </span>
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 rounded-full bg-white/20 border border-white/40" />
@@ -658,63 +920,109 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Step 2 & Step 3: Proper Start Hour -> End Hour Range Selector with Buffer Notice */}
-              <div className="lg:col-span-5 space-y-8">
-                {/* Step 2: Proper Start Hour -> End Hour Range Selector */}
-                <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] relative overflow-hidden space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                      <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
-                        تحديد فترة وساعات الحجز
-                      </span>
-                    </h2>
+              {/* Step 2 & Step 3: Interactive Hour Tile Grid (Like Calendar) + Hall Overview */}
+              <div className="lg:col-span-6 space-y-8">
+                {/* Step 2: Interactive Hour Grid Selector */}
+                <div
+                  data-glass-card="true"
+                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] relative overflow-hidden space-y-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/15">
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                        <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
+                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
+                          اختر الساعات بنفس طريقة اختيار التاريخ
+                        </span>
+                      </h2>
+                      <p className="text-xs text-[#DCE6F2] mt-0.5">
+                        {isPickingEndHour
+                          ? `تم تحديد البداية (${formatShortHour(startHour)}) — اضغط الآن على ساعة النهاية لتوسيع الفترة`
+                          : "اضغط على ساعة البدء ثم اضغط على ساعة الانتهاء لتحديد الفترة المطلوبة"}
+                      </p>
+                    </div>
                     <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#D4AF85]/20 text-[#FFE8B8] border border-[#D4AF85]/30">
                       {activeHall.hourlyRate} {activeHall.currency || "ر.ع"} / ساعة
                     </span>
                   </div>
 
-                  {/* Start Hour -> End Hour Range Selectors */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-bold text-[#DCE6F2] mb-1.5">
-                        وقت بدء الفعالية *
-                      </label>
-                      <select
-                        value={startHour}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setStartHour(val);
-                          if (endHour <= val) {
-                            setEndHour(Math.min(activeHall.closeHour || 24, val + 2));
-                          }
-                        }}
-                        className="w-full px-3 py-2.5 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#D4AF85] transition"
-                      >
-                        {startHourOptions.map((h) => (
-                          <option key={h} value={h} className="bg-[#050A14]">
-                            {formatHourLabel(h)}
-                          </option>
-                        ))}
-                      </select>
+                  {/* Mode Banner: 24 Hours for Katb Ketab vs Until Maghrib Only for 3aza */}
+                  {bookingType === "3aza" ? (
+                    <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-xs text-[#FFE8B8] flex items-center gap-2.5">
+                      <Sun className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span>
+                        مواعيد العزاء متاحة <strong>حتى أذان المغرب فقط ({maghribTimeStr})</strong> — لا يوجد عزاء بعد صلاة المغرب.
+                      </span>
                     </div>
+                  ) : (
+                    <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/15 text-xs text-[#DCE6F2] flex items-center gap-2.5">
+                      <Clock className="w-4 h-4 text-[#D4AF85] shrink-0" />
+                      <span>
+                        جميع ساعات اليوم (<strong>٢٤ ساعة</strong>) متاحة للاختيار المباشر لحجز عقد القران.
+                      </span>
+                    </div>
+                  )}
 
-                    <div>
-                      <label className="block text-xs font-bold text-[#DCE6F2] mb-1.5">
-                        وقت انتهاء الفعالية *
-                      </label>
-                      <select
-                        value={endHour}
-                        onChange={(e) => setEndHour(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#D4AF85] transition"
-                      >
-                        {endHourOptions.map((h) => (
-                          <option key={h} value={h} className="bg-[#050A14]">
-                            {formatHourLabel(h)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Interactive Hour Tiles Grid (matching the Calendar date picker) */}
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
+                    {visibleHourSlots.map(({ hour, status }) => {
+                      const isAvailable = status === "AVAILABLE";
+                      const isSelected = hour >= startHour && hour < endHour;
+                      const isStart = hour === startHour;
+                      const isEnd = hour === endHour - 1;
+                      const isSingleHour = isStart && isEnd;
+
+                      let subLabel = `إلى ${formatShortHour(hour + 1)}`;
+                      if (!isAvailable) {
+                        subLabel = status === "BUFFER" ? "تجهيز" : status === "BLACKOUT" ? "مغلق" : "محجوز";
+                      } else if (isSelected) {
+                        if (isSingleHour) {
+                          subLabel = isPickingEndHour ? "نقطة البدء" : "ساعة واحدة";
+                        } else if (isStart) {
+                          subLabel = "وقت البدء";
+                        } else if (isEnd) {
+                          subLabel = "وقت الانتهاء";
+                        } else {
+                          subLabel = "ضمن الفترة";
+                        }
+                      } else if (bookingType === "3aza" && hour === maghribHour - 1) {
+                        subLabel = "حتى المغرب";
+                      }
+
+                      return (
+                        <button
+                          key={hour}
+                          type="button"
+                          disabled={!isAvailable}
+                          onClick={() => handleHourTileClick(hour)}
+                          onMouseMove={handleButtonMouseMove}
+                          className={`relative group overflow-hidden h-14 rounded-xl px-1.5 py-1.5 text-center transition flex flex-col items-center justify-center cursor-pointer ${
+                            isSelected
+                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
+                              : !isAvailable
+                              ? status === "BUFFER"
+                                ? "bg-amber-950/30 text-amber-300/40 cursor-not-allowed line-through border border-amber-500/20"
+                                : "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
+                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
+                          }`}
+                        >
+                          <span className="relative z-10 text-xs font-black tracking-tight leading-tight">
+                            {formatShortHour(hour)}
+                          </span>
+                          <span
+                            className={`relative z-10 text-[9px] mt-0.5 leading-none font-bold ${
+                              isSelected
+                                ? "text-[#FFE8B8]"
+                                : !isAvailable
+                                ? "text-white/30"
+                                : "text-[#8EA3BF]"
+                            }`}
+                          >
+                            {subLabel}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Turnaround Buffer Notice Requirement */}
@@ -729,15 +1037,22 @@ export default function BookingPage() {
                     </p>
                   </div>
 
-                  {/* Dynamic Price Calculation */}
-                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 flex items-center justify-between">
-                    <div>
-                      <span className="block text-[11px] text-[#8EA3BF]">إجمالي مدة الحجز:</span>
-                      <span className="text-sm font-bold text-white">
-                        {durationText} (من {formatHourLabel(startHour)} إلى {formatHourLabel(endHour)})
+                  {/* Dynamic Price & Duration Calculation */}
+                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <span className="block text-[11px] text-[#8EA3BF]">
+                        {bookingType === "3aza" ? "الفترة اليومية (لمدة 3 أيام متتالية):" : "إجمالي مدة الحجز:"}
                       </span>
+                      <span className="text-xs sm:text-sm font-bold text-white block">
+                        {dailyDurationText} يومياً (من {formatShortHour(startHour)} إلى {formatShortHour(endHour)})
+                      </span>
+                      {bookingType === "3aza" && (
+                        <span className="text-[11px] text-[#FFE8B8] font-semibold block">
+                          إجمالي الساعات لـ 3 أيام: {totalDurationHours} ساعة ({selectedDateSummaryText})
+                        </span>
+                      )}
                     </div>
-                    <div className="text-left">
+                    <div className="text-right sm:text-left shrink-0">
                       <span className="block text-[11px] text-[#8EA3BF]">إجمالي الرسوم:</span>
                       <span className="text-lg font-black text-emerald-400 font-mono">
                         {totalPrice} {activeHall.currency || "ر.ع"}
@@ -766,7 +1081,9 @@ export default function BookingPage() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-white/15">
                     <span className="text-[11px] text-[#FFE8B8]">
-                      ساعات الاستقبال: من {activeHall.openHour}:00 حتى {activeHall.closeHour}:00
+                      {bookingType === "3aza"
+                        ? `مواعيد العزاء: متاح حتى أذان المغرب (${maghribTimeStr})`
+                        : "ساعات الاستقبال لعقد القران: متاح ٢٤ ساعة"}
                     </span>
                     <button
                       type="button"
@@ -930,15 +1247,23 @@ export default function BookingPage() {
                     <div className="flex justify-between">
                       <span>المناسبة وتاريخها:</span>
                       <span className="font-bold text-[#FFF2D2]">
-                        {bookingType === "katbketab" ? "عقد قران" : "عزاء"} • اليوم {selectedDay} من {currentMonthName}
+                        {bookingType === "katbketab" ? "عقد قران" : "مجلس عزاء (3 أيام)"} • {selectedDateSummaryText}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>الساعات المحجوزة:</span>
+                      <span>الساعات المحجوزة يومياً:</span>
                       <span className="font-bold text-[#FFE8B8]">
-                        من {formatHourLabel(startHour)} إلى {formatHourLabel(endHour)} ({durationText})
+                        من {formatShortHour(startHour)} إلى {formatShortHour(endHour)} ({dailyDurationText} يومياً)
                       </span>
                     </div>
+                    {bookingType === "3aza" && (
+                      <div className="flex justify-between">
+                        <span>إجمالي عدد الأيام والساعات:</span>
+                        <span className="font-bold text-[#FFE8B8]">
+                          3 أيام متتالية × {dailyDurationHours} ساعات = {totalDurationHours} ساعة
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>فترة التجهيز المخصصة (Buffer):</span>
                       <span className="font-bold text-[#FFE8B8]">

@@ -562,6 +562,8 @@ export interface HourlyAvailabilityResponse {
   bufferHours: number;
   openHour: number;
   closeHour: number;
+  maghribHour?: number;
+  maghribTime?: string;
   days: DayAvailabilityResponse[];
 }
 
@@ -574,6 +576,8 @@ export interface CreateBookingRequest {
   email: string;
   bookingType: string;
   eventDate: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+  daysCount?: number;
   startHour: number;
   endHour: number;
   notes?: string;
@@ -592,6 +596,8 @@ export interface BookingResponse {
   email: string;
   bookingType: string;
   eventDate: string;
+  endDate?: string;
+  daysCount?: number;
   startHour: number;
   endHour: number;
   durationHours: number;
