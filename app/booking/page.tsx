@@ -539,7 +539,7 @@ export default function BookingPage() {
                     <div>
                       <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
                         <span className="text-[#FFE8B8] font-mono font-black ml-2">1.</span>
-                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent">
+                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">
                           اختر تاريخ المناسبة من التقويم
                         </span>
                       </h2>
@@ -665,7 +665,7 @@ export default function BookingPage() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
                       <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
                         تحديد فترة وساعات الحجز
                       </span>
                     </h2>
@@ -751,7 +751,7 @@ export default function BookingPage() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
                       <span className="text-[#FFE8B8] font-mono font-black ml-2">3.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
                         قاعة المجلس المعتمدة
                       </span>
                     </h2>
@@ -819,7 +819,7 @@ export default function BookingPage() {
                   <div>
                     <h2 className="text-xl sm:text-2xl font-black font-sans flex items-center">
                       <span className="text-[#FFE8B8] font-mono font-black ml-2.5">4.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black">
+                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
                         بيانات صاحب الحجز واعتماد الطلب
                       </span>
                     </h2>

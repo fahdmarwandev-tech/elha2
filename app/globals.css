@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -75,4 +75,41 @@ body {
 .scrollport::-webkit-scrollbar {
   display: none;
 }
+
+/* Prevent golden gradient text from being clipped by WebKit/Blink bg-clip-text */
+[class*="bg-clip-text"],
+.bg-clip-text {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding-inline-start: 0.16em;
+  padding-inline-end: 0.16em;
+  padding-block: 0.08em;
+  overflow: visible;
+}
+
+/* Ensure calligraphy font Aref Ruqaa has natural letter spacing and line height so swashes aren't clipped */
+.font-aref {
+  letter-spacing: normal !important;
+}
+
+/* Authentic Arabic Naskh typography */
+.font-naskh {
+  font-family: 'Noto Naskh Arabic', 'Amiri', serif !important;
+}
+
+/* Utility class for perfectly padded golden gradient text */
+.text-gold-gradient {
+  background-image: linear-gradient(to left, #C59B63 0%, #FFE8B8 50%, #D4AF85 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: inline-block;
+  padding-inline-start: 0.18em;
+  padding-inline-end: 0.18em;
+  padding-block: 0.1em;
+  line-height: 1.4;
+  overflow: visible;
+}
+
 

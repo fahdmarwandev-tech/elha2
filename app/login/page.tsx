@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import AuthForm from "@/components/AuthForm";
 import type { Metadata } from "next";
 
@@ -8,6 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <AuthForm initialMode="login" />;
+  return <AuthForm initialMode="login" allowSignup={false} />;
 }
 

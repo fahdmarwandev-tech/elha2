@@ -152,8 +152,8 @@ export default function Home() {
   const scrollFactor = Math.min(1, Math.max(0, scrollY / 240));
   // Gap shrinks from 180px down to 10px as you scroll
   const dynamicGap = Math.max(10, Math.round((1 - scrollFactor) * 180));
-  // Mobile dynamic gap shrinks from 12px down to 6px
-  const mobileDynamicGap = Math.max(6, Math.round((1 - scrollFactor) * 12));
+  // Mobile dynamic gap shrinks from 8px down to 5px
+  const mobileDynamicGap = Math.max(5, Math.round((1 - scrollFactor) * 8));
   // Nav cluster translates horizontally towards the 3-bar sidebar button at top-right
   const navTranslateX = scrollFactor * 340;
   const mobileNavTranslateX = scrollFactor * 135;
@@ -286,13 +286,13 @@ export default function Home() {
 
           {/* Mobile Top App Bar: Fixed inside viewport with scroll convergence into 3-bar sidebar button */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-2.5 sm:px-4 pt-3.5 sm:pt-4 pb-2 transition-opacity duration-700 ${
+            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-3 sm:px-4 pt-2.5 sm:pt-4 pb-2 transition-opacity duration-700 ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Mosque Branding - Logo Only (Refined size) */}
+            {/* Mosque Branding - Logo Only (Prominent and balanced) */}
             <Link
               href="/"
               style={{
@@ -305,7 +305,7 @@ export default function Home() {
               <img
                 src="/logo-gold.png"
                 alt="جامع الحق"
-                className="h-18 sm:h-22 md:h-26 w-auto max-h-[84px] sm:max-h-[96px] object-contain drop-shadow-[0_4px_18px_rgba(212,175,133,0.5)] group-hover:scale-105 transition-all"
+                className="h-24 sm:h-32 md:h-36 w-auto max-h-[96px] sm:max-h-[135px] md:max-h-[160px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
               />
             </Link>
 
@@ -318,74 +318,58 @@ export default function Home() {
                 pointerEvents: navOpacity > 0.2 ? "auto" : "none",
                 transformOrigin: "center right",
               }}
-              className="flex items-center transition-all duration-75 will-change-transform"
+              className="flex items-center transition-all duration-75 will-change-transform shrink-0"
             >
               <Link
                 href="/booking"
-                className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent hover:brightness-125 transition-all whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] text-sm sm:text-base font-sans font-black"
+                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
               >
                 المجلس
               </Link>
               <Link
                 href="/videos"
-                className="text-white/95 hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-sm sm:text-base font-sans font-black"
+                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
               >
                 الخطب والدروس
               </Link>
               <a
                 href="#about-mobile"
-                className="text-white/95 hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-sm sm:text-base font-sans font-black"
+                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
               >
                 عن المسجد
               </a>
             </nav>
-
-            {/* Login Action (Left side in RTL) - Always 100% visible, never cut off */}
-            <div
-              style={{
-                opacity: headerExtrasOpacity,
-                pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-              }}
-              className="flex items-center shrink-0 transition-opacity duration-300"
-            >
-              <Link
-                href="/login"
-                className="text-[#FAF7F0] hover:text-white transition-all whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] text-xs sm:text-sm font-bold flex items-center gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] border border-[#D4AF85] shadow-[0_4px_14px_rgba(0,0,0,0.55)] active:scale-95 shrink-0"
-              >
-                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4AF85]" />
-                <span>دخول</span>
-              </Link>
-            </div>
           </header>
 
           {/* Main Hero Content (Strictly Right-Aligned over the sunset marble courtyard) */}
           <div
-            className={`relative z-20 flex flex-col justify-center items-start text-right pr-4 pl-2 pt-20 sm:pt-24 pb-4 my-auto w-full transition-all duration-1000 ease-out ${
+            className={`relative z-20 flex flex-col justify-center items-start text-right pr-2.5 pl-2 pt-12 sm:pt-16 pb-10 my-auto w-full transition-all duration-1000 ease-out ${
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            <div className="w-[62%] sm:w-[54%] mr-0 ml-auto flex flex-col items-start text-right gap-3">
-              {/* Main Mosque Name: Smooth calligraphic flow */}
-              <h1 className="font-aref text-[44px] sm:text-5xl font-bold text-white tracking-tight leading-[1.08] text-right w-full drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]">
-                جامع الحق
-              </h1>
+            <div className="w-fit mr-1 sm:mr-3 ml-auto flex flex-col items-center text-center gap-2.5 -mt-6 sm:-mt-4">
+              {/* Main Mosque Name: Ornate golden calligraphy matching reference */}
+              <img
+                src="/hero-calligraphy-gold.png"
+                alt="جامع الحق"
+                className="w-[195px] sm:w-[240px] h-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]"
+              />
 
-              {/* Subheading: Smooth and clear */}
-              <h2 className="text-[19px] sm:text-[21px] font-medium text-[#FAF7F0] leading-[1.4] text-right w-full drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] mt-2.5 mb-2">
-                بيتٌ منّ بيوت الله ...
-                <br />
-                يجمّعنا عليِ الخير
-              </h2>
+              {/* Location Tag */}
+              <div className="flex items-center justify-center gap-1.5 text-sm sm:text-base font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                <MapPin className="w-4 h-4 text-[#D4AF85] shrink-0" />
+                <span>الموالح الجنوبية - السيب</span>
+              </div>
 
-              {/* CTA Button: Dark blue gradient with golden border and golden gradient text + Person Icon */}
-              <div className="flex flex-wrap items-center gap-2 mt-1 self-start">
+              {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
+              <div className="self-start mr-1 flex flex-wrap items-center justify-center gap-2 mt-1.5">
                 <Link
                   href="/booking"
-                  className="relative group inline-flex items-center justify-center gap-2 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-8 py-3.5 rounded-full text-base sm:text-lg border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.25)] active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden tracking-wide"
+                  className="relative group inline-flex items-center justify-center gap-2 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-5 py-2 rounded-full text-base sm:text-lg border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.25)] active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden tracking-wide"
                 >
-                  <User className="w-5 h-5 text-[#FFE8B8] relative z-10" />
+                  <Calendar className="w-5 h-5 text-[#FFE8B8] relative z-10" />
                   <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                    دخول
+                    احجز مجلس
                   </span>
                 </Link>
               </div>
@@ -440,7 +424,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">أوقات الصلاة</h3>
+                <h3 className="text-lg font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">أوقات الصلاة</h3>
                 <p className="text-xs text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>
               </div>
               <span className="text-[11px] font-bold px-2.5 py-1 bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] rounded-full">
@@ -582,7 +566,7 @@ export default function Home() {
               <img
                 src="/logo-gold.png"
                 alt="جامع الحق"
-                className="h-28 sm:h-36 lg:h-44 w-auto max-h-[160px] object-contain drop-shadow-[0_4px_24px_rgba(212,175,133,0.5)] group-hover:scale-105 transition-all duration-300"
+                className="h-36 sm:h-48 lg:h-56 w-auto max-h-[210px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
               />
             </Link>
 
@@ -599,10 +583,10 @@ export default function Home() {
             >
               <Link
                 href="/booking"
-                className="flex items-center gap-3 py-2 text-xl lg:text-2xl font-sans font-black transition-all drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] whitespace-nowrap group"
+                className="flex items-center gap-3 py-2 text-xl lg:text-2xl font-sans font-black text-white/95 transition-all drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] whitespace-nowrap group"
               >
-                <Calendar className="w-6 h-6 text-[#FFE8B8]" />
-                <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent group-hover:brightness-125 transition">
+                <Calendar className="w-6 h-6 text-white/90 group-hover:text-[#FFE8B8] transition-colors" />
+                <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
                   المجلس
                 </span>
               </Link>
@@ -622,54 +606,41 @@ export default function Home() {
                 عن المسجد
               </a>
             </nav>
-
-            {/* Header Actions */}
-            <div
-              style={{
-                opacity: headerExtrasOpacity,
-                pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-              }}
-              className="flex items-center gap-3 transition-opacity duration-300"
-            >
-              {/* Sign In Button */}
-              <Link
-                href="/login"
-                className="items-center gap-2 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-7 py-3 text-sm sm:text-base font-sans font-bold text-white shadow-[0_6px_20px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.35)] border border-[#4A79B8]/50 hover:border-[#D4AF85]/80 transition inline-flex active:scale-95 cursor-pointer"
-              >
-                <User className="h-4 w-4 text-[#FFE8B8]" />
-                <span className="drop-shadow-sm">تسجيل الدخول</span>
-              </Link>
-            </div>
           </header>
 
           {/* Desktop Hero Content: INSIDE the video frame on the right side */}
           <div
-            className={`relative z-20 ml-auto flex flex-1 w-[55%] flex-col justify-center px-10 lg:px-16 py-8 transition-all duration-1000 ease-out ${
+            className={`relative z-20 ml-auto flex flex-1 w-[55%] flex-col justify-center pr-6 lg:pr-10 pl-10 pt-12 lg:pt-16 pb-8 transition-all duration-1000 ease-out ${
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            <div className="flex flex-col items-start gap-4 text-right">
-              {/* Title: Smooth, natural calligraphic rendering */}
-              <h1 className="font-aref text-7xl lg:text-8xl font-bold leading-[1.08] tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]">
-                جامع الحق
-              </h1>
+            <div className="flex flex-col items-start gap-3 text-right mt-0 lg:mt-2">
+              <div className="flex flex-col items-center gap-3.5">
+                {/* Title: Ornate golden calligraphy matching reference */}
+                <img
+                  src="/hero-calligraphy-gold.png"
+                  alt="جامع الحق"
+                  className="w-[280px] lg:w-[340px] h-auto object-contain drop-shadow-[0_6px_22px_rgba(0,0,0,0.6)]"
+                />
 
-              {/* Subheading: Smooth, elegant, no harsh outlines */}
-              <h2 className="text-2xl lg:text-3xl font-medium leading-relaxed text-[#FAF7F0] drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)] mt-3 lg:mt-4 mb-2">
-                بيت من بيوت الله ... يجمعنا على الخير
-              </h2>
+                {/* Location Tag */}
+                <div className="flex items-center justify-center gap-2 text-base lg:text-xl font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                  <MapPin className="w-5 h-5 text-[#D4AF85] shrink-0" />
+                  <span>الموالح الجنوبية - السيب</span>
+                </div>
 
-              {/* CTA Button: Dark blue gradient with golden border and golden gradient text + Person Icon */}
-              <div className="flex items-center gap-4 mt-2">
-                <Link
-                  href="/booking"
-                  className="relative group inline-flex min-h-16 items-center justify-center gap-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-14 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
-                >
-                  <User className="w-6 h-6 text-[#FFE8B8] relative z-10" />
-                  <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-                    دخول
-                  </span>
-                </Link>
+                {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
+                <div className="self-start mr-3 lg:mr-5 flex items-center gap-4 mt-2">
+                  <Link
+                    href="/booking"
+                    className="relative group inline-flex min-h-12 py-2.5 items-center justify-center gap-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-9 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
+                  >
+                    <Calendar className="w-6 h-6 text-[#FFE8B8] relative z-10" />
+                    <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                      احجز مجلس
+                    </span>
+                  </Link>
+                </div>
               </div>
 
               {/* 3 Bottom Feature Badges: Frameless on laptop view & moved down with smooth typography */}
@@ -720,9 +691,11 @@ export default function Home() {
                   <Calendar className="w-3.5 h-3.5 text-[#D4AF85]" />
                   <span>المجلس العام • جامع الحق</span>
                 </span>
-                <h3 className="text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
-                  حجز قاعات المناسبات (عقد قران وعزاء)
-                </h3>
+                <div>
+                  <h3 className="text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+                    حجز قاعات المناسبات (عقد قران وعزاء)
+                  </h3>
+                </div>
                 <p className="text-sm text-[#8EA3BF] mt-1 max-w-2xl">
                   قاعات فسيحة ومجهزة بأحدث الأنظمة الصوتية والمرئية، مع إمكانية استعراض التقويم المباشر وحجز موعدك فورياً.
                 </p>
@@ -754,7 +727,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <HeartHandshake className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
                     حجز عقد قران
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -781,7 +754,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <Building2 className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
                     حجز عزاء (دار التعازي)
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -808,7 +781,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <Video className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
                     المرئيات والدروس والخطب
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -850,7 +823,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
+                <h3 className="text-2xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
                   أوقات الصلاة
                 </h3>
                 <p className="text-sm text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>
@@ -921,15 +894,10 @@ export default function Home() {
         <button
           onClick={() => setSidebarOpen(true)}
           aria-label="فتح القائمة الجانبية"
-          className="group flex items-center gap-2 sm:gap-3 bg-[#08111F]/90 hover:bg-[#0E1B31] text-white backdrop-blur-xl px-3.5 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-full border border-white/20 hover:border-[#4A79B8] shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_20px_rgba(30,68,123,0.4)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+          className="group flex items-center gap-2.5 bg-[#060D1A]/95 hover:bg-[#0A1628] text-white backdrop-blur-xl px-4 py-2 sm:py-2.5 rounded-full border border-[#1E3A63] hover:border-[#D4AF85]/80 shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
         >
-          {/* 3 Horizontal lines with subtle dynamic widths */}
-          <div className="flex flex-col gap-1.5 w-5 items-end justify-center">
-            <span className="h-[2.5px] w-5 bg-white rounded-full transition-all group-hover:bg-[#60A5FA]" />
-            <span className="h-[2.5px] w-3.5 bg-[#D4AF85] rounded-full transition-all group-hover:w-5 group-hover:bg-white" />
-            <span className="h-[2.5px] w-5 bg-white rounded-full transition-all group-hover:bg-[#60A5FA]" />
-          </div>
-          <span className="text-sm font-bold text-white tracking-wide drop-shadow-sm">القائمة</span>
+          <Menu className="w-5 h-5 text-[#D4AF85] group-hover:text-[#FFF2D2] transition-transform duration-300 group-hover:scale-110" strokeWidth={2} />
+          <span className="text-sm font-bold text-white group-hover:text-[#FFF2D2] transition-colors tracking-wide drop-shadow-sm">القائمة</span>
         </button>
       </div>
 
@@ -973,7 +941,7 @@ export default function Home() {
                 alt="جامع الحق"
                 className="h-24 sm:h-28 md:h-32 w-auto max-h-[120px] object-contain drop-shadow-[0_4px_18px_rgba(212,175,133,0.45)] group-hover:scale-105 transition-all duration-300 mb-2"
               />
-              <span className="font-aref text-3xl font-bold text-white tracking-wide group-hover:text-[#D4AF85] transition-colors drop-shadow-md">
+              <span className="font-naskh text-3xl font-bold text-white tracking-normal group-hover:text-[#D4AF85] transition-colors drop-shadow-md">
                 جامع الحق
               </span>
               <span className="text-[11px] font-semibold text-[#D4AF85] tracking-[0.2em] uppercase drop-shadow-sm">
@@ -985,7 +953,7 @@ export default function Home() {
           {/* Middle Content */}
           <div className="flex flex-col items-center my-auto py-6">
             <h3 className="text-xl sm:text-2xl font-bold text-white drop-shadow-md tracking-tight mb-4">
-              بيتٌ من بيوت الله
+              صرح الإيمان والسكينة
             </h3>
 
             {/* Delicate thin divider */}
@@ -1033,15 +1001,6 @@ export default function Home() {
               >
                 أوقات الصلاة
               </a>
-
-              <Link
-                href="/login"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center justify-center gap-2 border border-[#D4AF85]/60 hover:bg-[#D4AF85]/10 rounded-full px-6 py-2 text-base font-bold text-[#D4AF85] hover:text-white transition-all shadow-sm tracking-wide drop-shadow-sm mt-1"
-              >
-                <User className="w-4 h-4 text-[#D4AF85]" />
-                <span>تسجيل الدخول</span>
-              </Link>
             </nav>
 
             {/* Delicate thin divider */}
@@ -1055,7 +1014,7 @@ export default function Home() {
               onClick={() => setSidebarOpen(false)}
               className="border border-white/50 hover:border-[#D4AF85] hover:bg-white/10 text-white hover:text-[#D4AF85] font-bold text-sm uppercase tracking-widest px-8 py-2.5 rounded-full transition-all active:scale-95 cursor-pointer shadow-sm drop-shadow-sm"
             >
-              دخول
+              احجز مجلس
             </Link>
 
             <div className="text-[11px] text-[#8EA3BF]/90 text-center space-y-0.5">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Navbar from "@/components/Navbar";
+import AdminHeader from "@/components/AdminHeader";
 import {
   Calendar as CalendarIcon,
   Search,
@@ -39,6 +39,7 @@ import {
   Printer,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getAllBookingsAdmin,
   updateBookingStatus,
@@ -48,12 +49,24 @@ import {
   getBlackouts,
   createBlackout,
   deleteBlackout,
+  isAdminUser,
   BookingResponse,
   HallResponse,
   BlackoutResponse,
 } from "@/lib/api";
 
 export default function AdminBookingsPage() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (!isAdminUser()) {
+      router.replace("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [router]);
+
   // Navigation sub-tabs: Bookings vs Hall Settings vs Blackouts
   const [adminSection, setAdminSection] = useState<"BOOKINGS" | "HALL_SETTINGS" | "BLACKOUTS">("BOOKINGS");
 
@@ -372,6 +385,17 @@ export default function AdminBookingsPage() {
     }
   };
 
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#040812] flex items-center justify-center text-[#FAF7F0]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#D4AF85] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#8EA3BF]">جاري التحقق من صلاحيات الإدارة...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[#040812] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#D4AF85] selection:text-[#0B1220] overflow-x-hidden">
       {/* Background mesh */}
@@ -380,9 +404,19 @@ export default function AdminBookingsPage() {
         <div className="absolute top-1/3 left-1/4 w-[550px] h-[550px] bg-[#C59B63]/10 rounded-full blur-[160px]" />
       </div>
 
-      <Navbar />
+      <AdminHeader />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20 w-full flex-1 space-y-8">
+        {/* Breadcrumb Back to Admin Hub */}
+        <div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#8EA3BF] hover:text-[#FFE8B8] bg-[#0A1628]/80 border border-[#1E3A63] hover:border-[#D4AF85]/60 px-3.5 py-1.5 rounded-full transition"
+          >
+            <span>← العودة إلى لوحة تحكم الإدارة</span>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div>
@@ -392,9 +426,11 @@ export default function AdminBookingsPage() {
                 <span>لوحة تحكم إدارة جامع الحق والمجلس العام</span>
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-              إدارة الحجوزات، إعدادات القاعة، وفترات الإغلاق
-            </h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] inline-block pe-3 ps-1 py-1 leading-normal">
+                إدارة الحجوزات، إعدادات القاعة، وفترات الإغلاق
+              </h1>
+            </div>
             <p className="text-xs sm:text-sm text-[#DCE6F2] mt-1.5">
               إدارة الحجوزات المباشرة وتعديل فترات الاستراحة والتجهيز (Buffer Time) وضبط الإغلاقات الدورية.
             </p>

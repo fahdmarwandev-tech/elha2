@@ -22,11 +22,15 @@ import { login, register, ApiError } from "@/lib/api";
 
 interface AuthFormProps {
   initialMode?: "login" | "signup";
+  allowSignup?: boolean;
 }
 
-export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
+export default function AuthForm({
+  initialMode = "login",
+  allowSignup = false,
+}: AuthFormProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const [mode, setMode] = useState<"login" | "signup">(allowSignup ? initialMode : "login");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -81,7 +85,11 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
 
       setSuccessMessage(`أهلاً بك، ${response.user.fullName}! جاري تحويلك...`);
       setTimeout(() => {
-        router.push("/");
+        if (response.user.role === "ROLE_ADMIN" || response.user.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       }, 1000);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -178,7 +186,7 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
             <div className="w-14 h-14 rounded-2xl bg-[#050C18] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] shadow-inner group-hover:border-[#D4AF85] group-hover:scale-105 transition-all">
               <Landmark className="w-7 h-7 text-[#D4AF85]" />
             </div>
-            <h1 className="font-aref text-3xl font-bold bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent mt-3 transition-colors">
+            <h1 className="font-aref text-3xl font-bold bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent mt-3 transition-colors inline-block pe-3 ps-1.5 py-1 leading-normal">
               جامع الحق
             </h1>
           </Link>
@@ -188,30 +196,38 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-[#050C18] rounded-2xl border border-[#1E3A63] mb-6">
-          <button
-            type="button"
-            onClick={() => switchMode("login")}
-            className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
-              mode === "login"
-                ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border border-[#D4AF85]/80 shadow-[0_4px_15px_rgba(0,0,0,0.5),0_0_12px_rgba(212,175,133,0.3)]"
-                : "text-[#8EA3BF] hover:text-[#FAF7F0]"
-            }`}
-          >
-            تسجيل الدخول
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode("signup")}
-            className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
-              mode === "signup"
-                ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border border-[#D4AF85]/80 shadow-[0_4px_15px_rgba(0,0,0,0.5),0_0_12px_rgba(212,175,133,0.3)]"
-                : "text-[#8EA3BF] hover:text-[#FAF7F0]"
-            }`}
-          >
-            إنشاء حساب جديد
-          </button>
-        </div>
+        {allowSignup ? (
+          <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-[#050C18] rounded-2xl border border-[#1E3A63] mb-6">
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
+                mode === "login"
+                  ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border border-[#D4AF85]/80 shadow-[0_4px_15px_rgba(0,0,0,0.5),0_0_12px_rgba(212,175,133,0.3)]"
+                  : "text-[#8EA3BF] hover:text-[#FAF7F0]"
+              }`}
+            >
+              تسجيل الدخول
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("signup")}
+              className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
+                mode === "signup"
+                  ? "bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] text-[#FFF2D2] border border-[#D4AF85]/80 shadow-[0_4px_15px_rgba(0,0,0,0.5),0_0_12px_rgba(212,175,133,0.3)]"
+                  : "text-[#8EA3BF] hover:text-[#FAF7F0]"
+              }`}
+            >
+              إنشاء حساب جديد
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <span className="h-[1px] w-12 bg-gradient-to-l from-[#D4AF85]/60 to-transparent" />
+            <h2 className="text-sm font-bold text-[#FFF2D2] tracking-wide">تسجيل الدخول</h2>
+            <span className="h-[1px] w-12 bg-gradient-to-r from-[#D4AF85]/60 to-transparent" />
+          </div>
+        )}
 
         {/* Feedback Alert Messages */}
         {errorMessage && (
@@ -484,33 +500,35 @@ export default function AuthForm({ initialMode = "login" }: AuthFormProps) {
         )}
 
         {/* Footer Note */}
-        <div className="mt-6 pt-5 border-t border-[#1E3A63]/80 text-center">
-          <p className="text-xs text-[#8EA3BF]">
-            {mode === "login" ? (
-              <>
-                ليس لديك حساب بعد؟{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("signup")}
-                  className="font-bold text-[#D4AF85] hover:text-[#FFE8B8] transition underline-offset-4 hover:underline"
-                >
-                  إنشاء حساب جديد
-                </button>
-              </>
-            ) : (
-              <>
-                لديك حساب بالفعل؟{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("login")}
-                  className="font-bold text-[#D4AF85] hover:text-[#FFE8B8] transition underline-offset-4 hover:underline"
-                >
-                  تسجيل الدخول
-                </button>
-              </>
-            )}
-          </p>
-        </div>
+        {allowSignup && (
+          <div className="mt-6 pt-5 border-t border-[#1E3A63]/80 text-center">
+            <p className="text-xs text-[#8EA3BF]">
+              {mode === "login" ? (
+                <>
+                  ليس لديك حساب بعد؟{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchMode("signup")}
+                    className="font-bold text-[#D4AF85] hover:text-[#FFE8B8] transition underline-offset-4 hover:underline"
+                  >
+                    إنشاء حساب جديد
+                  </button>
+                </>
+              ) : (
+                <>
+                  لديك حساب بالفعل؟{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchMode("login")}
+                    className="font-bold text-[#D4AF85] hover:text-[#FFE8B8] transition underline-offset-4 hover:underline"
+                  >
+                    تسجيل الدخول
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Security and Trust Footer */}

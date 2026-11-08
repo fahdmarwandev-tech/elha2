@@ -1,4 +1,4 @@
-﻿import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
@@ -40,8 +40,10 @@ const config: Config = {
       },
       fontFamily: {
         aref: ["ArefRuqaa", "serif"],
-        heading: ["var(--font-heading)", "Cairo", "sans-serif"],
-        body: ["var(--font-body)", "Tajawal", "Segoe UI", "sans-serif"],
+        naskh: ["'Noto Naskh Arabic'", "'Amiri'", "serif"],
+        heading: ["Tajawal", "Cairo", "sans-serif"],
+        body: ["Tajawal", "Cairo", "Segoe UI", "sans-serif"],
+        sans: ["Tajawal", "Cairo", "sans-serif"],
       },
     },
   },

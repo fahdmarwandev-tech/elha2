@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Play } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api";
 
 /**
  * Extracts YouTube 11-character video ID from any YouTube URL format:
@@ -65,9 +66,8 @@ export default function YouTubePlayer({
   const [thumbnailSrc, setThumbnailSrc] = useState<string>("");
 
   // Resolve absolute URL for locally uploaded videos
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
   const resolvedVideoUrl =
-    url.startsWith("/uploads/") ? `${apiBase}${url}` : url;
+    url.startsWith("/uploads/") ? `${getApiBaseUrl()}${url}` : url;
 
   const [currentDuration, setCurrentDuration] = useState<string>(
     duration && duration !== "فيديو مباشر" ? duration : ""

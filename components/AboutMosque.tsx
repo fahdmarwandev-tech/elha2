@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { motion } from "framer-motion";
@@ -99,9 +99,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
             <span>مسيرة البناء والتعمير</span>
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent tracking-tight leading-tight">
-            عن جامع الحق وصرحه المبارك
-          </h2>
+          <div>
+            <h2 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+              عن جامع الحق وصرحه المبارك
+            </h2>
+          </div>
 
           <p className="text-sm sm:text-base text-[#8EA3BF] leading-relaxed">
             صرح إيماني ومنارة مجتمعية في قلب الموالح الجنوبية بولاية السيب، يجسد أصالة العمارة العمانية
@@ -262,9 +264,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               <Building className="w-4 h-4 text-[#D4AF85]" />
               <span>مرافق متكاملة تخدم رواد الجامع والمجتمع</span>
             </span>
-            <h3 className="text-2xl sm:text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
-              مكونات ومراحل إنجاز مرافق جامع الحق
-            </h3>
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+                مكونات ومراحل إنجاز مرافق جامع الحق
+              </h3>
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -321,9 +325,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               الرؤية المستقبلية
             </span>
 
-            <h3 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
-              مشاريع التوسعة والإنشاءات المستقبلية
-            </h3>
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+                مشاريع التوسعة والإنشاءات المستقبلية
+              </h3>
+            </div>
 
             <p className="text-xs sm:text-sm text-[#8EA3BF] leading-relaxed">
               بإذن الله وتوفيقه، وعند توفر السيولة المالية والمساهمات الكريمة، تم التخطيط لاستكمال مسيرة البناء بمشاريع

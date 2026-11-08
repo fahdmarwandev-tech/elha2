@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Navbar from "@/components/Navbar";
+import AdminHeader from "@/components/AdminHeader";
 import YouTubePlayer, { extractYouTubeId, getYouTubeThumbnail } from "@/components/YouTubePlayer";
 import {
   Link as LinkIcon,
@@ -22,6 +22,7 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getVideos,
   createVideo,
@@ -29,6 +30,7 @@ import {
   setFeaturedVideo,
   deleteVideo,
   getCategories,
+  isAdminUser,
   VideoResponse,
   CategoryResponse,
 } from "@/lib/api";
@@ -42,6 +44,17 @@ const DEFAULT_CATEGORY_OPTIONS = [
 ];
 
 export default function AdminVideosPage() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (!isAdminUser()) {
+      router.replace("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [router]);
+
   const [activeTab, setActiveTab] = useState<"YOUTUBE" | "LOCAL">("YOUTUBE");
   const [videos, setVideos] = useState<VideoResponse[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>(DEFAULT_CATEGORY_OPTIONS);
@@ -273,20 +286,43 @@ export default function AdminVideosPage() {
     }
   };
 
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#040812] flex items-center justify-center text-[#FAF7F0]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#D4AF85] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#8EA3BF]">جاري التحقق من صلاحيات الإدارة...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#050A14] text-[#FAF7F0] flex flex-col font-cairo dir-rtl" dir="rtl">
-      <Navbar />
+      <AdminHeader />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 space-y-10">
+        {/* Breadcrumb Back to Admin Hub */}
+        <div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#8EA3BF] hover:text-[#FFE8B8] bg-[#0A1628]/80 border border-[#1E3A63] hover:border-[#D4AF85]/60 px-3.5 py-1.5 rounded-full transition"
+          >
+            <span>← العودة إلى لوحة تحكم الإدارة</span>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#1E3A63]/80 pb-6">
           <div>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] inline-block mb-2">
               لوحة تحكم الإدارة (Admin Dashboard)
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent">
-              إدارة ورفع المرئيات
-            </h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1 py-1 leading-normal">
+                إدارة ورفع المرئيات
+              </h1>
+            </div>
             <p className="text-xs sm:text-sm text-[#8A9BB3] mt-1">
               اختر بين وضع رابط يوتيوب أو رفع ملف فيديو مباشر من جهازك، وسيتم نشره فورياً في الموقع.
             </p>

@@ -50,10 +50,10 @@ export class ApiError extends Error {
 }
 
 export function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
+  if (process.env.NEXT_PUBLIC_API_URL !== undefined) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
   }
-  return "http://localhost:8080";
+  return "";
 }
 
 export const ACCESS_TOKEN_KEY = "dar_monasbat_access_token";
@@ -316,6 +316,15 @@ export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
   const token = localStorage.getItem(ACCESS_TOKEN_KEY);
   return !!token && !isTokenExpired(token);
+}
+
+/**
+ * Check if the stored user has admin role
+ */
+export function isAdminUser(): boolean {
+  const user = getStoredUser();
+  if (!user || !user.role) return false;
+  return user.role === "ROLE_ADMIN" || user.role === "ADMIN";
 }
 
 /**
