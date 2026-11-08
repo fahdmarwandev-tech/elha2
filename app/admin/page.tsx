@@ -58,7 +58,7 @@ export default function AdminHubPage() {
       <AdminHeader />
 
       {/* Main Hub Body */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col justify-center relative z-10 text-right">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col justify-center relative z-10 text-right">
         {/* Welcome Section */}
         <div className="mb-10 text-center sm:text-right">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#122849]/80 border border-[#D4AF85]/50 text-xs font-bold text-[#FFF2D2] mb-3">
@@ -69,12 +69,12 @@ export default function AdminHubPage() {
             أهلاً بك، {currentUser?.fullName || "مدير النظام"}
           </h1>
           <p className="text-xs sm:text-sm text-[#8EA3BF] mt-2 max-w-xl">
-            اختر القسم الذي ترغب في إدارته من الخيارات أدناه لتنظيم الحجوزات أو تحديث محتوى المرئيات والدروس.
+            اختر القسم الذي ترغب في إدارته من الخيارات أدناه لتنظيم الحجوزات، تحديث محتوى المرئيات والدروس، أو إدارة عناوين بريد الموظفين.
           </p>
         </div>
 
-        {/* 2 Main Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        {/* 3 Main Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Card 1: Bookings & Halls Management */}
           <Link
             href="/admin/bookings"
@@ -127,6 +127,35 @@ export default function AdminHubPage() {
 
             <div className="mt-8 pt-5 border-t border-[#1E3A63]/70 flex items-center justify-between text-xs sm:text-sm font-bold text-[#D4AF85] group-hover:text-[#FFE8B8]">
               <span>الدخول لإدارة المرئيات</span>
+              <span className="w-8 h-8 rounded-full bg-[#122849] border border-[#D4AF85]/40 flex items-center justify-center group-hover:translate-x-[-4px] transition-transform">
+                ←
+              </span>
+            </div>
+          </Link>
+
+          {/* Card 3: Staff & Team Management */}
+          <Link
+            href="/admin/staff"
+            className="group relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63] hover:border-[#D4AF85] shadow-[0_15px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_50px_rgba(212,175,133,0.25)] transition-all duration-300 flex flex-col justify-between overflow-hidden active:scale-[0.99]"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF85]/10 rounded-full blur-2xl group-hover:scale-150 transition-transform pointer-events-none" />
+
+            <div>
+              <div className="w-14 h-14 rounded-2xl bg-[#050C18] border border-[#1E3A63] group-hover:border-[#D4AF85] flex items-center justify-center text-[#D4AF85] mb-5 shadow-inner transition-colors">
+                <Users className="w-7 h-7 text-[#D4AF85]" />
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-bold text-[#FAF7F0] group-hover:text-[#FFE8B8] transition-colors flex items-center gap-2">
+                <span>إدارة فريق العمل والموظفين</span>
+              </h2>
+
+              <p className="text-xs sm:text-sm text-[#8EA3BF] leading-relaxed mt-3">
+                إدارة عناوين البريد الإلكتروني المعتمدة لموظفي وإداريي جامع الحق، إضافة موظفين جدد، وتحديد الأدوار وحالات التفعيل وسجلات التواصل.
+              </p>
+            </div>
+
+            <div className="mt-8 pt-5 border-t border-[#1E3A63]/70 flex items-center justify-between text-xs sm:text-sm font-bold text-[#D4AF85] group-hover:text-[#FFE8B8]">
+              <span>الدخول لإدارة الموظفين</span>
               <span className="w-8 h-8 rounded-full bg-[#122849] border border-[#D4AF85]/40 flex items-center justify-center group-hover:translate-x-[-4px] transition-transform">
                 ←
               </span>

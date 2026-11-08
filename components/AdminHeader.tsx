@@ -9,6 +9,7 @@ import {
   ExternalLink,
   LogOut,
   LayoutDashboard,
+  Users,
 } from "lucide-react";
 import { logout } from "@/lib/api";
 
@@ -25,6 +26,7 @@ export default function AdminHeader() {
     { href: "/admin", label: "لوحة الإدارة", icon: LayoutDashboard },
     { href: "/admin/bookings", label: "إدارة الحجوزات", icon: CalendarCheck },
     { href: "/admin/videos", label: "إدارة المرئيات", icon: Film },
+    { href: "/admin/staff", label: "إدارة الموظفين", icon: Users },
   ];
 
   return (
