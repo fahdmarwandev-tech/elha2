@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Play } from "lucide-react";
 import { getApiBaseUrl } from "@/lib/api";
+import { probeYouTubeDuration } from "@/lib/youtubeDuration";
 
 /**
  * Extracts YouTube 11-character video ID from any YouTube URL format:
@@ -98,8 +99,12 @@ export default function YouTubePlayer({
           setCurrentDuration(formatted);
         }
       };
+    } else if (!isDirectVideo && videoId && (!currentDuration || currentDuration === "00:00" || currentDuration === "غير محدد")) {
+      probeYouTubeDuration(videoId).then((dur) => {
+        if (dur) setCurrentDuration(dur);
+      });
     }
-  }, [isDirectVideo, resolvedVideoUrl, currentDuration]);
+  }, [isDirectVideo, resolvedVideoUrl, currentDuration, videoId]);
 
   useEffect(() => {
     setIsPlaying(autoPlay);

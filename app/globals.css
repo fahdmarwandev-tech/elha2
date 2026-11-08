@@ -6,10 +6,13 @@
 
 @font-face {
   font-family: 'ArefRuqaa';
-  src: url('/fonts/ArefRuqaa-Bold.ttf') format('truetype');
+  src: url('/fonts/ArefRuqaa-Bold.ttf?v=2') format('truetype');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
+  ascent-override: 125%;
+  descent-override: 48%;
+  line-gap-override: 10%;
 }
 
 :root {
@@ -82,15 +85,26 @@ body {
 .bg-clip-text {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
-  padding-inline-start: 0.16em;
-  padding-inline-end: 0.16em;
-  padding-block: 0.08em;
+  padding-inline-start: 0.18em;
+  padding-inline-end: 0.18em;
+  padding-top: 0.14em;
+  padding-bottom: 0.28em;
   overflow: visible;
 }
 
-/* Ensure calligraphy font Aref Ruqaa has natural letter spacing and line height so swashes aren't clipped */
+/* Ensure calligraphy font Aref Ruqaa has natural letter spacing and generous vertical space so descenders & dots are never clipped */
 .font-aref {
   letter-spacing: normal !important;
+}
+
+.font-aref[class*="bg-clip-text"],
+.font-aref.bg-clip-text,
+.font-aref [class*="bg-clip-text"],
+.font-aref .bg-clip-text {
+  padding-top: 0.18em !important;
+  padding-bottom: 0.38em !important;
+  line-height: 1.65 !important;
+  overflow: visible !important;
 }
 
 /* Authentic Arabic Naskh typography */
@@ -108,8 +122,9 @@ body {
   display: inline-block;
   padding-inline-start: 0.18em;
   padding-inline-end: 0.18em;
-  padding-block: 0.1em;
-  line-height: 1.4;
+  padding-top: 0.18em;
+  padding-bottom: 0.35em;
+  line-height: 1.65;
   overflow: visible;
 }
 

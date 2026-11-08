@@ -521,8 +521,8 @@ export default function BookingPage() {
   };
 
   // Dynamic calculation of duration and price
-  const dailyDurationHours = Math.max(0, endHour - startHour);
-  const totalDurationHours = dailyDurationHours * daysCount;
+  const dailyDurationHours = Math.max(1, endHour - startHour);
+  const totalDurationHours = Math.max(1, dailyDurationHours * daysCount);
   const totalPrice = totalDurationHours * (activeHall.hourlyRate || 25);
 
   const dailyDurationText =

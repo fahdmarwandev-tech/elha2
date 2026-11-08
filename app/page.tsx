@@ -201,7 +201,7 @@ export default function Home() {
   // Smooth scroll convergence physics (0.0 to 1.0 over first 180px of scroll)
   const scrollFactor = Math.min(1, Math.max(0, scrollY / 180));
   // Gap shrinks as you scroll
-  const dynamicGap = Math.max(10, Math.round((1 - scrollFactor) * 180));
+  const dynamicGap = Math.max(12, Math.round((1 - scrollFactor) * 44 + 28));
   const mobileDynamicGap = Math.max(6, Math.round((1 - scrollFactor) * 16));
 
   // Nav cluster translates horizontally towards the 3-bar sidebar button at top-right
@@ -378,55 +378,70 @@ export default function Home() {
             </button>
           )}
 
-          {/* Mobile Top App Bar: Fixed inside viewport with scroll convergence into 3-bar sidebar button */}
+          {/* Mobile Top App Bar: 3-column split across the whole width */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-3.5 sm:px-5 pt-4 sm:pt-5 pb-2 transition-opacity duration-700 ${
+            className={`fixed top-0 inset-x-0 z-30 w-full px-4 sm:px-6 pt-4 sm:pt-5 pb-2 transition-opacity duration-700 ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Mosque Branding - Logo Only (Prominent and balanced) */}
-            <Link
-              href="/"
-              style={{
-                opacity: headerExtrasOpacity,
-                pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-              }}
-              className="group flex items-center transition-all active:scale-95 shrink-0"
-              aria-label="جامع الحق"
-            >
-              <img
-                src="/logo-gold.png"
-                alt="جامع الحق"
-                className="h-28 sm:h-32 md:h-36 w-auto max-h-[110px] sm:max-h-[125px] md:max-h-[140px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
-              />
-            </Link>
+            <div className="w-full grid grid-cols-3 items-center">
+              {/* Right: Mosque Logo */}
+              <div className="flex items-center justify-start">
+                <Link
+                  href="/"
+                  style={{
+                    opacity: headerExtrasOpacity,
+                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
+                  }}
+                  className="group flex items-center transition-all active:scale-95 shrink-0"
+                  aria-label="جامع الحق"
+                >
+                  <img
+                    src="/logo-gold.png"
+                    alt="جامع الحق"
+                    className="h-24 sm:h-28 w-auto max-h-[90px] sm:max-h-[110px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
+                  />
+                </Link>
+              </div>
 
-            {/* Nav Links: Refined Luxury Typography (Centered with the Logo) */}
-            <nav
-              style={{
-                gap: `${mobileDynamicGap}px`,
-                transform: `translateX(${mobileNavTranslateX}px) scale(${mobileNavScale})`,
-                opacity: mobileNavOpacity,
-                pointerEvents: mobileNavOpacity > 0.2 ? "auto" : "none",
-                transformOrigin: "center right",
-              }}
-              className="flex items-center transition-all duration-75 will-change-transform shrink-0 ml-4 sm:ml-6"
-            >
-              <Link
-                href="/booking"
-                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[14px] sm:text-[15px] font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.96] scale-y-[1.62] origin-center"
+              {/* Center: المجلس */}
+              <div
+                style={{
+                  opacity: mobileNavOpacity,
+                  pointerEvents: mobileNavOpacity > 0.2 ? "auto" : "none",
+                }}
+                className="flex items-center justify-center text-center"
               >
-                المجلس
-              </Link>
-              <Link
-                href="/videos"
-                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[14px] sm:text-[15px] font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.96] scale-y-[1.62] origin-center"
+                <Link
+                  href="/booking"
+                  className="py-1 px-2 text-sm sm:text-base font-sans font-black whitespace-nowrap text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group"
+                >
+                  <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    المجلس
+                  </span>
+                </Link>
+              </div>
+
+              {/* Left: الخطب والدروس */}
+              <div
+                style={{
+                  opacity: mobileNavOpacity,
+                  pointerEvents: mobileNavOpacity > 0.2 ? "auto" : "none",
+                }}
+                className="flex items-center justify-end text-left"
               >
-                الخطب والدروس
-              </Link>
-            </nav>
+                <Link
+                  href="/videos"
+                  className="py-1 px-2 text-sm sm:text-base font-sans font-black whitespace-nowrap text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group"
+                >
+                  <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    الخطب والدروس
+                  </span>
+                </Link>
+              </div>
+            </div>
           </header>
 
           {/* Main Hero Content (Strictly Right-Aligned over the sunset marble courtyard) */}
@@ -506,14 +521,15 @@ export default function Home() {
         {/* Mobile Prayer Times Strip */}
         <section id="prayer-times-mobile" className="border-t border-[#1E3A63]/60 bg-[#050A14] px-4 py-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.15 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="will-change-[opacity,transform]"
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">أوقات الصلاة</h3>
+                <h3 className="text-lg font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-2 pt-0.5 pb-2 leading-[1.45]">أوقات الصلاة</h3>
                 <p className="text-xs text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>
               </div>
               <span className="text-[11px] font-bold px-2.5 py-1 bg-[#0A1628] text-[#D4AF85] border border-[#1E3A63] rounded-full">
@@ -647,60 +663,70 @@ export default function Home() {
             </button>
           )}
 
-          {/* Desktop Navigation Bar: INSIDE the video frame at the absolute top */}
+          {/* Desktop Navigation Bar: 3-column split across the whole width */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 w-full flex min-h-[96px] items-center justify-between px-8 lg:px-14 py-4 transition-opacity duration-700 ease-in-out ${
+            className={`fixed top-0 inset-x-0 z-30 w-full px-6 sm:px-10 lg:px-14 py-4 transition-opacity duration-700 ease-in-out ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            {/* Mosque Logo in Navbar */}
-            <Link
-              href="/"
-              style={{
-                opacity: headerExtrasOpacity,
-                pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-              }}
-              className="group flex items-center transition-all active:scale-95 shrink-0"
-              aria-label="جامع الحق"
-            >
-              <img
-                src="/logo-gold.png"
-                alt="جامع الحق"
-                className="h-36 sm:h-48 lg:h-56 w-auto max-h-[210px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
-              />
-            </Link>
+            <div className="w-full grid grid-cols-3 items-center min-h-[96px]">
+              {/* 1. Right: Mosque Logo */}
+              <div className="flex items-center justify-start">
+                <Link
+                  href="/"
+                  style={{
+                    opacity: headerExtrasOpacity,
+                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
+                  }}
+                  className="group flex items-center transition-all active:scale-95 shrink-0"
+                  aria-label="جامع الحق"
+                >
+                  <img
+                    src="/logo-gold.png"
+                    alt="جامع الحق"
+                    className="h-32 sm:h-40 lg:h-52 w-auto max-h-[180px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
+                  />
+                </Link>
+              </div>
 
-            {/* Desktop Nav links - Refined Luxury Typography */}
-            <nav
-              style={{
-                gap: `${dynamicGap}px`,
-                transform: `translateX(${navTranslateX}px) scale(${navScale})`,
-                opacity: navOpacity,
-                pointerEvents: navOpacity > 0.2 ? "auto" : "none",
-                transformOrigin: "center right",
-              }}
-              className="flex items-center transition-all duration-75 will-change-transform"
-            >
-              <Link
-                href="/booking"
-                className="flex items-center gap-3 py-2 text-xl lg:text-2xl font-sans font-black text-white/95 transition-all drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] whitespace-nowrap group"
+              {/* 2. Center: المجلس */}
+              <div
+                style={{
+                  opacity: navOpacity,
+                  pointerEvents: navOpacity > 0.2 ? "auto" : "none",
+                }}
+                className="flex items-center justify-center text-center"
               >
-                <Calendar className="w-6 h-6 text-white/90 group-hover:text-[#FFE8B8] transition-colors" />
-                <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
-                  المجلس
-                </span>
-              </Link>
+                <Link
+                  href="/booking"
+                  className="py-2 px-4 text-xl lg:text-2xl font-sans font-black text-white/95 transition-all drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] whitespace-nowrap group"
+                >
+                  <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    المجلس
+                  </span>
+                </Link>
+              </div>
 
-              <Link
-                href="/videos"
-                className="flex items-center gap-3 py-2 text-xl lg:text-2xl font-sans font-black text-white/95 hover:text-[#FFF2D2] transition-colors drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] whitespace-nowrap group"
+              {/* 3. Left: الخطب والدروس */}
+              <div
+                style={{
+                  opacity: navOpacity,
+                  pointerEvents: navOpacity > 0.2 ? "auto" : "none",
+                }}
+                className="flex items-center justify-end text-left"
               >
-                <Video className="w-6 h-6 text-[#FFE8B8]" />
-                <span>الخطب والدروس</span>
-              </Link>
-            </nav>
+                <Link
+                  href="/videos"
+                  className="py-2 px-4 text-xl lg:text-2xl font-sans font-black text-white/95 hover:text-[#FFF2D2] transition-colors drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] whitespace-nowrap group"
+                >
+                  <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    الخطب والدروس
+                  </span>
+                </Link>
+              </div>
+            </div>
           </header>
 
           {/* Desktop Hero Content: INSIDE the video frame on the right side */}
@@ -777,11 +803,11 @@ export default function Home() {
         {/* Dar Monasbat & Videos Showcase Section (Full Width Desktop) */}
         <section id="monasbat-section" className="w-full border-t border-[#1E3A63]/60 bg-[#050A14] px-8 lg:px-16 py-16">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.12 }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-[1560px] mx-auto space-y-12"
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-[1560px] mx-auto space-y-12 will-change-[opacity,transform]"
           >
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 text-right">
@@ -791,7 +817,7 @@ export default function Home() {
                   <span>المجلس العام • جامع الحق</span>
                 </span>
                 <div>
-                  <h3 className="text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+                  <h3 className="text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.45]">
                     حجز قاعات المناسبات (عقد قران وعزاء)
                   </h3>
                 </div>
@@ -826,7 +852,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <HeartHandshake className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block px-2 pt-1 pb-2.5 leading-[1.55]">
                     حجز عقد قران
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -853,7 +879,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <Building2 className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block px-2 pt-1 pb-2.5 leading-[1.55]">
                     حجز عزاء (دار التعازي)
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -880,7 +906,7 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-2xl bg-[#0A1628] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] mb-4 group-hover:scale-110 transition-transform">
                     <Video className="w-6 h-6 text-[#D4AF85]" />
                   </div>
-                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block pe-2 ps-1 py-0.5 leading-normal">
+                  <h4 className="text-xl font-bold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#FAF7F0] group-hover:to-[#D4AF85] bg-clip-text text-transparent transition-colors mb-2 inline-block px-2 pt-1 pb-2.5 leading-[1.55]">
                     المرئيات والدروس والخطب
                   </h4>
                   <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
@@ -914,15 +940,15 @@ export default function Home() {
         {/* Desktop Interactive Prayer Times Strip (Full Width) */}
         <section id="prayer-times" className="w-full border-t border-[#1E3A63]/60 bg-[#070F1E] px-8 lg:px-16 py-14">
           <motion.div
-            initial={{ opacity: 0, y: 22 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.15 }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-[1560px] mx-auto"
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-[1560px] mx-auto will-change-[opacity,transform]"
           >
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+                <h3 className="text-2xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.45]">
                   أوقات الصلاة
                 </h3>
                 <p className="text-sm text-[#8EA3BF]">حسب التوقيت المحلي لجامع الحق</p>

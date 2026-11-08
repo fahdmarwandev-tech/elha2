@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import YouTubePlayer, { extractYouTubeId, getYouTubeThumbnail } from "@/components/YouTubePlayer";
+import { probeYouTubeDuration } from "@/lib/youtubeDuration";
 import {
   Link as LinkIcon,
   Play,
@@ -75,10 +76,57 @@ export default function AdminVideosPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("lessons");
   const [detectedDuration, setDetectedDuration] = useState("");
+  const [probingDuration, setProbingDuration] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
 
   // Live preview video ID for YouTube
   const detectedYouTubeId = extractYouTubeId(youtubeUrl);
+
+  // Auto-detect YouTube duration and title when YouTube URL / ID is entered
+  useEffect(() => {
+    if (!detectedYouTubeId) {
+      if (activeTab === "YOUTUBE") {
+        setDetectedDuration("");
+      }
+      return;
+    }
+
+    const yId = detectedYouTubeId;
+    let isCancelled = false;
+    async function autoDetectYouTubeInfo() {
+      setProbingDuration(true);
+      try {
+        const probed = await probeYouTubeDuration(yId);
+        if (!isCancelled && probed) {
+          setDetectedDuration(probed);
+        }
+      } catch (err) {
+        console.warn("Could not auto-detect YouTube duration:", err);
+      } finally {
+        if (!isCancelled) setProbingDuration(false);
+      }
+
+      // Auto-fetch title from oEmbed if title is empty
+      if (!title.trim()) {
+        try {
+          const oembedRes = await fetch(
+            `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${yId}&format=json`
+          );
+          if (oembedRes.ok) {
+            const oembedData = await oembedRes.json();
+            if (!isCancelled && oembedData?.title && !title.trim()) {
+              setTitle(oembedData.title);
+            }
+          }
+        } catch {}
+      }
+    }
+
+    autoDetectYouTubeInfo();
+    return () => {
+      isCancelled = true;
+    };
+  }, [detectedYouTubeId, activeTab]);
 
   const loadData = async () => {
     try {
@@ -172,6 +220,7 @@ export default function AdminVideosPage() {
           description: description.trim() || undefined,
           category,
           categoryName: catName,
+          duration: detectedDuration.trim() || undefined,
           isFeatured,
         });
 
@@ -319,7 +368,7 @@ export default function AdminVideosPage() {
               لوحة تحكم الإدارة (Admin Dashboard)
             </span>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1 py-1 leading-normal">
+              <h1 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.55]">
                 إدارة ورفع المرئيات
               </h1>
             </div>
@@ -519,8 +568,8 @@ export default function AdminVideosPage() {
             )}
 
             {/* Common Metadata Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-[#8A9BB3] mb-1.5">
                   عنوان الفيديو
                 </label>
@@ -534,29 +583,52 @@ export default function AdminVideosPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#8A9BB3] mb-1.5">
-                  التصنيف
+                <label className="block text-xs font-semibold text-[#8A9BB3] mb-1.5 flex items-center justify-between">
+                  <span>مدة الفيديو</span>
+                  {probingDuration && (
+                    <span className="text-[10px] text-[#FFE8B8] flex items-center gap-1 animate-pulse font-normal">
+                      <Clock className="w-3 h-3 animate-spin" /> جارٍ الاستخراج...
+                    </span>
+                  )}
+                  {!probingDuration && detectedDuration && (
+                    <span className="text-[10px] text-emerald-400 font-normal">
+                      ✓ مستخرجة تلقائياً
+                    </span>
+                  )}
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#050A14] border border-[#1E3A63] text-xs text-[#FAF7F0] focus:outline-none focus:border-[#D4AF85] transition"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#050A14]">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  value={detectedDuration}
+                  onChange={(e) => setDetectedDuration(e.target.value)}
+                  placeholder="مثال: 14:35 أو 01:20:00"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#050A14] border border-[#1E3A63] text-xs text-[#FAF7F0] font-mono placeholder:text-[#8A9BB3]/40 focus:outline-none focus:border-[#D4AF85] transition"
+                />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#8A9BB3] mb-1.5">
+                التصنيف
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#050A14] border border-[#1E3A63] text-xs text-[#FAF7F0] focus:outline-none focus:border-[#D4AF85] transition"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id} className="bg-[#050A14]">
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Auto Detection Info Pill */}
             <div className="flex items-center gap-2 p-3 rounded-xl bg-[#050B14] border border-[#1E3A63] text-xs text-[#8A9BB3]">
               <Sparkles className="w-4 h-4 text-[#D4AF85] shrink-0" />
               <span>
-                يتم استخراج <strong>مدة الفيديو</strong> و<strong>عدد المشاهدات</strong> تلقائياً وبدقة فور الإضافة دون الحاجة لإدخالها يدوياً.
-                {detectedDuration ? ` (مدة الملف المختار: ${detectedDuration})` : ""}
+                يتم استخراج <strong>مدة الفيديو</strong> تلقائياً من رابط يوتيوب أو ملف الفيديو وحفظها مباشرة في قاعدة البيانات.
+                {detectedDuration ? ` (المدة المحددة: ${detectedDuration})` : ""}
               </span>
             </div>
 

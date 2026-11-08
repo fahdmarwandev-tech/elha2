@@ -86,13 +86,13 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#122849]/30 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-6xl mx-auto space-y-16 sm:space-y-20 relative z-10">
-        {/* Header with Fade-In (replays smoothly every time on scroll) */}
+        {/* Header with Smooth Fade-In */}
         <motion.div
-          initial={{ opacity: 0, y: 22 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.2 }}
-          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center space-y-4 max-w-3xl mx-auto"
+          viewport={{ once: true, amount: 0.08 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center space-y-4 max-w-3xl mx-auto will-change-[opacity,transform]"
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0A1628] border border-[#1E3A63] text-[#D4AF85] text-xs font-bold shadow-sm">
             <Compass className="w-4 h-4 text-[#D4AF85]" />
@@ -100,7 +100,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
           </div>
 
           <div>
-            <h2 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+            <h2 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-4 leading-[1.45]">
               عن جامع الحق وصرحه المبارك
             </h2>
           </div>
@@ -113,11 +113,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
 
         {/* Holy Quran & Hadith Card (Scroll Fade-In) */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="relative bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#D4AF85]/40 rounded-3xl p-6 sm:p-10 shadow-xl overflow-hidden"
+          viewport={{ once: true, amount: 0.08 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="relative bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#D4AF85]/40 rounded-3xl p-6 sm:p-10 shadow-xl overflow-hidden will-change-[opacity,transform]"
         >
           <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#D4AF85]/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -148,22 +148,16 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
           </div>
         </motion.div>
 
-        {/* Stats Grid with Fade-In (replays smoothly every time on scroll) */}
-        <motion.div
-          initial={{ opacity: 0, y: 22 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
-          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5"
-        >
+        {/* Stats Grid with Smooth Fade-In */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.15 }}
-              transition={{ duration: 0.65, delay: (i % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 hover:border-[#D4AF85] rounded-2xl sm:rounded-3xl p-4 sm:p-6 transition group shadow-lg hover:shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,133,0.25)]"
+              viewport={{ once: true, amount: 0.08 }}
+              transition={{ duration: 0.65, delay: (i % 2) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 hover:border-[#D4AF85] rounded-2xl sm:rounded-3xl p-4 sm:p-6 transition group shadow-lg hover:shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,133,0.25)] will-change-[opacity,transform]"
             >
               <div className="text-2xl sm:text-4xl font-black font-aref text-[#FFF2D2] drop-shadow-[0_0_15px_rgba(212,175,133,0.5)] group-hover:scale-105 transition-transform mb-1">
                 {stat.number}
@@ -176,18 +170,18 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
-        {/* History and Location Story (Fade-In) */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
-          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-        >
+        {/* History and Location Story (Individual Smooth Fade-In per card) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Story Narrative */}
-          <div className="lg:col-span-7 bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-7 bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-lg will-change-[opacity,transform]"
+          >
             <div className="flex items-center gap-2 text-[#D4AF85] font-bold text-xs">
               <Sparkles className="w-4 h-4 text-[#D4AF85]" />
               <span>فكرة التأسيس والنشأة المباركة</span>
@@ -217,10 +211,16 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
                 • بني بالجهود الذاتية وأصحاب الأيادي البيضاء
               </span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Location & Advantages Box */}
-          <div className="lg:col-span-5 bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-5 bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-lg will-change-[opacity,transform]"
+          >
             <div className="flex items-center gap-2 text-[#D4AF85] font-bold text-xs">
               <MapPin className="w-4 h-4 text-[#D4AF85]" />
               <span>مميزات موقع الجامع الاستراتيجي</span>
@@ -248,24 +248,24 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
                 <span>مرور <strong>ممشى اليوبيل الذهبي</strong> التابع لبلدية مسقط أمام الجامع، مما أضفى عليه رونقاً وبعداً حيوياً بالغ الأهمية.</span>
               </li>
             </ul>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Comprehensive Facilities Section (Fade-In on Scroll) */}
         <div className="space-y-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-right"
+            viewport={{ once: true, amount: 0.08 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="text-right will-change-[opacity,transform]"
           >
             <span className="text-xs font-bold text-[#D4AF85] flex items-center gap-1.5 mb-1">
               <Building className="w-4 h-4 text-[#D4AF85]" />
               <span>مرافق متكاملة تخدم رواد الجامع والمجتمع</span>
             </span>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+              <h3 className="text-2xl sm:text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.45]">
                 مكونات ومراحل إنجاز مرافق جامع الحق
               </h3>
             </div>
@@ -277,11 +277,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               return (
                 <motion.div
                   key={fac.title}
-                  initial={{ opacity: 0, y: 22 }}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.15 }}
-                  transition={{ duration: 0.7, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                  className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 hover:border-[#D4AF85] rounded-3xl p-6 flex flex-col justify-between group transition shadow-lg hover:shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,133,0.2)]"
+                  viewport={{ once: true, amount: 0.08 }}
+                  transition={{ duration: 0.65, delay: (idx % 3) * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                  className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 hover:border-[#D4AF85] rounded-3xl p-6 flex flex-col justify-between group transition shadow-lg hover:shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,133,0.2)] will-change-[opacity,transform]"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -314,11 +314,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
 
         {/* Future Projects Banner (Scroll Fade-In) */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
-          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-10 shadow-xl"
+          viewport={{ once: true, amount: 0.08 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 rounded-3xl p-6 sm:p-10 shadow-xl will-change-[opacity,transform]"
         >
           <div className="max-w-3xl space-y-4">
             <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-[#050A14] text-[#D4AF85] border border-[#1E3A63] inline-block">
@@ -326,7 +326,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
             </span>
 
             <div>
-              <h3 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal">
+              <h3 className="text-2xl sm:text-3xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.45]">
                 مشاريع التوسعة والإنشاءات المستقبلية
               </h3>
             </div>
@@ -351,11 +351,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
 
         {/* Conclusion Callout (Scroll Fade-In) */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.2 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-2xl mx-auto space-y-3 pt-6 border-t border-[#1E3A63]/60"
+          viewport={{ once: true, amount: 0.08 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center max-w-2xl mx-auto space-y-3 pt-6 border-t border-[#1E3A63]/60 will-change-[opacity,transform]"
         >
           <p className="text-xs sm:text-sm text-[#8EA3BF] leading-relaxed">
             «إن هذا المشروع الكبير الذي يحتوي على العديد من المرافق الحيوية قد تم بناؤه بالجهود الذاتية من أموال أصحاب الأيادي

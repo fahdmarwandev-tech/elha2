@@ -186,7 +186,7 @@ export default function AuthForm({
             <div className="w-14 h-14 rounded-2xl bg-[#050C18] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] shadow-inner group-hover:border-[#D4AF85] group-hover:scale-105 transition-all">
               <Landmark className="w-7 h-7 text-[#D4AF85]" />
             </div>
-            <h1 className="font-aref text-3xl font-bold bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent mt-3 transition-colors inline-block pe-3 ps-1.5 py-1 leading-normal">
+            <h1 className="font-aref text-3xl font-bold bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent mt-3 transition-colors inline-block px-3 pt-1 pb-3 leading-[1.55]">
               جامع الحق
             </h1>
           </Link>

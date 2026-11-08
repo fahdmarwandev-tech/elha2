@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import YouTubePlayer, { extractYouTubeId, getYouTubeThumbnail } from "@/components/YouTubePlayer";
+import { probeYouTubeDuration } from "@/lib/youtubeDuration";
 import {
   Video as VideoIcon,
   Film,
@@ -56,7 +57,7 @@ export default function VideosPage() {
             categoryName: v.categoryName || "دروس ومواعظ",
             videoUrl: (v.videoSourceType === "LOCAL" || v.fileUrl) ? v.fileUrl : (v.youtubeUrl || ""),
             poster: v.customPoster,
-            duration: (v.duration && v.duration !== "فيديو مباشر" && v.duration !== "غير محدد") ? v.duration : "00:00",
+            duration: (v.duration && v.duration !== "فيديو مباشر" && v.duration !== "غير محدد" && v.duration !== "00:00") ? v.duration : "",
             date: "أكتوبر 2026",
             views: v.viewsCount || "جديد",
             isFeatured: v.isFeatured,
@@ -68,6 +69,29 @@ export default function VideosPage() {
           } else {
             setActiveVideo(null);
           }
+
+          // Auto-resolve any legacy videos that were saved without a duration
+          mapped.forEach((v) => {
+            if (!v.duration || v.duration === "00:00" || v.duration === "غير محدد") {
+              const yId = extractYouTubeId(v.videoUrl);
+              if (yId) {
+                probeYouTubeDuration(yId)
+                  .then((dur) => {
+                    if (dur) {
+                      setVideoList((prev) =>
+                        prev.map((item) =>
+                          item.id === v.id ? { ...item, duration: dur } : item
+                        )
+                      );
+                      setActiveVideo((prev) =>
+                        prev && prev.id === v.id ? { ...prev, duration: dur } : prev
+                      );
+                    }
+                  })
+                  .catch(() => {});
+              }
+            }
+          });
         }
       } catch (err) {
         console.warn("Backend videos not reached:", err);
@@ -112,7 +136,7 @@ export default function VideosPage() {
           </div>
 
           <div>
-            <h1 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-3 ps-1.5 py-1 leading-normal mb-3 drop-shadow-md">
+            <h1 className="text-3xl sm:text-5xl font-black font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-4 pt-2 pb-6 sm:pb-8 leading-[1.45] sm:leading-[1.55] mb-2 drop-shadow-md">
               المرئيات والدروس الدينية وخطب الجمعة
             </h1>
           </div>
@@ -225,7 +249,7 @@ export default function VideosPage() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold font-aref flex items-center gap-2">
               <VideoIcon className="w-5 h-5 text-[#D4AF85]" />
-              <span className="bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5">
+              <span className="bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-2 pt-1 pb-2 leading-relaxed">
                 قائمة المرئيات والدروس المعروضة ({filteredVideos.length})
               </span>
             </h3>
