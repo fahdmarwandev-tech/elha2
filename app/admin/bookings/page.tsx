@@ -42,6 +42,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   getAllBookingsAdmin,
+  getHallAvailability,
   updateBookingStatus,
   deleteBooking,
   getHalls,
@@ -53,7 +54,49 @@ import {
   BookingResponse,
   HallResponse,
   BlackoutResponse,
+  HourlyAvailabilityResponse,
+  DayAvailabilityResponse,
 } from "@/lib/api";
+
+function formatHourShortAr(hour: number): string {
+  if (hour === 0 || hour === 24) return "12:00 ص";
+  if (hour === 12) return "12:00 ظ";
+  const h12 = hour > 12 ? hour - 12 : hour;
+  const suffix = hour >= 12 ? "م" : "ص";
+  return `${String(h12).padStart(2, "0")}:00 ${suffix}`;
+}
+
+function addDaysIso(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function isAzaType(bt?: string): boolean {
+  if (!bt) return false;
+  const norm = bt.trim().toLowerCase();
+  return norm === "3aza" || norm === "aza" || norm.includes("عزاء");
+}
+
+function getBookingReservedDates(b: BookingResponse): string[] {
+  if (b.reservedDates && b.reservedDates.length > 0) {
+    return b.reservedDates;
+  }
+  if (!b.eventDate) return [];
+  const isAza = isAzaType(b.bookingType);
+  const endIso =
+    b.endDate && b.endDate > b.eventDate
+      ? b.endDate
+      : isAza
+      ? addDaysIso(b.eventDate, 2)
+      : b.eventDate;
+  const list: string[] = [];
+  for (let d = b.eventDate; d <= endIso; d = addDaysIso(d, 1)) {
+    list.push(d);
+    if (list.length >= 10) break;
+  }
+  return list;
+}
 
 export default function AdminBookingsPage() {
   const router = useRouter();
@@ -75,10 +118,11 @@ export default function AdminBookingsPage() {
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Month navigation
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(11); // 1-12
-  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate() || 6);
+  // Month navigation (defaults to today)
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth() + 1); // 1-12
+  const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDate() || 8);
+  const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
 
   // Filters
   const [activeTab, setActiveTab] = useState<"ALL" | "UPCOMING" | "PAST">("ALL");
@@ -165,11 +209,25 @@ export default function AdminBookingsPage() {
     }
   };
 
+  // Fetch monthly availability from backend API (/api/v1/bookings/availability)
+  const loadAvailability = async (hallId = hall?.id || 1, year = currentYear, month = currentMonth) => {
+    try {
+      const avail = await getHallAvailability(hallId, year, month);
+      setMonthAvailability(avail);
+    } catch (err) {
+      console.warn("Could not load admin hall availability:", err);
+    }
+  };
+
   useEffect(() => {
     loadBookings();
     loadHall();
     loadBlackouts();
   }, [filterStatus]);
+
+  useEffect(() => {
+    loadAvailability(hall?.id || 1, currentYear, currentMonth);
+  }, [hall?.id, currentYear, currentMonth, bookings.length]);
 
   // Handle status update
   const handleStatusChange = async (id: number, newStatus: string) => {
@@ -179,6 +237,7 @@ export default function AdminBookingsPage() {
       if (selectedBookingModal?.id === id) {
         setSelectedBookingModal(updated);
       }
+      loadAvailability(hall?.id || 1, currentYear, currentMonth);
       setStatusMessage({ type: "success", text: `تم تحديث حالة الحجز إلى: ${newStatus}` });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل تحديث حالة الحجز";
@@ -195,6 +254,7 @@ export default function AdminBookingsPage() {
       if (selectedBookingModal?.id === id) {
         setSelectedBookingModal(null);
       }
+      loadAvailability(hall?.id || 1, currentYear, currentMonth);
       setStatusMessage({ type: "success", text: "تم حذف الحجز بنجاح." });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل حذف الحجز";
@@ -285,36 +345,102 @@ export default function AdminBookingsPage() {
 
   const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
 
-  // Filtered Bookings for the current month by day (including multi-day 3aza ranges)
+  // Availability by dayNumber from /api/v1/bookings/availability
+  const availabilityByDay = useMemo(() => {
+    const map = new Map<number, DayAvailabilityResponse>();
+    monthAvailability?.days?.forEach((d) => {
+      map.set(d.dayNumber, d);
+    });
+    return map;
+  }, [monthAvailability]);
+
+  // Filtered Bookings for the current month by day (including all 3 consecutive days for 3aza + API availability summaries)
   const bookingsByDay = useMemo(() => {
     const map = new Map<number, BookingResponse[]>();
     const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+
     bookings.forEach((b) => {
-      if (!b.eventDate) return;
-      const startIso = b.eventDate;
-      const endIso = b.endDate && b.endDate >= b.eventDate ? b.endDate : b.eventDate;
-      const [sy, sm, sd] = startIso.split("-").map(Number);
-      const [ey, em, ed] = endIso.split("-").map(Number);
-      const startDt = new Date(sy, sm - 1, sd);
-      const endDt = new Date(ey, em - 1, ed);
-      for (let d = new Date(startDt); d <= endDt; d.setDate(d.getDate() + 1)) {
-        const yy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = d.getDate();
-        if (`${yy}-${mm}` === monthPrefix) {
-          if (!map.has(dd)) {
-            map.set(dd, []);
+      if (!b.eventDate || b.status === "CANCELLED" || b.status === "EXPIRED") return;
+      const dates = getBookingReservedDates(b);
+      dates.forEach((iso) => {
+        if (iso.startsWith(monthPrefix)) {
+          const dd = parseInt(iso.split("-")[2], 10);
+          if (!isNaN(dd)) {
+            if (!map.has(dd)) map.set(dd, []);
+            const arr = map.get(dd)!;
+            if (!arr.some((item) => item.id === b.id && item.code === b.code)) {
+              arr.push(b);
+            }
           }
-          map.get(dd)!.push(b);
         }
-      }
+      });
     });
+
+    // Also merge any reservations reported by the availability API (/api/v1/bookings/availability)
+    monthAvailability?.days?.forEach((dayAvail) => {
+      const dd = dayAvail.dayNumber;
+      (dayAvail.reservations || []).forEach((r) => {
+        if (!map.has(dd)) map.set(dd, []);
+        const arr = map.get(dd)!;
+        const alreadyInDay = arr.some(
+          (item) =>
+            (r.code && item.code === r.code) ||
+            (r.bookingId && item.id === r.bookingId) ||
+            (item.eventDate === r.eventDate && item.startHour === r.startHour && item.endHour === r.endHour)
+        );
+        if (!alreadyInDay) {
+          const isAza = isAzaType(r.bookingType);
+          const duration = Math.max(1, r.endHour - r.startHour);
+          const daysCnt = isAza ? 3 : r.daysCount || 1;
+          arr.push({
+            id: r.bookingId || Math.floor(Math.random() * 100000),
+            code: r.code || "DAR-AVAIL",
+            hallId: monthAvailability.hallId || 1,
+            hallName: monthAvailability.hallName || "قاعة المجلس العام",
+            fullName: r.fullName || "حجز مسجل",
+            nationalId: "-",
+            phone: "-",
+            email: "-",
+            bookingType: isAza ? "3aza" : "katbketab",
+            eventLabel: r.eventLabel || (isAza ? "عزاء (3 أيام)" : "عقد قران"),
+            eventDate: r.eventDate,
+            endDate: r.endDate,
+            reservedDates: r.reservedDates,
+            daysCount: daysCnt,
+            startHour: r.startHour,
+            endHour: r.endHour,
+            durationHours: duration,
+            formattedTimeRange: r.formattedTimeRange,
+            appliedBufferHours: monthAvailability.bufferHours || 1,
+            hourlyRate: hall?.hourlyRate || 25,
+            totalAmount: duration * daysCnt * (hall?.hourlyRate || 25),
+            currency: hall?.currency || "ر.ع",
+            status: r.status || "CONFIRMED",
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+    });
+
     return map;
-  }, [bookings, currentYear, currentMonth]);
+  }, [bookings, monthAvailability, currentYear, currentMonth, hall?.hourlyRate, hall?.currency]);
 
   const selectedDayBookings = useMemo(() => {
     return bookingsByDay.get(selectedDay) || [];
   }, [bookingsByDay, selectedDay]);
+
+  const selectedDayAvailability = useMemo(() => {
+    return availabilityByDay.get(selectedDay) || null;
+  }, [availabilityByDay, selectedDay]);
+
+  // All ISO dates belonging to any multi-day (3aza) reservation on the currently selected day
+  const highlightedMultiDayIsos = useMemo(() => {
+    const set = new Set<string>();
+    selectedDayBookings.forEach((b) => {
+      getBookingReservedDates(b).forEach((iso) => set.add(iso));
+    });
+    return set;
+  }, [selectedDayBookings]);
 
   // Table Filtered Bookings
   const todayStr = new Date().toISOString().split("T")[0];
@@ -624,37 +750,77 @@ export default function AdminBookingsPage() {
                 {/* Days grid */}
                 <div className="grid grid-cols-7 gap-2">
                   {Array.from({ length: startDayOffset }).map((_, i) => (
-                    <div key={`offset-${i}`} className="h-10 sm:h-12" />
+                    <div key={`offset-${i}`} className="min-h-[64px] sm:min-h-[76px]" />
                   ))}
 
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
+                    const isoDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     const dayBookings = bookingsByDay.get(day) || [];
                     const isSelected = selectedDay === day;
-                    const hasConfirmed = dayBookings.some((b) => b.status === "CONFIRMED");
-                    const hasPending = dayBookings.some((b) => b.status === "PENDING_PAYMENT");
+                    const isPartOfSelectedMultiDay = !isSelected && highlightedMultiDayIsos.has(isoDate);
+                    const primaryBooking = dayBookings[0];
+                    const isAza = primaryBooking ? isAzaType(primaryBooking.bookingType) : false;
+                    const reservedDates = primaryBooking ? getBookingReservedDates(primaryBooking) : [];
+                    const dayIdxInRange = reservedDates.indexOf(isoDate) + 1;
 
                     return (
                       <button
                         key={day}
                         onClick={() => setSelectedDay(day)}
-                        className={`relative h-10 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
+                        className={`relative min-h-[64px] sm:min-h-[76px] p-1 rounded-xl text-xs font-bold transition flex flex-col items-center justify-between cursor-pointer ${
                           isSelected
-                            ? "bg-gradient-to-br from-[#D4AF85]/55 via-white/30 to-[#122849]/70 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
+                            ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
+                            : isPartOfSelectedMultiDay
+                            ? "bg-sky-500/25 border-2 border-sky-300/80 text-white shadow-md"
                             : dayBookings.length > 0
-                            ? "bg-amber-400/[0.15] text-[#FFF2D2] border border-amber-300/40 hover:bg-amber-400/[0.25]"
+                            ? isAza
+                              ? "bg-sky-500/15 text-[#FFF2D2] border border-sky-400/50 hover:bg-sky-500/25"
+                              : "bg-amber-400/[0.15] text-[#FFF2D2] border border-amber-300/50 hover:bg-amber-400/[0.25]"
                             : "bg-white/[0.08] hover:bg-white/[0.18] text-white border border-white/20"
                         }`}
                       >
-                        <span>{day}</span>
-                        {dayBookings.length > 0 && !isSelected && (
-                          <span className={`w-1.5 h-1.5 rounded-full absolute bottom-1.5 ${
-                            hasConfirmed ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" : "bg-amber-400"
-                          }`} />
+                        <span className="text-xs sm:text-sm font-black leading-none mt-0.5">{day}</span>
+
+                        {primaryBooking ? (
+                          <div className="w-full flex flex-col items-center gap-0.5 mt-0.5">
+                            <span
+                              className={`px-1 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold leading-tight truncate max-w-full ${
+                                isAza
+                                  ? "bg-sky-500/30 text-sky-200 border border-sky-400/40"
+                                  : "bg-[#D4AF85]/30 text-[#FFE8B8] border border-[#D4AF85]/40"
+                              }`}
+                            >
+                              {isAza
+                                ? `عزاء (${dayIdxInRange || 1}/3)`
+                                : "عقد قران"}
+                            </span>
+                            <span className="text-[8px] sm:text-[9px] font-mono text-white/90 leading-none dir-ltr">
+                              {primaryBooking.startHour}:00-{primaryBooking.endHour}:00
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-white/35">متاح</span>
                         )}
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Calendar Legend */}
+                <div className="flex flex-wrap items-center justify-center gap-4 mt-5 pt-4 border-t border-white/15 text-[11px] text-[#DCE6F2]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-sky-500/30 border border-sky-400" />
+                    <span>محجوز مجلس عزاء (3 أيام: 12:00 ظ - 06:00 م)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-amber-400/30 border border-amber-300" />
+                    <span>محجوز عقد قران</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-white/10 border border-white/30" />
+                    <span>متاح</span>
+                  </span>
                 </div>
               </div>
 
@@ -673,78 +839,168 @@ export default function AdminBookingsPage() {
 
                 {selectedDayBookings.length === 0 ? (
                   <div className="py-12 text-center text-xs text-[#8EA3BF] bg-white/[0.03] rounded-2xl border border-white/10">
-                    لا توجد أي حجوزات مسجلة في هذا اليوم.
+                    لا توجد أي حجوزات مسجلة في هذا اليوم. القاعة متاحة بالكامل.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {selectedDayBookings.map((b) => (
-                      <div
-                        key={b.id}
-                        className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 space-y-3"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-xs font-mono font-bold text-[#FFE8B8] block">
-                              {b.code}
-                            </span>
-                            <h4 className="text-sm font-bold text-white mt-0.5">{b.fullName}</h4>
-                            <p className="text-xs text-[#8EA3BF]">
-                              {b.bookingType === "katbketab" ? "عقد قران" : "عزاء (3 أيام)"} • من {b.startHour}:00 حتى {b.endHour}:00 ({b.durationHours} ساعات يومياً)
-                            </p>
-                            {b.endDate && b.endDate !== b.eventDate && (
-                              <p className="text-[11px] text-sky-300 font-mono mt-0.5">
-                                الفترة: من {b.eventDate} إلى {b.endDate} ({b.daysCount || 3} أيام)
-                              </p>
-                            )}
-                            <p className="text-[11px] text-[#FFE8B8]/80 mt-0.5">
-                              فترة التجهيز المطبقة: {b.appliedBufferHours || 1} ساعة
-                            </p>
-                          </div>
-                          {renderStatusBadge(b.status)}
-                        </div>
+                    {selectedDayBookings.map((b) => {
+                      const isAza = isAzaType(b.bookingType);
+                      const reservedDates = getBookingReservedDates(b);
+                      const selectedIso = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+                      const dayNumInRange = Math.max(1, reservedDates.indexOf(selectedIso) + 1);
 
-                        {/* Quick Status Buttons */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
-                          {b.status !== "CONFIRMED" && (
+                      return (
+                        <div
+                          key={`${b.id}-${b.code}`}
+                          className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-mono font-bold text-[#FFE8B8]">
+                                  {b.code}
+                                </span>
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border ${
+                                    isAza
+                                      ? "bg-sky-500/20 text-sky-200 border-sky-400/40"
+                                      : "bg-[#D4AF85]/20 text-[#FFE8B8] border-[#D4AF85]/40"
+                                  }`}
+                                >
+                                  {isAza ? "مجلس عزاء (3 أيام متتالية)" : "عقد قران (يوم واحد)"}
+                                </span>
+                              </div>
+
+                              <h4 className="text-sm font-bold text-white">{b.fullName}</h4>
+
+                              {/* Time reserved */}
+                              <div className="p-2.5 rounded-xl bg-black/30 border border-white/10 text-xs space-y-1">
+                                <div className="flex items-center justify-between text-[#FFF2D2] font-bold">
+                                  <span>التوقيت المحجوز يومياً:</span>
+                                  <span className="text-[#FFE8B8]">
+                                    {isAza
+                                      ? "من 12:00 ظهراً (الظهر) إلى 06:00 مساءً (المغرب)"
+                                      : `من ${formatHourShortAr(b.startHour)} إلى ${formatHourShortAr(b.endHour)}`}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-[#8EA3BF] font-mono">
+                                  الساعات: {b.startHour}:00 - {b.endHour}:00 ({b.durationHours} ساعات يومياً) • التجهيز: {b.appliedBufferHours || 1} ساعة
+                                </div>
+                              </div>
+
+                              {/* 3 Days Reserved breakdown for 3aza (or 1 day for katbketab) */}
+                              <div className="p-2.5 rounded-xl bg-sky-950/30 border border-sky-500/30 space-y-1.5">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-sky-200">
+                                  <span>
+                                    {isAza
+                                      ? `الأيام الـ 3 المحجوزة للعزاء (اليوم المحدد: ${dayNumInRange} من 3):`
+                                      : "اليوم المحجوز لعقد القران:"}
+                                  </span>
+                                  <span className="font-mono">{reservedDates.length} أيام</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {reservedDates.map((dIso, idx) => {
+                                    const isCurrentSelected = dIso === selectedIso;
+                                    return (
+                                      <span
+                                        key={dIso}
+                                        className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold border ${
+                                          isCurrentSelected
+                                            ? "bg-[#D4AF85] text-[#0A1628] border-[#FFF0C8]"
+                                            : "bg-white/10 text-white border-white/20"
+                                        }`}
+                                      >
+                                        اليوم {idx + 1}: {dIso}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                            {renderStatusBadge(b.status)}
+                          </div>
+
+                          {/* Quick Status Buttons */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                            {b.status !== "CONFIRMED" && (
+                              <button
+                                onClick={() => handleStatusChange(b.id, "CONFIRMED")}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 transition cursor-pointer"
+                              >
+                                تأكيد الحجز
+                              </button>
+                            )}
+                            {b.status !== "COMPLETED" && (
+                              <button
+                                onClick={() => handleStatusChange(b.id, "COMPLETED")}
+                                className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-[11px] font-bold border border-slate-500/30 transition cursor-pointer"
+                              >
+                                إكمال
+                              </button>
+                            )}
+                            {b.status !== "CANCELLED" && (
+                              <button
+                                onClick={() => handleStatusChange(b.id, "CANCELLED")}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-bold border border-rose-500/30 transition cursor-pointer"
+                              >
+                                إلغاء
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleStatusChange(b.id, "CONFIRMED")}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 transition cursor-pointer"
+                              onClick={() => setSelectedBookingModal(b)}
+                              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold border border-white/20 transition cursor-pointer mr-auto"
                             >
-                              تأكيد الحجز
+                              التفاصيل
                             </button>
-                          )}
-                          {b.status !== "COMPLETED" && (
                             <button
-                              onClick={() => handleStatusChange(b.id, "COMPLETED")}
-                              className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-[11px] font-bold border border-slate-500/30 transition cursor-pointer"
+                              onClick={() => handleDeleteBooking(b.id)}
+                              className="p-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 transition cursor-pointer"
+                              title="حذف الحجز"
                             >
-                              إكمال
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                          {b.status !== "CANCELLED" && (
-                            <button
-                              onClick={() => handleStatusChange(b.id, "CANCELLED")}
-                              className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-bold border border-rose-500/30 transition cursor-pointer"
-                            >
-                              إلغاء
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setSelectedBookingModal(b)}
-                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold border border-white/20 transition cursor-pointer mr-auto"
-                          >
-                            التفاصيل
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBooking(b.id)}
-                            className="p-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 transition cursor-pointer"
-                            title="حذف الحجز"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Hourly availability bar from API (/api/v1/bookings/availability) for selected day */}
+                {selectedDayAvailability && selectedDayAvailability.hours && (
+                  <div className="pt-3 border-t border-white/15 space-y-2">
+                    <span className="text-xs font-bold text-[#FFE8B8] block">
+                      حالة ساعات القاعة في هذا اليوم ({selectedDay} {currentMonthName}):
+                    </span>
+                    <div className="grid grid-cols-6 gap-1">
+                      {selectedDayAvailability.hours.map((slot) => {
+                        const isBooked = slot.status === "BOOKED";
+                        const isBuffer = slot.status === "BUFFER";
+                        return (
+                          <div
+                            key={slot.hour}
+                            className={`px-1 py-1 rounded text-center text-[10px] font-mono border ${
+                              isBooked
+                                ? slot.bookingType === "3aza"
+                                  ? "bg-sky-500/30 text-sky-200 border-sky-400/50 font-bold"
+                                  : "bg-rose-500/30 text-rose-200 border-rose-400/50 font-bold"
+                                : isBuffer
+                                ? "bg-amber-500/25 text-amber-200 border-amber-400/40"
+                                : "bg-white/[0.04] text-white/50 border-white/10"
+                            }`}
+                          >
+                            <div>{slot.hour}:00</div>
+                            <div className="text-[8px] truncate">
+                              {isBooked
+                                ? slot.eventLabel || "محجوز"
+                                : isBuffer
+                                ? "تجهيز"
+                                : "متاح"}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -826,58 +1082,81 @@ export default function AdminBookingsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
-                      {filteredBookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-white/[0.04] transition">
-                          <td className="py-3.5 px-3 font-mono font-bold text-[#FFE8B8]">
-                            {b.code}
-                          </td>
-                          <td className="py-3.5 px-3 font-bold text-white">
-                            {b.fullName}
-                          </td>
-                          <td className="py-3.5 px-3 text-[#DCE6F2]">
-                            <span className="block font-mono text-[11px]">{b.nationalId}</span>
-                            <span className="block font-mono text-[11px] text-[#8EA3BF] dir-ltr text-right">{b.phone}</span>
-                          </td>
-                          <td className="py-3.5 px-3">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-[#FFF2D2]">
-                              {b.bookingType === "katbketab" ? "عقد قران" : "عزاء"}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 font-mono font-bold text-white">
-                            <span>{b.eventDate}</span>
-                            {b.endDate && b.endDate !== b.eventDate && (
-                              <span className="block text-[10px] text-sky-300">
-                                إلى {b.endDate} ({b.daysCount || 3} أيام)
+                      {filteredBookings.map((b) => {
+                        const isAza = isAzaType(b.bookingType);
+                        const reservedDates = getBookingReservedDates(b);
+                        return (
+                          <tr key={`${b.id}-${b.code}`} className="hover:bg-white/[0.04] transition">
+                            <td className="py-3.5 px-3 font-mono font-bold text-[#FFE8B8]">
+                              {b.code}
+                            </td>
+                            <td className="py-3.5 px-3 font-bold text-white">
+                              {b.fullName}
+                            </td>
+                            <td className="py-3.5 px-3 text-[#DCE6F2]">
+                              <span className="block font-mono text-[11px]">{b.nationalId}</span>
+                              <span className="block font-mono text-[11px] text-[#8EA3BF] dir-ltr text-right">{b.phone}</span>
+                            </td>
+                            <td className="py-3.5 px-3">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border inline-block ${
+                                  isAza
+                                    ? "bg-sky-500/20 text-sky-200 border-sky-400/40"
+                                    : "bg-[#D4AF85]/20 text-[#FFE8B8] border-[#D4AF85]/40"
+                                }`}
+                              >
+                                {isAza ? "مجلس عزاء (3 أيام)" : "عقد قران (يوم واحد)"}
                               </span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-3 text-[#DCE6F2]">
-                            <span>{b.startHour}:00 - {b.endHour}:00 ({b.durationHours} س)</span>
-                            <span className="block font-bold text-[#FFE8B8]">{b.totalAmount} {b.currency || "ر.ع"}</span>
-                          </td>
-                          <td className="py-3.5 px-3">
-                            {renderStatusBadge(b.status)}
-                          </td>
-                          <td className="py-3.5 px-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={() => setSelectedBookingModal(b)}
-                                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
-                                title="عرض السند والتفاصيل"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteBooking(b.id)}
-                                className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition cursor-pointer"
-                                title="حذف الحجز"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="py-3.5 px-3 font-mono font-bold text-white">
+                              {isAza && reservedDates.length > 1 ? (
+                                <div className="space-y-0.5">
+                                  <span className="block text-[11px] text-sky-200">
+                                    من {reservedDates[0]} إلى {reservedDates[reservedDates.length - 1]} (3 أيام)
+                                  </span>
+                                  <span className="block text-[10px] text-white/75">
+                                    {reservedDates.map((d, idx) => `يوم ${idx + 1}: ${d}`).join(" • ")}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span>{b.eventDate}</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-3 text-[#DCE6F2]">
+                              <span className="block font-bold text-white">
+                                {isAza
+                                  ? "12:00 ظهراً - 06:00 مساءً (الظهر - المغرب)"
+                                  : `من ${formatHourShortAr(b.startHour)} إلى ${formatHourShortAr(b.endHour)}`}
+                              </span>
+                              <span className="block text-[10px] font-mono text-[#8EA3BF]">
+                                ({b.startHour}:00 - {b.endHour}:00 • {b.durationHours} س/يوم)
+                              </span>
+                              <span className="block font-bold text-[#FFE8B8] mt-0.5">{b.totalAmount} {b.currency || "ر.ع"}</span>
+                            </td>
+                            <td className="py-3.5 px-3">
+                              {renderStatusBadge(b.status)}
+                            </td>
+                            <td className="py-3.5 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => setSelectedBookingModal(b)}
+                                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+                                  title="عرض السند والتفاصيل"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteBooking(b.id)}
+                                  className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition cursor-pointer"
+                                  title="حذف الحجز"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1203,21 +1482,25 @@ export default function AdminBookingsPage() {
                 <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="text-[#8EA3BF]">نوع المناسبة:</span>
                   <span className="font-bold text-[#FFF2D2]">
-                    {selectedBookingModal.bookingType === "katbketab" ? "عقد قران" : "عزاء"}
+                    {isAzaType(selectedBookingModal.bookingType) ? "مجلس عزاء (3 أيام متتالية)" : "عقد قران (يوم واحد)"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="text-[#8EA3BF]">تاريخ الفعالية:</span>
-                  <span className="font-bold text-white font-mono">
-                    {selectedBookingModal.endDate && selectedBookingModal.endDate !== selectedBookingModal.eventDate
-                      ? `من ${selectedBookingModal.eventDate} إلى ${selectedBookingModal.endDate} (${selectedBookingModal.daysCount || 3} أيام)`
+                  <span className="text-[#8EA3BF]">الأيام المحجوزة:</span>
+                  <span className="font-bold text-white font-mono text-left">
+                    {getBookingReservedDates(selectedBookingModal).length > 1
+                      ? getBookingReservedDates(selectedBookingModal)
+                          .map((d, idx) => `يوم ${idx + 1}: ${d}`)
+                          .join(" • ")
                       : selectedBookingModal.eventDate}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="text-[#8EA3BF]">الساعات المحجوزة:</span>
+                  <span className="text-[#8EA3BF]">التوقيت اليومي المحجوز:</span>
                   <span className="font-bold text-white">
-                    من {selectedBookingModal.startHour}:00 حتى {selectedBookingModal.endHour}:00 ({selectedBookingModal.durationHours} ساعات)
+                    {isAzaType(selectedBookingModal.bookingType)
+                      ? `من 12:00 ظهراً (الظهر) إلى 06:00 مساءً (المغرب) — (${selectedBookingModal.startHour}:00 - ${selectedBookingModal.endHour}:00)`
+                      : `من ${formatHourShortAr(selectedBookingModal.startHour)} حتى ${formatHourShortAr(selectedBookingModal.endHour)} (${selectedBookingModal.durationHours} ساعات)`}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">

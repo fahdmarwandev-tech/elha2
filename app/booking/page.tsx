@@ -83,14 +83,26 @@ export default function BookingPage() {
     mediaList: [],
   });
 
-  // Calendar year and month navigation
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(11); // 1-12
-  const [selectedDay, setSelectedDay] = useState<number>(6);
+  // Current today reference (local calendar date) so past days are always greyed out & disabled
+  const [today] = useState(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      day: now.getDate(),
+    };
+  });
+
+  // Calendar year and month navigation (defaults to today)
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1); // 1-12
+  const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDate());
   const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
   const [nextMonthAvailability, setNextMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
 
-  // Maghrib cutoff for 3aza (default 18 = 06:00 PM)
+  // Dhuhr & Maghrib window for 3aza (default 12:00 PM Dhuhr to 06:00 PM Maghrib)
+  const [dhuhrHour, setDhuhrHour] = useState<number>(12);
+  const [dhuhrTimeStr, setDhuhrTimeStr] = useState<string>("12:15 ظهراً");
   const [maghribHour, setMaghribHour] = useState<number>(18);
   const [maghribTimeStr, setMaghribTimeStr] = useState<string>("06:05 مساءً");
 
@@ -173,10 +185,20 @@ export default function BookingPage() {
     }
   }, []);
 
-  // Fetch prayer times to get Maghrib time accurately
+  // Fetch prayer times to get Dhuhr & Maghrib times accurately
   useEffect(() => {
     getPrayerTimes()
       .then((pt) => {
+        if (pt?.dhuhr) {
+          const cleanD = pt.dhuhr.trim().split(" ")[0];
+          const partsD = cleanD.split(":");
+          const hd = parseInt(partsD[0], 10);
+          const md = partsD.length > 1 ? parseInt(partsD[1], 10) : 15;
+          if (!isNaN(hd) && hd >= 11 && hd <= 13) {
+            setDhuhrHour(hd);
+            setDhuhrTimeStr(`${String(hd).padStart(2, "0")}:${String(md).padStart(2, "0")} ظهراً`);
+          }
+        }
         if (pt?.maghrib) {
           const clean = pt.maghrib.trim().split(" ")[0];
           const parts = clean.split(":");
@@ -210,12 +232,15 @@ export default function BookingPage() {
       });
   }, []);
 
-  // Fetch availability for current month & next month (for 3-day 3aza rollover across month end)
-  useEffect(() => {
+  // Reusable availability fetcher for current month & next month (shared 1-hall state)
+  const refreshAvailability = React.useCallback(() => {
     if (!activeHall?.id) return;
     getHallAvailability(activeHall.id, currentYear, currentMonth)
       .then((res) => {
         setMonthAvailability(res);
+        if (res?.dhuhrHour && res.dhuhrHour >= 11 && res.dhuhrHour <= 13) {
+          setDhuhrHour(res.dhuhrHour);
+        }
         if (res?.maghribHour && res.maghribHour >= 16 && res.maghribHour <= 20) {
           setMaghribHour(res.maghribHour);
         }
@@ -230,6 +255,11 @@ export default function BookingPage() {
       .then((res) => setNextMonthAvailability(res))
       .catch(() => setNextMonthAvailability(null));
   }, [activeHall?.id, currentYear, currentMonth]);
+
+  // Fetch availability for current month & next month (and when switching bookingType)
+  useEffect(() => {
+    refreshAvailability();
+  }, [refreshAvailability, bookingType]);
 
   // Calendar calculations
   const daysInMonth = useMemo(() => {
@@ -279,17 +309,19 @@ export default function BookingPage() {
 
   // Allowed hour range based on bookingType:
   // - katbketab: full 24 hours (0 to 24, slots 0..23)
-  // - 3aza: only until Maghrib time (0 to maghribHour, slots 0..maghribHour-1)
+  // - 3aza: strictly from Dhuhr time to Maghrib time (dhuhrHour to maghribHour, e.g. 12..18) for 3 days
+  const minAllowedStartHour = bookingType === "3aza" ? dhuhrHour : 0;
   const maxAllowedEndHour = bookingType === "3aza" ? maghribHour : 24;
 
-  // Compute status of each hour (0 .. maxAllowedEndHour - 1) across all selectedDates
+  // Compute status of each visible hour (minAllowedStartHour .. maxAllowedEndHour - 1) across all selectedDates
+  // Because there is only 1 shared hall, any reservation (katbketab or 3aza) blocks the hours for both.
   const visibleHourSlots = useMemo(() => {
     const slots: {
       hour: number;
       status: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT";
     }[] = [];
 
-    for (let h = 0; h < maxAllowedEndHour; h++) {
+    for (let h = minAllowedStartHour; h < maxAllowedEndHour; h++) {
       let combinedStatus: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT" = "AVAILABLE";
 
       for (const sd of selectedDates) {
@@ -316,11 +348,11 @@ export default function BookingPage() {
       slots.push({ hour: h, status: combinedStatus });
     }
     return slots;
-  }, [maxAllowedEndHour, selectedDates, availabilityByIsoDate]);
+  }, [minAllowedStartHour, maxAllowedEndHour, selectedDates, availabilityByIsoDate]);
 
   // Helper to check if a range [s, e) is completely available
   const isRangeAvailable = (s: number, e: number): boolean => {
-    if (s < 0 || e > maxAllowedEndHour || s >= e) return false;
+    if (s < minAllowedStartHour || e > maxAllowedEndHour || s >= e) return false;
     for (let h = s; h < e; h++) {
       const slot = visibleHourSlots.find((item) => item.hour === h);
       if (!slot || slot.status !== "AVAILABLE") return false;
@@ -328,24 +360,111 @@ export default function BookingPage() {
     return true;
   };
 
-  // Auto-adjust startHour & endHour when switching bookingType or selectedDay if current selection is invalid
+  // Helper to check if a calendar date has already passed (strictly before today)
+  const isPastCalendarDay = (day: number, month = currentMonth, year = currentYear): boolean => {
+    if (year < today.year) return true;
+    if (year > today.year) return false;
+    if (month < today.month) return true;
+    if (month > today.month) return false;
+    return day < today.day;
+  };
+
+  // Helper to check if a calendar day `day` can be selected
+  // - Any day strictly before today is "PAST" (greyed out and cannot be pressed).
+  // - For 3aza: 3aza is from Dhuhr to Maghrib for 3 days (`day`, `day+1`, `day+2`).
+  //   If the hall is reserved (by katbketab or 3aza) during ANY hour of Dhuhr..Maghrib on any of the 3 days,
+  //   then that 3-day range is NOT available for 3aza ("FULLY_BOOKED").
+  // - For katbketab: checks all 24 hours on `day`.
+  const getCalendarDayStatus = (day: number): "PAST" | "AVAILABLE" | "PARTIALLY_BOOKED" | "FULLY_BOOKED" => {
+    if (isPastCalendarDay(day, currentMonth, currentYear)) {
+      return "PAST";
+    }
+
+    if (bookingType === "3aza") {
+      for (let i = 0; i < 3; i++) {
+        const dt = new Date(currentYear, currentMonth - 1, day + i);
+        const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+        const dayData = availabilityByIsoDate.get(iso);
+        if (!dayData) continue;
+
+        if (dayData.status === "FULLY_BOOKED" && (!dayData.hours || dayData.hours.length === 0)) {
+          return "FULLY_BOOKED";
+        }
+
+        const dhuhrToMaghribHours = (dayData.hours || []).filter(
+          (h) => h.hour >= dhuhrHour && h.hour < maghribHour
+        );
+        if (dhuhrToMaghribHours.length > 0) {
+          // If any hour between Dhuhr and Maghrib is reserved (e.g. by katbketab or 3aza), 3aza (Dhuhr->Maghrib) is unavailable
+          const hasConflictInDhuhrMaghrib = dhuhrToMaghribHours.some(
+            (h) => h.status !== "AVAILABLE"
+          );
+          if (hasConflictInDhuhrMaghrib) {
+            return "FULLY_BOOKED";
+          }
+        }
+      }
+      return "AVAILABLE";
+    }
+
+    // katbketab (1 day, 24 hours)
+    const dt = new Date(currentYear, currentMonth - 1, day);
+    const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    const dayData = availabilityByIsoDate.get(iso);
+    if (!dayData) return "AVAILABLE";
+
+    const relevantHours = dayData.hours || [];
+    if (relevantHours.length > 0) {
+      const availCount = relevantHours.filter((h) => h.status === "AVAILABLE").length;
+      if (availCount === 0) return "FULLY_BOOKED";
+      if (availCount < relevantHours.length) return "PARTIALLY_BOOKED";
+      return "AVAILABLE";
+    }
+
+    if (dayData.status === "FULLY_BOOKED") return "FULLY_BOOKED";
+    if (dayData.status === "PARTIALLY_BOOKED") return "PARTIALLY_BOOKED";
+    return "AVAILABLE";
+  };
+
+  // Auto-advance selectedDay if it falls on a PAST day, FULLY_BOOKED day, or exceeds daysInMonth
+  useEffect(() => {
+    const status = getCalendarDayStatus(selectedDay);
+    if (selectedDay > daysInMonth || status === "PAST" || status === "FULLY_BOOKED") {
+      for (let d = 1; d <= daysInMonth; d++) {
+        const st = getCalendarDayStatus(d);
+        if (st === "AVAILABLE" || st === "PARTIALLY_BOOKED") {
+          if (d !== selectedDay) {
+            setSelectedDay(d);
+          }
+          return;
+        }
+      }
+    }
+  }, [currentYear, currentMonth, daysInMonth, bookingType, availabilityByIsoDate, dhuhrHour, maghribHour]);
+
+  // Auto-adjust startHour & endHour when switching bookingType or selectedDay
   useEffect(() => {
     setIsPickingEndHour(false);
+
+    if (bookingType === "3aza") {
+      // 3aza is always from Dhuhr time to Maghrib time for 3 days
+      setStartHour(dhuhrHour);
+      setEndHour(maghribHour);
+      return;
+    }
+
     if (isRangeAvailable(startHour, endHour)) {
       return;
     }
 
-    // Preferred default window: 9:00 AM - 12:00 PM for 3aza, 6:00 PM - 10:00 PM for katbketab
-    const prefStart = bookingType === "3aza" ? 9 : 18;
-    const prefEnd = bookingType === "3aza" ? Math.min(12, maxAllowedEndHour) : 22;
-
-    if (isRangeAvailable(prefStart, prefEnd)) {
-      setStartHour(prefStart);
-      setEndHour(prefEnd);
+    // Preferred default window for katbketab: 6:00 PM - 10:00 PM
+    if (isRangeAvailable(18, 22)) {
+      setStartHour(18);
+      setEndHour(22);
       return;
     }
 
-    // Otherwise find first available slot
+    // Otherwise find first available slot on that day
     const firstAvail = visibleHourSlots.find((s) => s.status === "AVAILABLE");
     if (firstAvail) {
       const s = firstAvail.hour;
@@ -356,7 +475,7 @@ export default function BookingPage() {
       setStartHour(s);
       setEndHour(e);
     }
-  }, [bookingType, maxAllowedEndHour, selectedDay, currentMonth, currentYear, visibleHourSlots]);
+  }, [bookingType, dhuhrHour, maghribHour, minAllowedStartHour, maxAllowedEndHour, selectedDay, currentMonth, currentYear, visibleHourSlots]);
 
   // Handle clicking an hour tile in the interactive grid (works just like selecting dates)
   const handleHourTileClick = (clickedHour: number) => {
@@ -364,6 +483,14 @@ export default function BookingPage() {
     if (!slot || slot.status !== "AVAILABLE") return;
 
     setErrorMessage(null);
+
+    if (bookingType === "3aza") {
+      // 3aza is from Dhuhr to Maghrib for 3 days
+      setStartHour(dhuhrHour);
+      setEndHour(maghribHour);
+      setIsPickingEndHour(false);
+      return;
+    }
 
     if (!isPickingEndHour || clickedHour < startHour) {
       // First click (or clicked an earlier hour): start a new selection at clickedHour
@@ -391,32 +518,6 @@ export default function BookingPage() {
       setEndHour(clickedHour + 1);
       setIsPickingEndHour(true);
     }
-  };
-
-  // Helper to check if a calendar day `day` can be selected
-  const getCalendarDayStatus = (day: number): "AVAILABLE" | "PARTIALLY_BOOKED" | "FULLY_BOOKED" => {
-    const checkCount = bookingType === "3aza" ? 3 : 1;
-    let anyPartial = false;
-
-    for (let i = 0; i < checkCount; i++) {
-      const dt = new Date(currentYear, currentMonth - 1, day + i);
-      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-      const dayData = availabilityByIsoDate.get(iso);
-      if (!dayData) continue;
-
-      const relevantHours = (dayData.hours || []).filter((h) => h.hour < maxAllowedEndHour);
-      if (relevantHours.length > 0) {
-        const availCount = relevantHours.filter((h) => h.status === "AVAILABLE").length;
-        if (availCount === 0) return "FULLY_BOOKED";
-        if (availCount < relevantHours.length) anyPartial = true;
-      } else if (dayData.status === "FULLY_BOOKED") {
-        return "FULLY_BOOKED";
-      } else if (dayData.status === "PARTIALLY_BOOKED") {
-        anyPartial = true;
-      }
-    }
-
-    return anyPartial ? "PARTIALLY_BOOKED" : "AVAILABLE";
   };
 
   // Dynamic calculation of duration and price
@@ -454,18 +555,27 @@ export default function BookingPage() {
       return;
     }
 
+    if (isPastCalendarDay(selectedDay, currentMonth, currentYear)) {
+      setErrorMessage("لا يمكن الحجز في تاريخ فائت — يرجى اختيار تاريخ من اليوم فصاعداً.");
+      return;
+    }
+
     if (endHour <= startHour) {
       setErrorMessage("ساعة الانتهاء يجب أن تكون بعد ساعة البدء.");
       return;
     }
 
-    if (bookingType === "3aza" && endHour > maghribHour) {
-      setErrorMessage(`لا يمكن حجز مجلس عزاء بعد وقت أذان المغرب (${formatShortHour(maghribHour)}).`);
+    if (bookingType === "3aza" && (startHour < dhuhrHour || endHour > maghribHour)) {
+      setErrorMessage(
+        `مواعيد مجلس العزاء متاحة فقط من وقت صلاة الظهر (${formatShortHour(dhuhrHour)}) حتى أذان المغرب (${formatShortHour(maghribHour)}).`
+      );
       return;
     }
 
     if (!isRangeAvailable(startHour, endHour)) {
-      setErrorMessage("الفترة الزمنية المحددة تتضمن ساعات محجوزة أو غير متاحة، يرجى اختيار ساعات متاحة.");
+      setErrorMessage(
+        "القاعة محجوزة بالفعل في هذه الفترة (توجد قاعة واحدة فقط مشتركة لعقد القران والعزاء) — يرجى اختيار تاريخ أو وقت متاح."
+      );
       return;
     }
 
@@ -491,6 +601,7 @@ export default function BookingPage() {
       });
 
       setPendingInitiation(res);
+      refreshAvailability();
       window.scrollTo({ top: 150, behavior: "smooth" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل تسجيل الحجز، يرجى مراجعة البيانات والمحاولة مجدداً.";
@@ -508,6 +619,7 @@ export default function BookingPage() {
       const confirmed = await capturePayPalOrder(pendingInitiation.paypalOrderId);
       setConfirmedBooking(confirmed);
       setPendingInitiation(null);
+      refreshAvailability();
       window.scrollTo({ top: 100, behavior: "smooth" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل تأكيد عملية الدفع عبر بايبال.";
@@ -741,6 +853,7 @@ export default function BookingPage() {
                 onClick={() => {
                   setConfirmedBooking(null);
                   setPendingInitiation(null);
+                  refreshAvailability();
                 }}
                 className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs transition cursor-pointer"
               >
@@ -781,7 +894,11 @@ export default function BookingPage() {
                     <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/20 rounded-xl px-2 py-1">
                       <button
                         type="button"
+                        disabled={currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)}
                         onClick={() => {
+                          if (currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)) {
+                            return;
+                          }
                           if (currentMonth === 1) {
                             setCurrentMonth(12);
                             setCurrentYear((y) => y - 1);
@@ -789,7 +906,11 @@ export default function BookingPage() {
                             setCurrentMonth((m) => m - 1);
                           }
                         }}
-                        className="p-1.5 rounded-lg hover:bg-white/20 text-[#FFE8B8] transition cursor-pointer"
+                        className={`p-1.5 rounded-lg transition ${
+                          currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)
+                            ? "text-white/20 cursor-not-allowed"
+                            : "hover:bg-white/20 text-[#FFE8B8] cursor-pointer"
+                        }`}
                         title="الشهر السابق"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -848,29 +969,39 @@ export default function BookingPage() {
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                       const day = i + 1;
                       const dayStatus = getCalendarDayStatus(day);
+                      const isPast = dayStatus === "PAST";
                       const isFullyBooked = dayStatus === "FULLY_BOOKED";
                       const isPartiallyBooked = dayStatus === "PARTIALLY_BOOKED";
+                      const isDisabled = isPast || isFullyBooked;
 
-                      const selectedIdx = selectedDates.findIndex(
-                        (sd) => sd.year === currentYear && sd.month === currentMonth && sd.day === day
-                      );
+                      const selectedIdx = !isDisabled
+                        ? selectedDates.findIndex(
+                            (sd) => sd.year === currentYear && sd.month === currentMonth && sd.day === day
+                          )
+                        : -1;
                       const isSelected = selectedIdx !== -1;
 
                       return (
                         <button
                           key={day}
                           type="button"
-                          disabled={isFullyBooked}
-                          onClick={() => setSelectedDay(day)}
-                          onMouseMove={handleButtonMouseMove}
-                          className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              setSelectedDay(day);
+                            }
+                          }}
+                          onMouseMove={isDisabled ? undefined : handleButtonMouseMove}
+                          className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center ${
                             isSelected
-                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
+                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10 cursor-pointer"
+                              : isPast
+                              ? "bg-slate-600/25 text-slate-400/40 border border-slate-500/20 cursor-not-allowed select-none opacity-55"
                               : isFullyBooked
                               ? "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
                               : isPartiallyBooked
-                              ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25]"
-                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
+                              ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25] cursor-pointer"
+                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20 cursor-pointer"
                           }`}
                         >
                           <span className="relative z-10 leading-none">{day}</span>
@@ -916,6 +1047,10 @@ export default function BookingPage() {
                       <span className="w-3 h-3 rounded-full bg-black/50 border border-white/20" />
                       <span className="text-white/40">محجوز / مغلق</span>
                     </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-slate-500/40 border border-slate-400/30" />
+                      <span className="text-slate-400/70">تاريخ فائت</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -932,11 +1067,15 @@ export default function BookingPage() {
                       <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
                         <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
                         <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
-                          اختر الساعات بنفس طريقة اختيار التاريخ
+                          {bookingType === "3aza"
+                            ? "توقيت العزاء (من صلاة الظهر إلى صلاة المغرب)"
+                            : "اختر الساعات بنفس طريقة اختيار التاريخ"}
                         </span>
                       </h2>
                       <p className="text-xs text-[#DCE6F2] mt-0.5">
-                        {isPickingEndHour
+                        {bookingType === "3aza"
+                          ? "يُحجز مجلس العزاء من وقت صلاة الظهر حتى أذان المغرب لمدة 3 أيام متتالية"
+                          : isPickingEndHour
                           ? `تم تحديد البداية (${formatShortHour(startHour)}) — اضغط الآن على ساعة النهاية لتوسيع الفترة`
                           : "اضغط على ساعة البدء ثم اضغط على ساعة الانتهاء لتحديد الفترة المطلوبة"}
                       </p>
@@ -946,19 +1085,31 @@ export default function BookingPage() {
                     </span>
                   </div>
 
-                  {/* Mode Banner: 24 Hours for Katb Ketab vs Until Maghrib Only for 3aza */}
+                  {/* Mode Banner: 24 Hours for Katb Ketab vs Dhuhr to Maghrib Only for 3aza */}
                   {bookingType === "3aza" ? (
                     <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-xs text-[#FFE8B8] flex items-center gap-2.5">
                       <Sun className="w-4 h-4 text-amber-300 shrink-0" />
                       <span>
-                        مواعيد العزاء متاحة <strong>حتى أذان المغرب فقط ({maghribTimeStr})</strong> — لا يوجد عزاء بعد صلاة المغرب.
+                        مجلس العزاء متاح <strong>من صلاة الظهر ({dhuhrTimeStr}) حتى أذان المغرب ({maghribTimeStr})</strong> لمدة 3 أيام — ولا يتاح إذا كانت القاعة محجوزة لعقد قران أو عزاء في هذا الوقت لأنها قاعة واحدة فقط.
                       </span>
                     </div>
                   ) : (
                     <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/15 text-xs text-[#DCE6F2] flex items-center gap-2.5">
                       <Clock className="w-4 h-4 text-[#D4AF85] shrink-0" />
                       <span>
-                        جميع ساعات اليوم (<strong>٢٤ ساعة</strong>) متاحة للاختيار المباشر لحجز عقد القران.
+                        جميع ساعات اليوم (<strong>٢٤ ساعة</strong>) متاحة لحجز عقد القران (الساعات المحجوزة لعقد قران أو عزاء تظهر غير متاحة لأنها قاعة واحدة).
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Conflict Alert if selected day(s) have a reservation in the Dhuhr-Maghrib / selected range */}
+                  {!isRangeAvailable(startHour, endHour) && (
+                    <div className="p-3 rounded-2xl bg-red-950/60 border border-red-500/50 text-xs text-red-200 flex items-center gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>
+                        {bookingType === "3aza"
+                          ? "القاعة محجوزة بالفعل خلال فترة الظهر إلى المغرب في أحد الأيام الثلاثة المحددة (لعقد قران أو عزاء) — يرجى اختيار تاريخ آخر متاح."
+                          : "توجد ساعات محجوزة في الفترة المحددة — يرجى اختيار ساعات متاحة."}
                       </span>
                     </div>
                   )}

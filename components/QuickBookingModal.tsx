@@ -83,11 +83,28 @@ export default function QuickBookingModal({
     mediaList: [],
   });
 
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(11);
-  const [selectedDay, setSelectedDay] = useState<number>(18);
+  const [today] = useState(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      day: now.getDate(),
+    };
+  });
+
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDate());
   const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
   const [nextMonthAvailability, setNextMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
+
+  const isPastDay = (day: number, month = currentMonth, year = currentYear): boolean => {
+    if (year < today.year) return true;
+    if (year > today.year) return false;
+    if (month < today.month) return true;
+    if (month > today.month) return false;
+    return day < today.day;
+  };
 
   // Range selector
   const [startHour, setStartHour] = useState<number>(16);
@@ -131,7 +148,7 @@ export default function QuickBookingModal({
       });
   }, []);
 
-  useEffect(() => {
+  const refreshModalAvailability = React.useCallback(() => {
     if (!activeHall?.id || !isOpen) return;
     getHallAvailability(activeHall.id, currentYear, currentMonth)
       .then((res) => setMonthAvailability(res))
@@ -144,31 +161,44 @@ export default function QuickBookingModal({
       .catch(() => setNextMonthAvailability(null));
   }, [activeHall?.id, currentYear, currentMonth, isOpen]);
 
+  useEffect(() => {
+    refreshModalAvailability();
+  }, [refreshModalAvailability, bookingType]);
+
+  const dhuhrHour = monthAvailability?.dhuhrHour ?? 12;
   const maghribHour = monthAvailability?.maghribHour ?? 18;
-  const hallOpenHour = activeHall.openHour !== undefined ? activeHall.openHour : 0;
-  const hallCloseHour = activeHall.closeHour !== undefined ? activeHall.closeHour : 24;
-  const effectiveCloseHour = bookingType === "3aza" ? Math.min(hallCloseHour, maghribHour) : hallCloseHour;
+  const effectiveOpenHour = bookingType === "3aza" ? dhuhrHour : 0;
+  const effectiveCloseHour = bookingType === "3aza" ? maghribHour : 24;
   const daysCount = bookingType === "3aza" ? 3 : 1;
 
   useEffect(() => {
     if (bookingType === "3aza") {
-      if (endHour > maghribHour) {
-        const newEnd = maghribHour;
-        const newStart = Math.max(hallOpenHour, newEnd - 3);
-        setStartHour(newStart);
-        setEndHour(newEnd);
-      } else if (startHour >= maghribHour) {
-        setStartHour(Math.max(hallOpenHour, maghribHour - 3));
-        setEndHour(maghribHour);
+      setStartHour(dhuhrHour);
+      setEndHour(maghribHour);
+    } else {
+      if (startHour < 0 || endHour > 24 || startHour >= endHour) {
+        setStartHour(18);
+        setEndHour(22);
       }
     }
     setSelectingRangeStep("START");
-  }, [bookingType, maghribHour, hallOpenHour, startHour, endHour]);
+  }, [bookingType, dhuhrHour, maghribHour]);
 
   const daysInMonth = useMemo(() => new Date(currentYear, currentMonth, 0).getDate(), [currentYear, currentMonth]);
   const startDayOffset = useMemo(() => new Date(currentYear, currentMonth - 1, 1).getDay(), [currentYear, currentMonth]);
   const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
   const currentMonthName = `${monthNames[currentMonth - 1]} ${currentYear}`;
+
+  useEffect(() => {
+    if (selectedDay > daysInMonth || isPastDay(selectedDay, currentMonth, currentYear)) {
+      for (let d = 1; d <= daysInMonth; d++) {
+        if (!isPastDay(d, currentMonth, currentYear)) {
+          setSelectedDay(d);
+          return;
+        }
+      }
+    }
+  }, [currentYear, currentMonth, daysInMonth]);
 
   const daysAvailabilityMap = useMemo(() => {
     const map = new Map<number, DayAvailabilityResponse>();
@@ -225,15 +255,33 @@ export default function QuickBookingModal({
 
   const visibleHourBlocks = useMemo(() => {
     const blocks: number[] = [];
-    for (let h = hallOpenHour; h < effectiveCloseHour; h++) {
+    for (let h = effectiveOpenHour; h < effectiveCloseHour; h++) {
       blocks.push(h);
     }
     return blocks;
-  }, [hallOpenHour, effectiveCloseHour]);
+  }, [effectiveOpenHour, effectiveCloseHour]);
+
+  const isCurrentRangeAvailable = useMemo(() => {
+    if (startHour < effectiveOpenHour || endHour > effectiveCloseHour || startHour >= endHour) {
+      return false;
+    }
+    for (let h = startHour; h < endHour; h++) {
+      const st = combinedSlotsMap.get(h)?.status;
+      if (st && st !== "AVAILABLE") return false;
+    }
+    return true;
+  }, [startHour, endHour, effectiveOpenHour, effectiveCloseHour, combinedSlotsMap]);
 
   const handleHourBlockClick = (h: number) => {
     const slotInfo = combinedSlotsMap.get(h);
     if (slotInfo && slotInfo.status !== "AVAILABLE") return;
+
+    if (bookingType === "3aza") {
+      setStartHour(dhuhrHour);
+      setEndHour(maghribHour);
+      setSelectingRangeStep("START");
+      return;
+    }
 
     if (selectingRangeStep === "START") {
       setStartHour(h);
@@ -278,6 +326,13 @@ export default function QuickBookingModal({
       return;
     }
 
+    if (!isCurrentRangeAvailable) {
+      setErrorMessage(
+        "القاعة محجوزة بالفعل في هذه الفترة (توجد قاعة واحدة فقط مشتركة لعقد القران والعزاء) — يرجى اختيار تاريخ أو وقت متاح."
+      );
+      return;
+    }
+
     const eventDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
 
     try {
@@ -290,11 +345,14 @@ export default function QuickBookingModal({
         email: email.trim(),
         bookingType,
         eventDate,
+        endDate: selectedEndIsoDate,
+        daysCount,
         startHour,
         endHour,
         notes: notes.trim() || undefined,
       });
       setPendingInitiation(res);
+      refreshModalAvailability();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل إنشاء الحجز، يرجى المحاولة لاحقاً.";
       setErrorMessage(msg);
@@ -310,6 +368,7 @@ export default function QuickBookingModal({
       const confirmed = await capturePayPalOrder(pendingInitiation.paypalOrderId);
       setConfirmedBooking(confirmed);
       setPendingInitiation(null);
+      refreshModalAvailability();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل إتمام الدفع عبر بايبال.";
       setErrorMessage(msg);
@@ -525,11 +584,17 @@ export default function QuickBookingModal({
                 <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
                   <button
                     type="button"
+                    disabled={currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)}
                     onClick={() => {
+                      if (currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)) return;
                       if (currentMonth === 1) { setCurrentMonth(12); setCurrentYear((y) => y - 1); }
                       else setCurrentMonth((m) => m - 1);
                     }}
-                    className="p-1 rounded bg-white hover:bg-slate-50 text-slate-700 shadow-xs cursor-pointer"
+                    className={`p-1 rounded bg-white shadow-xs ${
+                      currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)
+                        ? "text-slate-300 cursor-not-allowed"
+                        : "hover:bg-slate-50 text-slate-700 cursor-pointer"
+                    }`}
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -558,34 +623,50 @@ export default function QuickBookingModal({
                   const day = i + 1;
                   const isoForCell = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const dayData = daysAvailabilityMap.get(day);
+                  const isPast = isPastDay(day, currentMonth, currentYear);
                   const isFullyBooked = dayData?.status === "FULLY_BOOKED";
                   const isPartially = dayData?.status === "PARTIALLY_BOOKED";
-                  const selectedIdx = selectedIsoDates.indexOf(isoForCell);
-                  const isSelected = selectedIdx !== -1;
 
-                  let isRangeBlocked = isFullyBooked;
-                  if (bookingType === "3aza" && !isRangeBlocked) {
-                    const d2 = allLoadedDaysByDate.get(addDaysToIsoDate(isoForCell, 1));
-                    const d3 = allLoadedDaysByDate.get(addDaysToIsoDate(isoForCell, 2));
-                    if (d2?.status === "FULLY_BOOKED" || d3?.status === "FULLY_BOOKED") {
-                      isRangeBlocked = true;
+                  let isRangeBlocked = isPast || isFullyBooked;
+                  if (!isPast && bookingType === "3aza") {
+                    for (let offset = 0; offset < 3; offset++) {
+                      const dCheck = allLoadedDaysByDate.get(addDaysToIsoDate(isoForCell, offset));
+                      if (!dCheck) continue;
+                      if (dCheck.status === "FULLY_BOOKED") {
+                        isRangeBlocked = true;
+                        break;
+                      }
+                      const dhuhrMaghribSlots = (dCheck.hours || []).filter(
+                        (h) => h.hour >= dhuhrHour && h.hour < maghribHour
+                      );
+                      if (dhuhrMaghribSlots.some((h) => h.status !== "AVAILABLE")) {
+                        isRangeBlocked = true;
+                        break;
+                      }
                     }
                   }
+
+                  const selectedIdx = !isRangeBlocked ? selectedIsoDates.indexOf(isoForCell) : -1;
+                  const isSelected = selectedIdx !== -1;
 
                   return (
                     <button
                       key={day}
                       type="button"
                       disabled={isRangeBlocked}
-                      onClick={() => setSelectedDay(day)}
-                      className={`h-8 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center relative cursor-pointer ${
+                      onClick={() => {
+                        if (!isRangeBlocked) setSelectedDay(day);
+                      }}
+                      className={`h-8 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center relative ${
                         isSelected
-                          ? "bg-[#1E447B] border border-[#D4AF85] text-[#FFF2D2] shadow-sm font-black scale-105 z-10"
+                          ? "bg-[#1E447B] border border-[#D4AF85] text-[#FFF2D2] shadow-sm font-black scale-105 z-10 cursor-pointer"
+                          : isPast
+                          ? "bg-slate-200/70 text-slate-400 border border-slate-200 cursor-not-allowed select-none"
                           : isRangeBlocked
                           ? "bg-slate-100 text-slate-300 cursor-not-allowed line-through"
                           : isPartially
-                          ? "bg-amber-50 text-slate-800 border border-amber-200"
-                          : "bg-white text-slate-800 border border-slate-200 hover:border-[#1E447B]"
+                          ? "bg-amber-50 text-slate-800 border border-amber-200 cursor-pointer"
+                          : "bg-white text-slate-800 border border-slate-200 hover:border-[#1E447B] cursor-pointer"
                       }`}
                     >
                       <span>{day}</span>
@@ -594,7 +675,7 @@ export default function QuickBookingModal({
                           يوم {selectedIdx + 1}
                         </span>
                       )}
-                      {isPartially && !isSelected && (
+                      {isPartially && !isSelected && !isPast && (
                         <span className="w-1 h-1 rounded-full bg-amber-500 absolute bottom-0.5" />
                       )}
                     </button>
@@ -619,7 +700,7 @@ export default function QuickBookingModal({
                   <Clock className="w-4 h-4 text-[#D4AF85]" />
                   <span>
                     {bookingType === "3aza"
-                      ? `اختر ساعات العزاء (متاح حتى المغرب ${formatShortHourLabel(maghribHour)}):`
+                      ? `توقيت العزاء (من الظهر ${formatShortHourLabel(dhuhrHour)} إلى المغرب ${formatShortHourLabel(maghribHour)}):`
                       : "اختر ساعات عقد القران (متاح 24 ساعة):"}
                   </span>
                 </span>
@@ -630,7 +711,9 @@ export default function QuickBookingModal({
               </div>
 
               <p className="text-[11px] text-[#8EA3BF]">
-                {selectingRangeStep === "START"
+                {bookingType === "3aza"
+                  ? "مجلس العزاء يُحجز من وقت صلاة الظهر حتى أذان المغرب لمدة 3 أيام متتالية:"
+                  : selectingRangeStep === "START"
                   ? "اضغط على ساعة البدء ثم اضغط على ساعة الانتهاء لتحديد الفترة:"
                   : `تم اختيار البدء (${formatShortHourLabel(startHour)}) — اضغط الآن على ساعة الانتهاء:`}
               </p>
