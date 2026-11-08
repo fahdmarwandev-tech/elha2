@@ -158,6 +158,12 @@ export default function BookingPage() {
   // Booking Flow States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    fullName?: string;
+    nationalId?: string;
+    email?: string;
+    phone?: string;
+  }>({});
   const [pendingInitiation, setPendingInitiation] = useState<BookingInitiationResponse | null>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<BookingResponse | null>(null);
   const [isCapturingPayment, setIsCapturingPayment] = useState(false);
@@ -550,10 +556,36 @@ export default function BookingPage() {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!fullName.trim() || !phone.trim() || !nationalId.trim() || !email.trim()) {
-      setErrorMessage("يرجى ملء جميع الحقول الإلزامية المطلوبة.");
+    // Validate fields neatly
+    const errors: typeof fieldErrors = {};
+    if (!fullName.trim()) {
+      errors.fullName = "يرجى إدخال اسم صاحب الحجز (الثلاثي أو الرباعي)";
+    }
+    if (!nationalId.trim()) {
+      errors.nationalId = "يرجى إدخال الرقم المدني / الهوية الوطنية";
+    }
+    if (!email.trim()) {
+      errors.email = "يرجى إدخال البريد الإلكتروني لاستلام السند والتأكيد";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      errors.email = "يرجى كتابة بريد إلكتروني صحيح (مثال: name@example.com)";
+    }
+    if (!phone.trim()) {
+      errors.phone = "يرجى إدخال رقم الهاتف للتواصل";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setErrorMessage("يرجى استكمال البيانات الإلزامية المحددة بالأسفل للمتابعة.");
+      // Smooth scroll to the first field with an error
+      const firstErrorKey = Object.keys(errors)[0];
+      const el = document.getElementById(`booking-field-${firstErrorKey}`);
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       return;
     }
+    setFieldErrors({});
 
     if (isPastCalendarDay(selectedDay, currentMonth, currentYear)) {
       setErrorMessage("لا يمكن الحجز في تاريخ فائت — يرجى اختيار تاريخ من اليوم فصاعداً.");
@@ -1297,20 +1329,33 @@ export default function BookingPage() {
                   </span>
                 </div>
 
-                <form onSubmit={handleBookingSubmit} className="space-y-4">
+                <form onSubmit={handleBookingSubmit} noValidate className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-[#DCE6F2] mb-1.5">
                         الاسم الثلاثي أو الرباعي *
                       </label>
                       <input
+                        id="booking-field-fullName"
                         type="text"
-                        required
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          if (fieldErrors.fullName) setFieldErrors((prev) => ({ ...prev, fullName: undefined }));
+                        }}
                         placeholder="أدخل اسم صاحب الحجز"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
+                        className={`w-full px-4 py-3 rounded-xl bg-white/[0.08] border text-white text-xs focus:outline-none transition ${
+                          fieldErrors.fullName
+                            ? "border-amber-400/90 bg-amber-500/[0.08] shadow-[0_0_15px_rgba(251,191,36,0.18)] focus:border-amber-300"
+                            : "border-white/25 focus:border-[#FFE8B8]"
+                        }`}
                       />
+                      {fieldErrors.fullName && (
+                        <p className="mt-1.5 text-[11px] text-amber-300 flex items-center gap-1.5 font-medium animate-in fade-in duration-200">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{fieldErrors.fullName}</span>
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1318,14 +1363,27 @@ export default function BookingPage() {
                         الرقم المدني / الهوية الوطنية *
                       </label>
                       <input
+                        id="booking-field-nationalId"
                         type="text"
-                        required
                         value={nationalId}
-                        onChange={(e) => setNationalId(e.target.value)}
+                        onChange={(e) => {
+                          setNationalId(e.target.value);
+                          if (fieldErrors.nationalId) setFieldErrors((prev) => ({ ...prev, nationalId: undefined }));
+                        }}
                         placeholder="أدخل الرقم المدني"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
+                        className={`w-full px-4 py-3 rounded-xl bg-white/[0.08] border text-white text-xs focus:outline-none transition ${
+                          fieldErrors.nationalId
+                            ? "border-amber-400/90 bg-amber-500/[0.08] shadow-[0_0_15px_rgba(251,191,36,0.18)] focus:border-amber-300"
+                            : "border-white/25 focus:border-[#FFE8B8]"
+                        }`}
                       />
+                      {fieldErrors.nationalId && (
+                        <p className="mt-1.5 text-[11px] text-amber-300 flex items-center gap-1.5 font-medium animate-in fade-in duration-200">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{fieldErrors.nationalId}</span>
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1333,14 +1391,27 @@ export default function BookingPage() {
                         البريد الإلكتروني (لاستلام السند والتأكيد) *
                       </label>
                       <input
+                        id="booking-field-email"
                         type="email"
-                        required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                        }}
                         placeholder="name@example.com"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
+                        className={`w-full px-4 py-3 rounded-xl bg-white/[0.08] border text-white text-xs focus:outline-none transition ${
+                          fieldErrors.email
+                            ? "border-amber-400/90 bg-amber-500/[0.08] shadow-[0_0_15px_rgba(251,191,36,0.18)] focus:border-amber-300"
+                            : "border-white/25 focus:border-[#FFE8B8]"
+                        }`}
                       />
+                      {fieldErrors.email && (
+                        <p className="mt-1.5 text-[11px] text-amber-300 flex items-center gap-1.5 font-medium animate-in fade-in duration-200">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{fieldErrors.email}</span>
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1348,14 +1419,27 @@ export default function BookingPage() {
                         رقم الهاتف للتواصل *
                       </label>
                       <input
+                        id="booking-field-phone"
                         type="tel"
-                        required
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+                        }}
                         placeholder="968XXXXXXXX"
                         dir="ltr"
-                        className="w-full px-4 py-3 rounded-xl bg-white/[0.08] border border-white/25 text-white text-xs focus:outline-none focus:border-[#FFE8B8] transition"
+                        className={`w-full px-4 py-3 rounded-xl bg-white/[0.08] border text-white text-xs focus:outline-none transition ${
+                          fieldErrors.phone
+                            ? "border-amber-400/90 bg-amber-500/[0.08] shadow-[0_0_15px_rgba(251,191,36,0.18)] focus:border-amber-300"
+                            : "border-white/25 focus:border-[#FFE8B8]"
+                        }`}
                       />
+                      {fieldErrors.phone && (
+                        <p className="mt-1.5 text-[11px] text-amber-300 flex items-center gap-1.5 font-medium animate-in fade-in duration-200">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{fieldErrors.phone}</span>
+                        </p>
+                      )}
                     </div>
 
                     <div className="sm:col-span-2">
@@ -1425,6 +1509,23 @@ export default function BookingPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Inline Error Alert if any error */}
+                  {errorMessage && (
+                    <div className="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200 shadow-lg">
+                      <div className="flex items-center gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span className="font-medium">{errorMessage}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setErrorMessage(null)}
+                        className="text-rose-300 hover:text-white transition p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
