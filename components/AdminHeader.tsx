@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ShieldCheck,
   CalendarCheck,
   Film,
   ExternalLink,
@@ -31,7 +30,7 @@ export default function AdminHeader() {
   return (
     <header className="sticky top-0 z-40 bg-[#060D1A]/95 backdrop-blur-md border-b border-[#1E3A63]/80 px-4 sm:px-6 lg:px-8 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Right side: Logo & Admin Badge */}
+        {/* Right side: Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <Link href="/admin" className="group flex items-center gap-2.5">
             <img
@@ -39,15 +38,6 @@ export default function AdminHeader() {
               alt="جامع الحق"
               className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_2px_10px_rgba(212,175,133,0.5)] group-hover:scale-105 transition-transform"
             />
-            <div className="flex flex-col text-right">
-              <span className="font-aref text-base sm:text-lg font-bold bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent px-1.5 py-0.5 leading-normal inline-block">
-                جامع الحق
-              </span>
-              <span className="text-[10px] sm:text-[11px] text-[#8EA3BF] flex items-center gap-1 font-semibold">
-                <ShieldCheck className="w-3 h-3 text-[#D4AF85]" />
-                <span>لوحة تحكم المشرف</span>
-              </span>
-            </div>
           </Link>
         </div>
 

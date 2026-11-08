@@ -662,18 +662,10 @@ export default function AdminBookingsPage() {
         {adminSection === "BOOKINGS" && (
           <div className="space-y-8">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="p-4 rounded-2xl bg-slate-950/40 backdrop-blur-xl border border-white/15">
                 <span className="text-[11px] font-semibold text-[#8EA3BF] block mb-1">إجمالي الحجوزات</span>
                 <span className="text-2xl font-black text-[#FFF2D2] font-mono">{stats.total}</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-emerald-950/25 backdrop-blur-xl border border-emerald-500/25">
-                <span className="text-[11px] font-semibold text-emerald-300/80 block mb-1">المؤكدة</span>
-                <span className="text-2xl font-black text-emerald-300 font-mono">{stats.confirmed}</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-amber-950/25 backdrop-blur-xl border border-amber-500/25">
-                <span className="text-[11px] font-semibold text-amber-300/80 block mb-1">بانتظار الدفع</span>
-                <span className="text-2xl font-black text-amber-300 font-mono">{stats.pending}</span>
               </div>
               <div className="p-4 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/15">
                 <span className="text-[11px] font-semibold text-[#8EA3BF] block mb-1">المكتملة</span>
@@ -750,57 +742,31 @@ export default function AdminBookingsPage() {
                 {/* Days grid */}
                 <div className="grid grid-cols-7 gap-2">
                   {Array.from({ length: startDayOffset }).map((_, i) => (
-                    <div key={`offset-${i}`} className="min-h-[64px] sm:min-h-[76px]" />
+                    <div key={`offset-${i}`} className="h-11 sm:h-12" />
                   ))}
 
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
-                    const isoDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     const dayBookings = bookingsByDay.get(day) || [];
+                    const isBooked = dayBookings.length > 0;
                     const isSelected = selectedDay === day;
-                    const isPartOfSelectedMultiDay = !isSelected && highlightedMultiDayIsos.has(isoDate);
-                    const primaryBooking = dayBookings[0];
-                    const isAza = primaryBooking ? isAzaType(primaryBooking.bookingType) : false;
-                    const reservedDates = primaryBooking ? getBookingReservedDates(primaryBooking) : [];
-                    const dayIdxInRange = reservedDates.indexOf(isoDate) + 1;
 
                     return (
                       <button
                         key={day}
+                        type="button"
                         onClick={() => setSelectedDay(day)}
-                        className={`relative min-h-[64px] sm:min-h-[76px] p-1 rounded-xl text-xs font-bold transition flex flex-col items-center justify-between cursor-pointer ${
+                        className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
                           isSelected
-                            ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
-                            : isPartOfSelectedMultiDay
-                            ? "bg-sky-500/25 border-2 border-sky-300/80 text-white shadow-md"
-                            : dayBookings.length > 0
-                            ? isAza
-                              ? "bg-sky-500/15 text-[#FFF2D2] border border-sky-400/50 hover:bg-sky-500/25"
-                              : "bg-amber-400/[0.15] text-[#FFF2D2] border border-amber-300/50 hover:bg-amber-400/[0.25]"
-                            : "bg-white/[0.08] hover:bg-white/[0.18] text-white border border-white/20"
+                            ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
+                            : isBooked
+                            ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25]"
+                            : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
                         }`}
                       >
-                        <span className="text-xs sm:text-sm font-black leading-none mt-0.5">{day}</span>
-
-                        {primaryBooking ? (
-                          <div className="w-full flex flex-col items-center gap-0.5 mt-0.5">
-                            <span
-                              className={`px-1 py-0.5 rounded text-[9px] sm:text-[10px] font-extrabold leading-tight truncate max-w-full ${
-                                isAza
-                                  ? "bg-sky-500/30 text-sky-200 border border-sky-400/40"
-                                  : "bg-[#D4AF85]/30 text-[#FFE8B8] border border-[#D4AF85]/40"
-                              }`}
-                            >
-                              {isAza
-                                ? `عزاء (${dayIdxInRange || 1}/3)`
-                                : "عقد قران"}
-                            </span>
-                            <span className="text-[8px] sm:text-[9px] font-mono text-white/90 leading-none dir-ltr">
-                              {primaryBooking.startHour}:00-{primaryBooking.endHour}:00
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-white/35">متاح</span>
+                        <span className="relative z-10 leading-none">{day}</span>
+                        {isBooked && !isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
                         )}
                       </button>
                     );
@@ -808,18 +774,18 @@ export default function AdminBookingsPage() {
                 </div>
 
                 {/* Calendar Legend */}
-                <div className="flex flex-wrap items-center justify-center gap-4 mt-5 pt-4 border-t border-white/15 text-[11px] text-[#DCE6F2]">
+                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-5 pt-4 border-t border-white/15 text-xs text-[#DCE6F2]">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-sky-500/30 border border-sky-400" />
-                    <span>محجوز مجلس عزاء (3 أيام: 12:00 ظ - 06:00 م)</span>
+                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#D4AF85] to-[#1E447B] border border-white" />
+                    <span className="text-[#FFF2D2] font-semibold">المحدد ({selectedDay} {currentMonthName})</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-amber-400/30 border border-amber-300" />
-                    <span>محجوز عقد قران</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-white/10 border border-white/30" />
+                    <span className="w-3 h-3 rounded-full bg-white/20 border border-white/40" />
                     <span>متاح</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-amber-400/30 border border-amber-300" />
+                    <span>محجوز</span>
                   </span>
                 </div>
               </div>

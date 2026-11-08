@@ -19,24 +19,23 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
   const navLinks = [
     { name: "المجلس", href: "/booking", icon: Calendar },
     { name: "الخطب والدروس", href: "/videos", icon: Video },
-    { name: "عن المسجد", href: "/#about" },
   ];
 
   return (
     <>
       <header className="sticky top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#060D1A] via-[#060D1A]/95 to-[#060D1A]/70 backdrop-blur-md text-[#FAF7F0] transition-all duration-300">
-        <div className="w-full px-3 sm:px-4 lg:px-14 pt-2.5 sm:pt-4 pb-2 lg:py-3.5">
-          <div className="flex items-center justify-between min-h-[75px] sm:min-h-[95px] lg:min-h-[120px] gap-2 sm:gap-4">
-            {/* Mosque Logo Only - Responsive: balanced majestic size on mobile */}
+        <div className="w-full px-3.5 sm:px-5 lg:px-14 pt-4 sm:pt-5 pb-2 lg:py-4">
+          <div className="flex items-center justify-between">
+            {/* Mosque Logo Only - Identical to home page */}
             <Link
               href="/"
               className="group flex items-center transition-all active:scale-95 shrink-0"
-              aria-label="الرئيسية - جامع الحق"
+              aria-label="جامع الحق"
             >
               <img
                 src="/logo-gold.png"
                 alt="جامع الحق"
-                className="h-24 sm:h-32 md:h-36 lg:h-52 xl:h-56 w-auto max-h-[96px] sm:max-h-[135px] md:max-h-[160px] lg:max-h-[210px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
+                className="h-28 sm:h-32 md:h-36 lg:h-56 w-auto max-h-[110px] sm:max-h-[125px] md:max-h-[140px] lg:max-h-[210px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
               />
             </Link>
 
@@ -74,15 +73,15 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
               })}
             </nav>
 
-            {/* Mobile Navigation - Exact same size and typography as home page */}
-            <nav className="md:hidden flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Mobile Navigation - Exact same layout, typography, gap and margin as home page */}
+            <nav className="md:hidden flex items-center gap-4 sm:gap-5 shrink-0 ml-4 sm:ml-6">
               {navLinks.map((item) => {
                 const isActive = pathname === item.href || (item.href === "/booking" && pathname.startsWith("/booking"));
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center transition-colors ${
+                    className={`whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[14px] sm:text-[15px] font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.96] scale-y-[1.62] origin-center transition-colors ${
                       isActive
                         ? "text-[#D4AF85] hover:text-[#FFF2D2]"
                         : "text-white hover:text-[#FFF2D2]"

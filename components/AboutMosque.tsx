@@ -79,7 +79,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
   return (
     <section
       id={id}
-      className="relative w-full bg-[#050A14] text-[#FAF7F0] border-t border-[#1E3A63]/60 py-16 sm:py-24 px-4 sm:px-6 lg:px-12 overflow-hidden text-right"
+      className="relative w-full bg-[#050A14] text-[#FAF7F0] border-t border-[#1E3A63]/60 py-16 sm:py-24 px-4 sm:px-6 lg:px-12 overflow-hidden text-right scroll-mt-4 sm:scroll-mt-8"
     >
       {/* Background Subtle Ambience */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#D4AF85]/10 rounded-full blur-3xl pointer-events-none" />

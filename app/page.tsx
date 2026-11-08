@@ -82,25 +82,58 @@ export default function Home() {
     setVideoLoaded(true);
   };
 
-  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+  const handleMobileTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
     if (video.currentTime > 0.05 && !videoLoadedRef.current) {
       videoLoadedRef.current = true;
       setVideoLoaded(true);
     }
-    // The text fades in strictly when the video finishes playing (reaches end)
-    if (video.duration && video.currentTime >= video.duration - 0.12) {
-      handleVideoEnded();
+    // Mobile video reaches end (duration ~3.48s)
+    if (video.duration && video.currentTime >= video.duration - 0.08) {
+      video.pause();
+      try {
+        video.currentTime = video.duration;
+      } catch {}
+      setVideoEnded(true);
     }
   };
 
-  // When video reaches its end, it pauses on the last frame and text fades in
-  const handleVideoEnded = () => {
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.pause();
-    }
+  const handleMobileEnded = () => {
     if (mobileVideoRef.current) {
       mobileVideoRef.current.pause();
+      try {
+        if (mobileVideoRef.current.duration) {
+          mobileVideoRef.current.currentTime = mobileVideoRef.current.duration;
+        }
+      } catch {}
+    }
+    setVideoEnded(true);
+  };
+
+  const handleDesktopTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.currentTime > 0.05 && !videoLoadedRef.current) {
+      videoLoadedRef.current = true;
+      setVideoLoaded(true);
+    }
+    // Desktop video reaches end (duration ~3.13s)
+    if (video.duration && video.currentTime >= video.duration - 0.08) {
+      video.pause();
+      try {
+        video.currentTime = video.duration;
+      } catch {}
+      setVideoEnded(true);
+    }
+  };
+
+  const handleDesktopEnded = () => {
+    if (desktopVideoRef.current) {
+      desktopVideoRef.current.pause();
+      try {
+        if (desktopVideoRef.current.duration) {
+          desktopVideoRef.current.currentTime = desktopVideoRef.current.duration;
+        }
+      } catch {}
     }
     setVideoEnded(true);
   };
@@ -109,25 +142,42 @@ export default function Home() {
     videoLoadedRef.current = true;
     setVideoLoaded(true);
     if (desktopVideoRef.current) {
-      desktopVideoRef.current.currentTime = desktopVideoRef.current.duration || 3.3;
       desktopVideoRef.current.pause();
+      try {
+        desktopVideoRef.current.currentTime = desktopVideoRef.current.duration || 3.13;
+      } catch {}
     }
     if (mobileVideoRef.current) {
-      mobileVideoRef.current.currentTime = mobileVideoRef.current.duration || 3.1;
       mobileVideoRef.current.pause();
+      try {
+        mobileVideoRef.current.currentTime = mobileVideoRef.current.duration || 3.48;
+      } catch {}
     }
     setVideoEnded(true);
   };
 
   const handleReplay = () => {
     setVideoEnded(false);
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.currentTime = 0;
-      desktopVideoRef.current.play().catch(() => {});
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+    if (isMobile) {
+      if (mobileVideoRef.current) {
+        mobileVideoRef.current.currentTime = 0;
+        mobileVideoRef.current.play().catch(() => {});
+      }
+    } else {
+      if (desktopVideoRef.current) {
+        desktopVideoRef.current.currentTime = 0;
+        desktopVideoRef.current.play().catch(() => {});
+      }
     }
-    if (mobileVideoRef.current) {
-      mobileVideoRef.current.currentTime = 0;
-      mobileVideoRef.current.play().catch(() => {});
+  };
+
+  const scrollToAbout = (e: React.MouseEvent, isMobile = false) => {
+    e.preventDefault();
+    const targetId = isMobile ? "about-mobile" : "about";
+    const el = document.getElementById(targetId) || document.getElementById("about") || document.getElementById("about-mobile");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -148,23 +198,30 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Smooth scroll convergence physics (0.0 to 1.0 over first 240px of scroll)
-  const scrollFactor = Math.min(1, Math.max(0, scrollY / 240));
-  // Gap shrinks from 180px down to 10px as you scroll
+  // Smooth scroll convergence physics (0.0 to 1.0 over first 180px of scroll)
+  const scrollFactor = Math.min(1, Math.max(0, scrollY / 180));
+  // Gap shrinks as you scroll
   const dynamicGap = Math.max(10, Math.round((1 - scrollFactor) * 180));
-  // Mobile dynamic gap shrinks from 8px down to 5px
-  const mobileDynamicGap = Math.max(5, Math.round((1 - scrollFactor) * 8));
+  const mobileDynamicGap = Math.max(6, Math.round((1 - scrollFactor) * 16));
+
   // Nav cluster translates horizontally towards the 3-bar sidebar button at top-right
   const navTranslateX = scrollFactor * 340;
-  const mobileNavTranslateX = scrollFactor * 135;
-  // Nav stays 100% visible while drawing closer, then smoothly drops into the 3-bar button at the end
-  const navOpacity = scrollFactor >= 0.85 ? Math.max(0, (1 - scrollFactor) / 0.15) : 1;
-  const navScale = scrollFactor >= 0.75 ? Math.max(0.15, 1 - (scrollFactor - 0.75) * 3.4) : Math.max(0.85, 1 - scrollFactor * 0.15);
-  // Sidebar button appears and scales up to receive the falling navbar
-  const sidebarButtonOpacity = scrollFactor >= 0.15 ? Math.min(1, (scrollFactor - 0.15) / 0.45) : 0;
-  const sidebarButtonScale = scrollFactor >= 0.15 ? Math.min(1, 0.5 + ((scrollFactor - 0.15) / 0.85) * 0.5) : 0;
+  const mobileNavTranslateX = scrollFactor * 90;
+
+  // Desktop Nav fade and scale
+  const navOpacity = scrollFactor >= 0.7 ? Math.max(0, 1 - (scrollFactor - 0.7) / 0.3) : 1;
+  const navScale = scrollFactor >= 0.6 ? Math.max(0.2, 1 - (scrollFactor - 0.6) * 2) : Math.max(0.85, 1 - scrollFactor * 0.15);
+
+  // Mobile Nav: Smoothly shrinks & dissolves as it approaches the button spot
+  const mobileNavOpacity = scrollFactor <= 0.2 ? 1 : Math.max(0, 1 - (scrollFactor - 0.2) / 0.45);
+  const mobileNavScale = scrollFactor <= 0.15 ? 1 : Math.max(0.1, 1 - Math.pow(scrollFactor, 1.3) * 0.9);
+
+  // Sidebar button appears and expands smoothly to receive the dissolving navbar (0.25 to 0.7)
+  const sidebarButtonOpacity = scrollFactor <= 0.25 ? 0 : Math.min(1, (scrollFactor - 0.25) / 0.4);
+  const sidebarButtonScale = scrollFactor <= 0.25 ? 0.3 : Math.min(1, 0.3 + ((scrollFactor - 0.25) / 0.4) * 0.7);
+
   // Header extras (logo & left actions) fade out gently as scroll begins
-  const headerExtrasOpacity = Math.max(0, 1 - scrollFactor * 2.5);
+  const headerExtrasOpacity = Math.max(0, 1 - scrollFactor * 2.2);
 
   // Proactively start playing video on mount and check cached images
   useEffect(() => {
@@ -176,13 +233,37 @@ export default function Home() {
       const imgDesktop = new Image();
       imgDesktop.src = "/landing_first_frame.jpg";
       if (imgDesktop.complete) setDesktopHqLoaded(true);
-    }
 
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.play().catch(() => {});
-    }
-    if (mobileVideoRef.current) {
-      mobileVideoRef.current.play().catch(() => {});
+      // Preload the guaranteed last frames
+      const imgMobileLast = new Image();
+      imgMobileLast.src = "/mobile_last_frame.jpg";
+      const imgDesktopLast = new Image();
+      imgDesktopLast.src = "/landing_last_frame.jpg";
+
+      const isMobile = window.innerWidth < 1024;
+      if (isMobile) {
+        if (mobileVideoRef.current) {
+          mobileVideoRef.current.play().catch(() => {
+            setVideoLoaded(true);
+            setVideoEnded(true);
+          });
+        }
+      } else {
+        if (desktopVideoRef.current) {
+          desktopVideoRef.current.play().catch(() => {
+            setVideoLoaded(true);
+            setVideoEnded(true);
+          });
+        }
+      }
+
+      // Safety watchdog: ensure UI and last frame always show within 4.5s
+      const timer = setTimeout(() => {
+        setVideoLoaded(true);
+        setVideoEnded(true);
+      }, 4500);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -234,12 +315,25 @@ export default function Home() {
               preload="auto"
               poster="/mobile_first_frame.jpg"
               onPlaying={handleVideoPlaying}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
+              onTimeUpdate={handleMobileTimeUpdate}
+              onEnded={handleMobileEnded}
+              onError={() => {
+                setVideoLoaded(true);
+                setVideoEnded(true);
+              }}
               className="h-full w-full object-cover object-center"
             >
               <source src={process.env.NEXT_PUBLIC_MOBILE_HERO_VIDEO || "/1012(1).mp4"} type="video/mp4" />
             </video>
+
+            {/* Guaranteed Last Frame Poster (fades in once video reaches the end, ensuring it is always on the last frame) */}
+            <img
+              src="/mobile_last_frame.jpg"
+              alt=""
+              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out pointer-events-none ${
+                videoEnded ? "opacity-100" : "opacity-0"
+              }`}
+            />
 
             {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}
             <div
@@ -286,7 +380,7 @@ export default function Home() {
 
           {/* Mobile Top App Bar: Fixed inside viewport with scroll convergence into 3-bar sidebar button */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-3 sm:px-4 pt-2.5 sm:pt-4 pb-2 transition-opacity duration-700 ${
+            className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-3.5 sm:px-5 pt-4 sm:pt-5 pb-2 transition-opacity duration-700 ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
@@ -305,39 +399,33 @@ export default function Home() {
               <img
                 src="/logo-gold.png"
                 alt="جامع الحق"
-                className="h-24 sm:h-32 md:h-36 w-auto max-h-[96px] sm:max-h-[135px] md:max-h-[160px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
+                className="h-28 sm:h-32 md:h-36 w-auto max-h-[110px] sm:max-h-[125px] md:max-h-[140px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
               />
             </Link>
 
-            {/* The 3 Links: Refined Luxury Typography (Center in RTL) */}
+            {/* Nav Links: Refined Luxury Typography (Centered with the Logo) */}
             <nav
               style={{
                 gap: `${mobileDynamicGap}px`,
-                transform: `translateX(${mobileNavTranslateX}px) scale(${navScale})`,
-                opacity: navOpacity,
-                pointerEvents: navOpacity > 0.2 ? "auto" : "none",
+                transform: `translateX(${mobileNavTranslateX}px) scale(${mobileNavScale})`,
+                opacity: mobileNavOpacity,
+                pointerEvents: mobileNavOpacity > 0.2 ? "auto" : "none",
                 transformOrigin: "center right",
               }}
-              className="flex items-center transition-all duration-75 will-change-transform shrink-0"
+              className="flex items-center transition-all duration-75 will-change-transform shrink-0 ml-4 sm:ml-6"
             >
               <Link
                 href="/booking"
-                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
+                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[14px] sm:text-[15px] font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.96] scale-y-[1.62] origin-center"
               >
                 المجلس
               </Link>
               <Link
                 href="/videos"
-                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
+                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[14px] sm:text-[15px] font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.96] scale-y-[1.62] origin-center"
               >
                 الخطب والدروس
               </Link>
-              <a
-                href="#about-mobile"
-                className="text-white hover:text-[#FFF2D2] transition-colors whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] text-[13px] sm:text-sm font-heading font-black py-1.5 px-0.5 inline-block scale-x-[0.94] scale-y-[1.45] origin-center"
-              >
-                عن المسجد
-              </a>
             </nav>
           </header>
 
@@ -363,15 +451,16 @@ export default function Home() {
 
               {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
               <div className="self-start mr-1 flex flex-wrap items-center justify-center gap-2 mt-1.5">
-                <Link
-                  href="/booking"
+                <a
+                  href="#about-mobile"
+                  onClick={(e) => scrollToAbout(e, true)}
                   className="relative group inline-flex items-center justify-center gap-2 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-5 py-2 rounded-full text-base sm:text-lg border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.25)] active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden tracking-wide"
                 >
-                  <Calendar className="w-5 h-5 text-[#FFE8B8] relative z-10" />
+                  <Landmark className="w-5 h-5 text-[#FFE8B8] relative z-10" />
                   <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                    احجز مجلس
+                    عن المسجد
                   </span>
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -495,12 +584,25 @@ export default function Home() {
               preload="auto"
               poster="/landing_first_frame.jpg"
               onPlaying={handleVideoPlaying}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
+              onTimeUpdate={handleDesktopTimeUpdate}
+              onEnded={handleDesktopEnded}
+              onError={() => {
+                setVideoLoaded(true);
+                setVideoEnded(true);
+              }}
               className="h-full w-full object-cover object-center"
             >
               <source src={process.env.NEXT_PUBLIC_DESKTOP_HERO_VIDEO || "/1014.mp4"} type="video/mp4" />
             </video>
+
+            {/* Guaranteed Last Frame Poster (fades in once video reaches the end, ensuring it is always on the last frame) */}
+            <img
+              src="/landing_last_frame.jpg"
+              alt=""
+              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out pointer-events-none ${
+                videoEnded ? "opacity-100" : "opacity-0"
+              }`}
+            />
 
             {/* Progressive First Frame Placeholder: Blurry LQ -> Smoothly fades to crisp HQ -> Smoothly dissolves into Video */}
             <div
@@ -598,29 +700,23 @@ export default function Home() {
                 <Video className="w-6 h-6 text-[#FFE8B8]" />
                 <span>الخطب والدروس</span>
               </Link>
-
-              <a
-                href="#about"
-                className="py-2 text-xl lg:text-2xl font-sans font-black text-white/95 hover:text-[#FFF2D2] transition-colors drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] whitespace-nowrap"
-              >
-                عن المسجد
-              </a>
             </nav>
           </header>
 
           {/* Desktop Hero Content: INSIDE the video frame on the right side */}
           <div
-            className={`relative z-20 ml-auto flex flex-1 w-[55%] flex-col justify-center pr-6 lg:pr-10 pl-10 pt-12 lg:pt-16 pb-8 transition-all duration-1000 ease-out ${
+            className={`relative z-20 ml-auto flex flex-1 w-[55%] min-h-screen flex-col justify-between pr-6 lg:pr-10 pl-10 pt-32 lg:pt-40 xl:pt-44 pb-8 lg:pb-12 transition-all duration-1000 ease-out ${
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            <div className="flex flex-col items-start gap-3 text-right mt-0 lg:mt-2">
-              <div className="flex flex-col items-center gap-3.5">
+            {/* Main Hero Elements: جامع الحق + الموقع + الأزرار (moved down for laptop view to fill screen proportionally) */}
+            <div className="flex flex-col items-start gap-3 text-right mt-auto mb-auto lg:translate-y-4 xl:translate-y-6">
+              <div className="flex flex-col items-center gap-4">
                 {/* Title: Ornate golden calligraphy matching reference */}
                 <img
                   src="/hero-calligraphy-gold.png"
                   alt="جامع الحق"
-                  className="w-[280px] lg:w-[340px] h-auto object-contain drop-shadow-[0_6px_22px_rgba(0,0,0,0.6)]"
+                  className="w-[290px] lg:w-[350px] xl:w-[380px] h-auto object-contain drop-shadow-[0_6px_22px_rgba(0,0,0,0.6)]"
                 />
 
                 {/* Location Tag */}
@@ -631,20 +727,23 @@ export default function Home() {
 
                 {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
                 <div className="self-start mr-3 lg:mr-5 flex items-center gap-4 mt-2">
-                  <Link
-                    href="/booking"
+                  <a
+                    href="#about"
+                    onClick={(e) => scrollToAbout(e, false)}
                     className="relative group inline-flex min-h-12 py-2.5 items-center justify-center gap-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-9 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
                   >
-                    <Calendar className="w-6 h-6 text-[#FFE8B8] relative z-10" />
+                    <Landmark className="w-6 h-6 text-[#FFE8B8] relative z-10" />
                     <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-                      احجز مجلس
+                      عن المسجد
                     </span>
-                  </Link>
+                  </a>
                 </div>
               </div>
+            </div>
 
-              {/* 3 Bottom Feature Badges: Frameless on laptop view & moved down with smooth typography */}
-              <div className="mt-10 lg:mt-14 grid w-full grid-cols-3 gap-6">
+            {/* 3 Bottom Feature Badges: Frameless on laptop view & anchored at the bottom */}
+            <div className="w-full pt-4">
+              <div className="grid w-full grid-cols-3 gap-6">
                 {[
                   { icon: HeartHandshake, title: "صدقة جارية", detail: "الأجر المستدام" },
                   { icon: BookOpen, title: "علم ونور", detail: "لبناء جيل واعٍ" },
@@ -960,11 +1059,11 @@ export default function Home() {
             <div className="w-16 h-[1px] bg-white/25 mb-6" />
 
             {/* Navigation links centered with elegant spacing */}
-            <nav className="flex flex-col items-center gap-4 w-full">
+            <nav className="flex flex-col items-center gap-5 w-full">
               <Link
                 href="/"
                 onClick={() => setSidebarOpen(false)}
-                className="text-base sm:text-lg font-bold text-white/90 hover:text-white transition tracking-wide drop-shadow-sm"
+                className="text-base sm:text-lg font-bold text-white/90 hover:text-[#D4AF85] transition tracking-wide drop-shadow-sm"
               >
                 الرئيسية
               </Link>
@@ -972,32 +1071,42 @@ export default function Home() {
               <Link
                 href="/videos"
                 onClick={() => setSidebarOpen(false)}
-                className="text-base sm:text-lg font-bold text-white/90 hover:text-white transition tracking-wide drop-shadow-sm"
+                className="text-base sm:text-lg font-bold text-white/90 hover:text-[#D4AF85] transition tracking-wide drop-shadow-sm"
               >
                 الخطب والدروس
               </Link>
 
-              {/* Featured Active Item with outlined pill border (like 'WIDE EXTERIOR') */}
               <Link
                 href="/booking"
                 onClick={() => setSidebarOpen(false)}
-                className="border border-white/60 hover:border-[#D4AF85] hover:bg-white/10 rounded-full px-8 py-2 text-base sm:text-lg font-bold text-[#D4AF85] hover:text-white transition-all shadow-sm tracking-wide drop-shadow-sm my-1"
+                className="text-base sm:text-lg font-bold text-white/90 hover:text-[#D4AF85] transition tracking-wide drop-shadow-sm"
               >
                 المجلس
               </Link>
 
               <a
                 href="#about"
-                onClick={() => setSidebarOpen(false)}
-                className="text-base sm:text-lg font-bold text-white/90 hover:text-white transition tracking-wide drop-shadow-sm"
+                onClick={(e) => {
+                  setSidebarOpen(false);
+                  scrollToAbout(e, typeof window !== "undefined" && window.innerWidth < 1024);
+                }}
+                className="text-base sm:text-lg font-bold text-white/90 hover:text-[#D4AF85] transition tracking-wide drop-shadow-sm"
               >
                 عن المسجد
               </a>
 
               <a
                 href="#prayer-times"
-                onClick={() => setSidebarOpen(false)}
-                className="text-base sm:text-lg font-bold text-white/90 hover:text-white transition tracking-wide drop-shadow-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSidebarOpen(false);
+                  const targetId = typeof window !== "undefined" && window.innerWidth < 1024 ? "prayer-times-mobile" : "prayer-times";
+                  const el = document.getElementById(targetId) || document.getElementById("prayer-times") || document.getElementById("prayer-times-mobile");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                className="text-base sm:text-lg font-bold text-white/90 hover:text-[#D4AF85] transition tracking-wide drop-shadow-sm"
               >
                 أوقات الصلاة
               </a>
@@ -1005,22 +1114,6 @@ export default function Home() {
 
             {/* Delicate thin divider */}
             <div className="w-16 h-[1px] bg-white/25 mt-6" />
-          </div>
-
-          {/* Bottom Action & Mosque Info (like 'View Project' pill button) */}
-          <div className="flex flex-col items-center gap-4 pb-2">
-            <Link
-              href="/booking"
-              onClick={() => setSidebarOpen(false)}
-              className="border border-white/50 hover:border-[#D4AF85] hover:bg-white/10 text-white hover:text-[#D4AF85] font-bold text-sm uppercase tracking-widest px-8 py-2.5 rounded-full transition-all active:scale-95 cursor-pointer shadow-sm drop-shadow-sm"
-            >
-              احجز مجلس
-            </Link>
-
-            <div className="text-[11px] text-[#8EA3BF]/90 text-center space-y-0.5">
-              <p>ولاية السيب — الموالح الجنوبية</p>
-              <p className="text-[#D4AF85]/90">سلطنة عمان</p>
-            </div>
           </div>
         </div>
       </div>

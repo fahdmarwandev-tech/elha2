@@ -5,6 +5,9 @@ const isDev = process.env.NODE_ENV !== "production";
 const nextConfig: NextConfig = {
   ...(isDev ? {} : { output: "export" }),
   reactStrictMode: true,
+  experimental: {
+    turbopackPluginRuntimeStrategy: "workerThreads",
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

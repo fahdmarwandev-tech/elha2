@@ -865,167 +865,170 @@ export default function BookingPage() {
 
         {/* STEP C: ACTIVE RESERVATION WIZARD */}
         {!pendingInitiation && !confirmedBooking && (
-          <div className="space-y-12 sm:space-y-16">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-10 xl:gap-14 items-start">
+          <div className="space-y-8 sm:space-y-10">
+            {/* Step 1 & Step 2 Side-by-Side: Symmetrical Equal-Size Boxes on Laptop View */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-8 xl:gap-10 items-stretch">
               {/* Step 1: Calendar Widget */}
-              <div className="lg:col-span-6">
+              <div className="flex flex-col h-full">
                 <div
                   data-glass-card="true"
-                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-[#FAF7F0] relative overflow-hidden"
+                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45)] text-[#FAF7F0] relative overflow-hidden flex flex-col justify-between h-full"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/15">
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                        <span className="text-[#FFE8B8] font-mono font-black ml-2">1.</span>
-                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/15">
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                          <span className="text-[#FFE8B8] font-mono font-black ml-2">1.</span>
+                          <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent inline-block pe-2 ps-1 py-0.5 leading-normal">
+                            {bookingType === "3aza"
+                              ? "اختر تاريخ بداية العزاء (٣ أيام متتالية)"
+                              : "اختر تاريخ المناسبة من التقويم"}
+                          </span>
+                        </h2>
+                        <p className="text-xs text-[#DCE6F2] mt-0.5">
                           {bookingType === "3aza"
-                            ? "اختر تاريخ بداية العزاء (٣ أيام متتالية)"
-                            : "اختر تاريخ المناسبة من التقويم"}
-                        </span>
-                      </h2>
-                      <p className="text-xs text-[#DCE6F2] mt-0.5">
-                        {bookingType === "3aza"
-                          ? "اضغط على اليوم الأول ليتم تحديد 3 أيام متتالية لمجلس العزاء تلقائياً"
-                          : "اضغط على اليوم المطلوب لتحديده والاطلاع على الساعات المتاحة"}
-                      </p>
-                    </div>
-
-                    {/* Month Controls */}
-                    <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/20 rounded-xl px-2 py-1">
-                      <button
-                        type="button"
-                        disabled={currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)}
-                        onClick={() => {
-                          if (currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)) {
-                            return;
-                          }
-                          if (currentMonth === 1) {
-                            setCurrentMonth(12);
-                            setCurrentYear((y) => y - 1);
-                          } else {
-                            setCurrentMonth((m) => m - 1);
-                          }
-                        }}
-                        className={`p-1.5 rounded-lg transition ${
-                          currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)
-                            ? "text-white/20 cursor-not-allowed"
-                            : "hover:bg-white/20 text-[#FFE8B8] cursor-pointer"
-                        }`}
-                        title="الشهر السابق"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                      <span className="text-xs font-bold text-[#FFF2D2] px-3 min-w-[105px] text-center">
-                        {currentMonthName}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (currentMonth === 12) {
-                            setCurrentMonth(1);
-                            setCurrentYear((y) => y + 1);
-                          } else {
-                            setCurrentMonth((m) => m + 1);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-white/20 text-[#D4AF85] transition cursor-pointer"
-                        title="الشهر التالي"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 3-Day Selection Banner for 3aza */}
-                  {bookingType === "3aza" && (
-                    <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-[#D4AF85]/15 border border-[#D4AF85]/40 flex items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2 text-[#FFF2D2] font-bold">
-                        <CalendarIcon className="w-4 h-4 text-[#FFE8B8] shrink-0" />
-                        <span>تحديد 3 أيام متتالية للعزاء:</span>
+                            ? "اضغط على اليوم الأول ليتم تحديد 3 أيام متتالية لمجلس العزاء تلقائياً"
+                            : "اضغط على اليوم المطلوب لتحديده والاطلاع على الساعات المتاحة"}
+                        </p>
                       </div>
-                      <span className="font-bold text-[#FFE8B8]">
-                        {selectedDateSummaryText}
-                      </span>
-                    </div>
-                  )}
 
-                  {/* Weekday names */}
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#FFE8B8] mb-3 py-2.5 bg-white/[0.06] rounded-xl">
-                    <span>الأحد</span>
-                    <span>الإثنين</span>
-                    <span>الثلاثاء</span>
-                    <span>الأربعاء</span>
-                    <span>الخميس</span>
-                    <span>الجمعة</span>
-                    <span>السبت</span>
-                  </div>
-
-                  {/* Day Buttons with backend live availability status & 3-day selection highlight */}
-                  <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: startDayOffset }).map((_, i) => (
-                      <div key={`offset-${i}`} className="h-11 sm:h-12" />
-                    ))}
-
-                    {Array.from({ length: daysInMonth }).map((_, i) => {
-                      const day = i + 1;
-                      const dayStatus = getCalendarDayStatus(day);
-                      const isPast = dayStatus === "PAST";
-                      const isFullyBooked = dayStatus === "FULLY_BOOKED";
-                      const isPartiallyBooked = dayStatus === "PARTIALLY_BOOKED";
-                      const isDisabled = isPast || isFullyBooked;
-
-                      const selectedIdx = !isDisabled
-                        ? selectedDates.findIndex(
-                            (sd) => sd.year === currentYear && sd.month === currentMonth && sd.day === day
-                          )
-                        : -1;
-                      const isSelected = selectedIdx !== -1;
-
-                      return (
+                      {/* Month Controls */}
+                      <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/20 rounded-xl px-2 py-1">
                         <button
-                          key={day}
                           type="button"
-                          disabled={isDisabled}
+                          disabled={currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)}
                           onClick={() => {
-                            if (!isDisabled) {
-                              setSelectedDay(day);
+                            if (currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)) {
+                              return;
+                            }
+                            if (currentMonth === 1) {
+                              setCurrentMonth(12);
+                              setCurrentYear((y) => y - 1);
+                            } else {
+                              setCurrentMonth((m) => m - 1);
                             }
                           }}
-                          onMouseMove={isDisabled ? undefined : handleButtonMouseMove}
-                          className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center ${
-                            isSelected
-                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10 cursor-pointer"
-                              : isPast
-                              ? "bg-slate-600/25 text-slate-400/40 border border-slate-500/20 cursor-not-allowed select-none opacity-55"
-                              : isFullyBooked
-                              ? "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
-                              : isPartiallyBooked
-                              ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25] cursor-pointer"
-                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20 cursor-pointer"
+                          className={`p-1.5 rounded-lg transition ${
+                            currentYear < today.year || (currentYear === today.year && currentMonth <= today.month)
+                              ? "text-white/20 cursor-not-allowed"
+                              : "hover:bg-white/20 text-[#FFE8B8] cursor-pointer"
                           }`}
+                          title="الشهر السابق"
                         >
-                          <span className="relative z-10 leading-none">{day}</span>
-                          {isSelected && bookingType === "3aza" && (
-                            <span className="relative z-10 text-[9px] font-extrabold text-[#FFE8B8] mt-0.5 leading-none">
-                              اليوم {selectedIdx + 1}
-                            </span>
-                          )}
-                          {isPartiallyBooked && !isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
-                          )}
+                          <ChevronRight className="w-4 h-4" />
                         </button>
-                      );
-                    })}
-                  </div>
+                        <span className="text-xs font-bold text-[#FFF2D2] px-3 min-w-[105px] text-center">
+                          {currentMonthName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (currentMonth === 12) {
+                              setCurrentMonth(1);
+                              setCurrentYear((y) => y + 1);
+                            } else {
+                              setCurrentMonth((m) => m + 1);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-white/20 text-[#D4AF85] transition cursor-pointer"
+                          title="الشهر التالي"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Spillover notice if Day 2 or Day 3 is in next month */}
-                  {bookingType === "3aza" &&
-                    selectedDates.some((sd) => sd.month !== currentMonth || sd.year !== currentYear) && (
-                      <div className="mt-3 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-[11px] text-[#FFE8B8] text-center">
-                        يمتد الحجز إلى الشهر التالي:{" "}
-                        {selectedDates.map((sd, idx) => `اليوم ${idx + 1} (${sd.label})`).join(" • ")}
+                    {/* 3-Day Selection Banner for 3aza */}
+                    {bookingType === "3aza" && (
+                      <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-[#D4AF85]/15 border border-[#D4AF85]/40 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 text-[#FFF2D2] font-bold">
+                          <CalendarIcon className="w-4 h-4 text-[#FFE8B8] shrink-0" />
+                          <span>تحديد 3 أيام متتالية للعزاء:</span>
+                        </div>
+                        <span className="font-bold text-[#FFE8B8]">
+                          {selectedDateSummaryText}
+                        </span>
                       </div>
                     )}
+
+                    {/* Weekday names */}
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#FFE8B8] mb-3 py-2.5 bg-white/[0.06] rounded-xl">
+                      <span>الأحد</span>
+                      <span>الإثنين</span>
+                      <span>الثلاثاء</span>
+                      <span>الأربعاء</span>
+                      <span>الخميس</span>
+                      <span>الجمعة</span>
+                      <span>السبت</span>
+                    </div>
+
+                    {/* Day Buttons with backend live availability status & 3-day selection highlight */}
+                    <div className="grid grid-cols-7 gap-2">
+                      {Array.from({ length: startDayOffset }).map((_, i) => (
+                        <div key={`offset-${i}`} className="h-11 sm:h-12" />
+                      ))}
+
+                      {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const dayStatus = getCalendarDayStatus(day);
+                        const isPast = dayStatus === "PAST";
+                        const isFullyBooked = dayStatus === "FULLY_BOOKED";
+                        const isPartiallyBooked = dayStatus === "PARTIALLY_BOOKED";
+                        const isDisabled = isPast || isFullyBooked;
+
+                        const selectedIdx = !isDisabled
+                          ? selectedDates.findIndex(
+                              (sd) => sd.year === currentYear && sd.month === currentMonth && sd.day === day
+                            )
+                          : -1;
+                        const isSelected = selectedIdx !== -1;
+
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            disabled={isDisabled}
+                            onClick={() => {
+                              if (!isDisabled) {
+                                setSelectedDay(day);
+                              }
+                            }}
+                            onMouseMove={isDisabled ? undefined : handleButtonMouseMove}
+                            className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center ${
+                              isSelected
+                                ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10 cursor-pointer"
+                                : isPast
+                                ? "bg-slate-600/25 text-slate-400/40 border border-slate-500/20 cursor-not-allowed select-none opacity-55"
+                                : isFullyBooked
+                                ? "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
+                                : isPartiallyBooked
+                                ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25] cursor-pointer"
+                                : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20 cursor-pointer"
+                            }`}
+                          >
+                            <span className="relative z-10 leading-none">{day}</span>
+                            {isSelected && bookingType === "3aza" && (
+                              <span className="relative z-10 text-[9px] font-extrabold text-[#FFE8B8] mt-0.5 leading-none">
+                                اليوم {selectedIdx + 1}
+                              </span>
+                            )}
+                            {isPartiallyBooked && !isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Spillover notice if Day 2 or Day 3 is in next month */}
+                    {bookingType === "3aza" &&
+                      selectedDates.some((sd) => sd.month !== currentMonth || sd.year !== currentYear) && (
+                        <div className="mt-3 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-[11px] text-[#FFE8B8] text-center">
+                          يمتد الحجز إلى الشهر التالي:{" "}
+                          {selectedDates.map((sd, idx) => `اليوم ${idx + 1} (${sd.label})`).join(" • ")}
+                        </div>
+                      )}
+                  </div>
 
                   {/* Legend */}
                   <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 pt-4 border-t border-white/15 text-xs text-[#DCE6F2]">
@@ -1055,141 +1058,142 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Step 2 & Step 3: Interactive Hour Tile Grid (Like Calendar) + Hall Overview */}
-              <div className="lg:col-span-6 space-y-8">
-                {/* Step 2: Interactive Hour Grid Selector */}
+              {/* Step 2: Interactive Hour Grid Selector */}
+              <div className="flex flex-col h-full">
                 <div
                   data-glass-card="true"
-                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] relative overflow-hidden space-y-4"
+                  className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.45)] relative overflow-hidden flex flex-col justify-between h-full space-y-4"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/15">
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                        <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
-                        <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
-                          {bookingType === "3aza"
-                            ? "توقيت العزاء (من صلاة الظهر إلى صلاة المغرب)"
-                            : "اختر الساعات بنفس طريقة اختيار التاريخ"}
-                        </span>
-                      </h2>
-                      <p className="text-xs text-[#DCE6F2] mt-0.5">
-                        {bookingType === "3aza"
-                          ? "يُحجز مجلس العزاء من وقت صلاة الظهر حتى أذان المغرب لمدة 3 أيام متتالية"
-                          : isPickingEndHour
-                          ? `تم تحديد البداية (${formatShortHour(startHour)}) — اضغط الآن على ساعة النهاية لتوسيع الفترة`
-                          : "اضغط على ساعة البدء ثم اضغط على ساعة الانتهاء لتحديد الفترة المطلوبة"}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#D4AF85]/20 text-[#FFE8B8] border border-[#D4AF85]/30">
-                      {activeHall.hourlyRate} {activeHall.currency || "ر.ع"} / ساعة
-                    </span>
-                  </div>
-
-                  {/* Mode Banner: 24 Hours for Katb Ketab vs Dhuhr to Maghrib Only for 3aza */}
-                  {bookingType === "3aza" ? (
-                    <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-xs text-[#FFE8B8] flex items-center gap-2.5">
-                      <Sun className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span>
-                        مجلس العزاء متاح <strong>من صلاة الظهر ({dhuhrTimeStr}) حتى أذان المغرب ({maghribTimeStr})</strong> لمدة 3 أيام — ولا يتاح إذا كانت القاعة محجوزة لعقد قران أو عزاء في هذا الوقت لأنها قاعة واحدة فقط.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/15 text-xs text-[#DCE6F2] flex items-center gap-2.5">
-                      <Clock className="w-4 h-4 text-[#D4AF85] shrink-0" />
-                      <span>
-                        جميع ساعات اليوم (<strong>٢٤ ساعة</strong>) متاحة لحجز عقد القران (الساعات المحجوزة لعقد قران أو عزاء تظهر غير متاحة لأنها قاعة واحدة).
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Conflict Alert if selected day(s) have a reservation in the Dhuhr-Maghrib / selected range */}
-                  {!isRangeAvailable(startHour, endHour) && (
-                    <div className="p-3 rounded-2xl bg-red-950/60 border border-red-500/50 text-xs text-red-200 flex items-center gap-2.5">
-                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>
-                        {bookingType === "3aza"
-                          ? "القاعة محجوزة بالفعل خلال فترة الظهر إلى المغرب في أحد الأيام الثلاثة المحددة (لعقد قران أو عزاء) — يرجى اختيار تاريخ آخر متاح."
-                          : "توجد ساعات محجوزة في الفترة المحددة — يرجى اختيار ساعات متاحة."}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Interactive Hour Tiles Grid (matching the Calendar date picker) */}
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
-                    {visibleHourSlots.map(({ hour, status }) => {
-                      const isAvailable = status === "AVAILABLE";
-                      const isSelected = hour >= startHour && hour < endHour;
-                      const isStart = hour === startHour;
-                      const isEnd = hour === endHour - 1;
-                      const isSingleHour = isStart && isEnd;
-
-                      let subLabel = `إلى ${formatShortHour(hour + 1)}`;
-                      if (!isAvailable) {
-                        subLabel = status === "BUFFER" ? "تجهيز" : status === "BLACKOUT" ? "مغلق" : "محجوز";
-                      } else if (isSelected) {
-                        if (isSingleHour) {
-                          subLabel = isPickingEndHour ? "نقطة البدء" : "ساعة واحدة";
-                        } else if (isStart) {
-                          subLabel = "وقت البدء";
-                        } else if (isEnd) {
-                          subLabel = "وقت الانتهاء";
-                        } else {
-                          subLabel = "ضمن الفترة";
-                        }
-                      } else if (bookingType === "3aza" && hour === maghribHour - 1) {
-                        subLabel = "حتى المغرب";
-                      }
-
-                      return (
-                        <button
-                          key={hour}
-                          type="button"
-                          disabled={!isAvailable}
-                          onClick={() => handleHourTileClick(hour)}
-                          onMouseMove={handleButtonMouseMove}
-                          className={`relative group overflow-hidden h-14 rounded-xl px-1.5 py-1.5 text-center transition flex flex-col items-center justify-center cursor-pointer ${
-                            isSelected
-                              ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
-                              : !isAvailable
-                              ? status === "BUFFER"
-                                ? "bg-amber-950/30 text-amber-300/40 cursor-not-allowed line-through border border-amber-500/20"
-                                : "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
-                              : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
-                          }`}
-                        >
-                          <span className="relative z-10 text-xs font-black tracking-tight leading-tight">
-                            {formatShortHour(hour)}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/15">
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                          <span className="text-[#FFE8B8] font-mono font-black ml-2">2.</span>
+                          <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
+                            {bookingType === "3aza"
+                              ? "توقيت العزاء (من صلاة الظهر إلى صلاة المغرب)"
+                              : "اختر الساعات بنفس طريقة اختيار التاريخ"}
                           </span>
-                          <span
-                            className={`relative z-10 text-[9px] mt-0.5 leading-none font-bold ${
+                        </h2>
+                        <p className="text-xs text-[#DCE6F2] mt-0.5">
+                          {bookingType === "3aza"
+                            ? "يُحجز مجلس العزاء من وقت صلاة الظهر حتى أذان المغرب لمدة 3 أيام متتالية"
+                            : isPickingEndHour
+                            ? `تم تحديد البداية (${formatShortHour(startHour)}) — اضغط الآن على ساعة النهاية لتوسيع الفترة`
+                            : "اضغط على ساعة البدء ثم اضغط على ساعة الانتهاء لتحديد الفترة المطلوبة"}
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#D4AF85]/20 text-[#FFE8B8] border border-[#D4AF85]/30">
+                        {activeHall.hourlyRate} {activeHall.currency || "ر.ع"} / ساعة
+                      </span>
+                    </div>
+
+                    {/* Mode Banner: 24 Hours for Katb Ketab vs Dhuhr to Maghrib Only for 3aza */}
+                    {bookingType === "3aza" ? (
+                      <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-xs text-[#FFE8B8] flex items-center gap-2.5">
+                        <Sun className="w-4 h-4 text-amber-300 shrink-0" />
+                        <span>
+                          مجلس العزاء متاح <strong>من صلاة الظهر ({dhuhrTimeStr}) حتى أذان المغرب ({maghribTimeStr})</strong> لمدة 3 أيام — ولا يتاح إذا كانت القاعة محجوزة لعقد قران أو عزاء في هذا الوقت لأنها قاعة واحدة فقط.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/15 text-xs text-[#DCE6F2] flex items-center gap-2.5">
+                        <Clock className="w-4 h-4 text-[#D4AF85] shrink-0" />
+                        <span>
+                          جميع ساعات اليوم (<strong>٢٤ ساعة</strong>) متاحة لحجز عقد القران (الساعات المحجوزة لعقد قران أو عزاء تظهر غير متاحة لأنها قاعة واحدة).
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Conflict Alert if selected day(s) have a reservation in the Dhuhr-Maghrib / selected range */}
+                    {!isRangeAvailable(startHour, endHour) && (
+                      <div className="p-3 rounded-2xl bg-red-950/60 border border-red-500/50 text-xs text-red-200 flex items-center gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                        <span>
+                          {bookingType === "3aza"
+                            ? "القاعة محجوزة بالفعل خلال فترة الظهر إلى المغرب في أحد الأيام الثلاثة المحددة (لعقد قران أو عزاء) — يرجى اختيار تاريخ آخر متاح."
+                            : "توجد ساعات محجوزة في الفترة المحددة — يرجى اختيار ساعات متاحة."}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Interactive Hour Tiles Grid (matching the Calendar date picker) */}
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
+                      {visibleHourSlots.map(({ hour, status }) => {
+                        const isAvailable = status === "AVAILABLE";
+                        const isSelected = hour >= startHour && hour < endHour;
+                        const isStart = hour === startHour;
+                        const isEnd = hour === endHour - 1;
+                        const isSingleHour = isStart && isEnd;
+
+                        let subLabel = `إلى ${formatShortHour(hour + 1)}`;
+                        if (!isAvailable) {
+                          subLabel = status === "BUFFER" ? "تجهيز" : status === "BLACKOUT" ? "مغلق" : "محجوز";
+                        } else if (isSelected) {
+                          if (isSingleHour) {
+                            subLabel = isPickingEndHour ? "نقطة البدء" : "ساعة واحدة";
+                          } else if (isStart) {
+                            subLabel = "وقت البدء";
+                          } else if (isEnd) {
+                            subLabel = "وقت الانتهاء";
+                          } else {
+                            subLabel = "ضمن الفترة";
+                          }
+                        } else if (bookingType === "3aza" && hour === maghribHour - 1) {
+                          subLabel = "حتى المغرب";
+                        }
+
+                        return (
+                          <button
+                            key={hour}
+                            type="button"
+                            disabled={!isAvailable}
+                            onClick={() => handleHourTileClick(hour)}
+                            onMouseMove={handleButtonMouseMove}
+                            className={`relative group overflow-hidden h-14 rounded-xl px-1.5 py-1.5 text-center transition flex flex-col items-center justify-center cursor-pointer ${
                               isSelected
-                                ? "text-[#FFE8B8]"
+                                ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
                                 : !isAvailable
-                                ? "text-white/30"
-                                : "text-[#8EA3BF]"
+                                ? status === "BUFFER"
+                                  ? "bg-amber-950/30 text-amber-300/40 cursor-not-allowed line-through border border-amber-500/20"
+                                  : "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
+                                : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
                             }`}
                           >
-                            {subLabel}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Turnaround Buffer Notice Requirement */}
-                  <div className="p-3.5 rounded-2xl bg-[#D4AF85]/10 border border-[#D4AF85]/30 text-xs text-[#FFE8B8] space-y-1">
-                    <div className="flex items-center gap-2 font-bold">
-                      <Sparkles className="w-4 h-4 text-[#FFE8B8] shrink-0" />
-                      <span>تجهيز واستراحة تلقائية (Buffer):</span>
+                            <span className="relative z-10 text-xs font-black tracking-tight leading-tight">
+                              {formatShortHour(hour)}
+                            </span>
+                            <span
+                              className={`relative z-10 text-[9px] mt-0.5 leading-none font-bold ${
+                                isSelected
+                                  ? "text-[#FFE8B8]"
+                                  : !isAvailable
+                                  ? "text-white/30"
+                                  : "text-[#8EA3BF]"
+                              }`}
+                            >
+                              {subLabel}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <p className="text-[11px] text-[#DCE6F2] leading-relaxed">
-                      ملاحظة: يتم تخصيص وقت استراحة وفاصل تجهيز (بفر) تلقائي قبل وبعد الحجز لضمان النظافة والترتيب
-                      ({activeHall.bufferHours || 1} ساعة تلقائياً).
-                    </p>
+
+                    {/* Turnaround Buffer Notice Requirement */}
+                    <div className="p-3.5 rounded-2xl bg-[#D4AF85]/10 border border-[#D4AF85]/30 text-xs text-[#FFE8B8] space-y-1">
+                      <div className="flex items-center gap-2 font-bold">
+                        <Sparkles className="w-4 h-4 text-[#FFE8B8] shrink-0" />
+                        <span>تجهيز واستراحة تلقائية (Buffer):</span>
+                      </div>
+                      <p className="text-[11px] text-[#DCE6F2] leading-relaxed">
+                        ملاحظة: يتم تخصيص وقت استراحة وفاصل تجهيز (بفر) تلقائي قبل وبعد الحجز لضمان النظافة والترتيب
+                        ({activeHall.bufferHours || 1} ساعة تلقائياً).
+                      </p>
+                    </div>
                   </div>
 
                   {/* Dynamic Price & Duration Calculation */}
-                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-auto">
                     <div className="space-y-0.5">
                       <span className="block text-[11px] text-[#8EA3BF]">
                         {bookingType === "3aza" ? "الفترة اليومية (لمدة 3 أيام متتالية):" : "إجمالي مدة الحجز:"}
@@ -1211,40 +1215,33 @@ export default function BookingPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Step 3: Hall Overview */}
-                <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
-                      <span className="text-[#FFE8B8] font-mono font-black ml-2">3.</span>
-                      <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
-                        قاعة المجلس المعتمدة
-                      </span>
-                    </h2>
-                    <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-[#FFE8B8] border border-white/20 font-bold">
-                      تتسع حتى {activeHall.capacity} فرد
-                    </span>
-                  </div>
+            {/* Step 3: Hall Overview */}
+            <div data-glass-card="true" className="glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-black font-sans flex items-center">
+                  <span className="text-[#FFE8B8] font-mono font-black ml-2">3.</span>
+                  <span className="bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-black inline-block pe-2 ps-1 py-0.5 leading-normal">
+                    قاعة المجلس المعتمدة
+                  </span>
+                </h2>
+                <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-[#FFE8B8] border border-white/20 font-bold">
+                  تتسع حتى {activeHall.capacity} فرد
+                </span>
+              </div>
 
-                  <p className="text-xs text-[#DCE6F2] leading-relaxed">
-                    {activeHall.description || "قاعة المجلس العام مجهزة بأحدث وسائل التكييف، الصوتيات الرقمية، وشاشات العرض."}
-                  </p>
+              <p className="text-xs text-[#DCE6F2] leading-relaxed">
+                {activeHall.description || "قاعة المجلس العام مجهزة بأحدث وسائل التكييف، الصوتيات الرقمية، وشاشات العرض."}
+              </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/15">
-                    <span className="text-[11px] text-[#FFE8B8]">
-                      {bookingType === "3aza"
-                        ? `مواعيد العزاء: متاح حتى أذان المغرب (${maghribTimeStr})`
-                        : "ساعات الاستقبال لعقد القران: متاح ٢٤ ساعة"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowGallery((prev) => !prev)}
-                      className="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
-                    >
-                      {showGallery ? "إخفاء الصور" : "عرض صور القاعة"}
-                    </button>
-                  </div>
-                </div>
+              <div className="pt-2 border-t border-white/15">
+                <span className="text-[11px] text-[#FFE8B8]">
+                  {bookingType === "3aza"
+                    ? `مواعيد العزاء: متاح حتى أذان المغرب (${maghribTimeStr})`
+                    : "ساعات الاستقبال لعقد القران: متاح ٢٤ ساعة"}
+                </span>
               </div>
             </div>
 
