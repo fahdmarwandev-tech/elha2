@@ -1445,3 +1445,37 @@ export async function resetPassword(
     body: JSON.stringify({ identifier, otpCode, newPassword }),
   });
 }
+
+// Staff Emails Management (Option 1 DB Table)
+export interface StaffEmailResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface CreateStaffEmailRequest {
+  fullName: string;
+  email: string;
+}
+
+export async function getStaffMembers(): Promise<StaffEmailResponse[]> {
+  const res = await request<StaffEmailResponse[]>("/api/v1/staff");
+  return res || [];
+}
+
+export async function createStaffMember(
+  data: CreateStaffEmailRequest
+): Promise<StaffEmailResponse> {
+  return requestWithAuth<StaffEmailResponse>("/api/v1/staff", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteStaffMember(id: number): Promise<void> {
+  return requestWithAuth<void>(`/api/v1/staff/${id}`, {
+    method: "DELETE",
+  });
+}
+

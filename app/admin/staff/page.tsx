@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import { useRouter } from "next/navigation";
-import { isAdminUser } from "@/lib/api";
+import {
+  isAdminUser,
+  getStaffMembers,
+  createStaffMember,
+  deleteStaffMember,
+  ApiError,
+} from "@/lib/api";
 import {
   Users,
   UserPlus,
@@ -15,11 +21,12 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 
 export interface StaffMember {
-  id: string;
+  id: string | number;
   fullName: string;
   email: string;
   createdAt: string;
@@ -55,18 +62,20 @@ export default function AdminStaffPage() {
   // Staff List State
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Simple Form Fields (Name + Email only)
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Copy Feedback
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Delete Confirmation State
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | number | null>(null);
 
   // 1. Authorization check
   useEffect(() => {
@@ -77,44 +86,51 @@ export default function AdminStaffPage() {
     }
   }, [router]);
 
-  // 2. Load stored staff from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // 2. Load staff from backend database (Option 1) with fallback
+  const fetchStaff = async () => {
     try {
+      setIsLoading(true);
+      const data = await getStaffMembers();
+      if (Array.isArray(data) && data.length > 0) {
+        setStaffList(
+          data.map((item) => ({
+            id: item.id,
+            fullName: item.fullName,
+            email: item.email,
+            createdAt: item.createdAt ? item.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+          }))
+        );
+        return;
+      }
+      // If DB empty, fallback to localStorage
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Keep only required simplified fields
-          const simplified: StaffMember[] = parsed.map((item: any) => ({
-            id: item.id || `staff-${Date.now()}-${Math.random()}`,
-            fullName: item.fullName || "موظف",
-            email: item.email || "",
-            createdAt: item.createdAt || new Date().toISOString().split("T")[0],
-          }));
-          setStaffList(simplified);
-          return;
-        }
+        setStaffList(JSON.parse(stored));
+      } else {
+        setStaffList(DEFAULT_STAFF);
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STAFF));
-      setStaffList(DEFAULT_STAFF);
     } catch {
-      setStaffList(DEFAULT_STAFF);
-    }
-  }, []);
-
-  // Save changes helper
-  const saveStaffList = (updated: StaffMember[]) => {
-    setStaffList(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to save to localStorage", e);
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          setStaffList(JSON.parse(stored));
+        } catch {
+          setStaffList(DEFAULT_STAFF);
+        }
+      } else {
+        setStaffList(DEFAULT_STAFF);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Add staff member (Name + Email only)
-  const handleAddStaff = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  // Add staff member (Name + Email only - saved in DB)
+  const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
     setFormSuccess("");
@@ -144,29 +160,55 @@ export default function AdminStaffPage() {
       return;
     }
 
-    const newMember: StaffMember = {
-      id: `staff-${Date.now()}`,
-      fullName: cleanName,
-      email: cleanEmail,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      setIsSubmitting(true);
+      const created = await createStaffMember({
+        fullName: cleanName,
+        email: cleanEmail,
+      });
 
-    const updated = [newMember, ...staffList];
-    saveStaffList(updated);
+      const newMember: StaffMember = {
+        id: created.id,
+        fullName: created.fullName,
+        email: created.email,
+        createdAt: created.createdAt ? created.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+      };
 
-    setNameInput("");
-    setEmailInput("");
-    setFormSuccess(`تمت إضافة الموظف (${cleanName}) بنجاح`);
+      const updated = [newMember, ...staffList];
+      setStaffList(updated);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
 
-    setTimeout(() => {
-      setFormSuccess("");
-    }, 3500);
+      setNameInput("");
+      setEmailInput("");
+      setFormSuccess(`تمت إضافة (${cleanName}) بنجاح وحفظه في قاعدة البيانات`);
+
+      setTimeout(() => {
+        setFormSuccess("");
+      }, 3500);
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : "فشل إضافة الموظف، يرجى المحاولة مجدداً";
+      setFormError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Delete staff member
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string | number) => {
+    try {
+      if (typeof id === "number" || !isNaN(Number(id))) {
+        await deleteStaffMember(Number(id));
+      }
+    } catch (e) {
+      console.warn("Delete DB error:", e);
+    }
     const updated = staffList.filter((s) => s.id !== id);
-    saveStaffList(updated);
+    setStaffList(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
     setDeleteConfirmId(null);
   };
 
@@ -295,10 +337,11 @@ export default function AdminStaffPage() {
             <div className="sm:col-span-2">
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] border border-[#D4AF85] text-xs sm:text-sm font-bold text-[#FFF2D2] transition shadow-md active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                disabled={isSubmitting}
+                className="w-full py-2.5 rounded-xl bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] border border-[#D4AF85] text-xs sm:text-sm font-bold text-[#FFF2D2] transition shadow-md active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <UserPlus className="w-4 h-4 text-[#FFE8B8]" />
-                <span>إضافة</span>
+                <span>{isSubmitting ? "جاري الحفظ..." : "إضافة"}</span>
               </button>
             </div>
           </form>
