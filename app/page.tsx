@@ -380,13 +380,13 @@ export default function Home() {
 
           {/* Mobile Top App Bar: 3-column split across the whole width */}
           <header
-            className={`fixed top-0 inset-x-0 z-30 w-full px-4 sm:px-6 pt-4 sm:pt-5 pb-2 transition-opacity duration-700 ${
+            className={`fixed top-0 inset-x-0 z-30 w-full px-3 sm:px-6 pt-3.5 sm:pt-5 pb-2 transition-opacity duration-700 ${
               videoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
             } ${
               scrollFactor >= 0.98 ? "pointer-events-none" : ""
             }`}
           >
-            <div className="w-full grid grid-cols-3 items-center">
+            <div className="w-full grid grid-cols-[1fr_auto_1fr] items-center">
               {/* Right: المجلس */}
               <div
                 style={{
@@ -397,7 +397,7 @@ export default function Home() {
               >
                 <Link
                   href="/booking"
-                  className="py-1 px-2 text-sm sm:text-base font-sans font-black whitespace-nowrap text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group"
+                  className="py-1 px-1.5 sm:px-2 text-sm sm:text-base font-sans font-black whitespace-nowrap text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group"
                 >
                   <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
                     المجلس
@@ -406,7 +406,7 @@ export default function Home() {
               </div>
 
               {/* Center: Mosque Logo & Location */}
-              <div className="flex flex-col items-center justify-center text-center">
+              <div className="flex flex-col items-center justify-center text-center px-1">
                 <Link
                   href="/"
                   style={{
@@ -422,9 +422,9 @@ export default function Home() {
                     className="h-28 sm:h-36 w-auto max-h-[115px] sm:max-h-[145px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
                   />
                   {/* Location Tag */}
-                  <div className="flex items-center justify-center gap-1 mt-1 text-xs sm:text-sm font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-                    <MapPin className="w-3.5 h-3.5 text-[#D4AF85] shrink-0" />
-                    <span>الموالح الجنوبية - السيب</span>
+                  <div className="flex items-center justify-center gap-1 mt-1 text-[11px] sm:text-sm font-bold whitespace-nowrap bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                    <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF85] shrink-0" />
+                    <span className="whitespace-nowrap">الموالح الجنوبية - السيب</span>
                   </div>
                 </Link>
               </div>
@@ -439,10 +439,13 @@ export default function Home() {
               >
                 <Link
                   href="/videos"
-                  className="py-1 px-2 text-sm sm:text-base font-sans font-black whitespace-nowrap text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group"
+                  className="py-1 px-1.5 sm:px-2 text-sm sm:text-base font-sans font-black text-white/95 hover:text-[#FFF2D2] transition-all drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] group flex flex-col items-center leading-tight text-center"
                 >
-                  <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
-                    الخطب والدروس
+                  <span className="whitespace-nowrap transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    الخطب
+                  </span>
+                  <span className="whitespace-nowrap transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
+                    والدروس
                   </span>
                 </Link>
               </div>
@@ -451,19 +454,18 @@ export default function Home() {
 
           {/* Main Hero Content (Strictly Right-Aligned over the sunset marble courtyard) */}
           <div
-            className={`relative z-20 flex flex-col justify-center items-start text-right pr-2.5 pl-2 pt-12 sm:pt-16 pb-10 my-auto w-full transition-all duration-1000 ease-out ${
+            className={`relative z-20 flex flex-col justify-center items-start text-right pr-2.5 pl-2 pt-16 sm:pt-20 pb-10 my-auto w-full transition-all duration-1000 ease-out ${
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            <div className="w-fit mr-1 sm:mr-3 ml-auto flex flex-col items-center text-center gap-2.5 -mt-6 sm:-mt-4">
+            <div className="w-fit mr-1 sm:mr-3 ml-auto flex flex-col items-center text-center gap-2.5 mt-8 sm:mt-10 translate-y-4">
               {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
               <div className="self-start mr-1 flex flex-wrap items-center justify-center gap-2 mt-1.5">
                 <a
                   href="#about-mobile"
                   onClick={(e) => scrollToAbout(e, true)}
-                  className="relative group inline-flex items-center justify-center gap-2 bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-5 py-2 rounded-full text-base sm:text-lg border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.25)] active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden tracking-wide"
+                  className="relative group inline-flex items-center justify-center bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-4 py-1.5 rounded-full text-sm sm:text-base border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_10px_25px_-4px_rgba(0,0,0,0.8),0_0_15px_rgba(212,175,133,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.25)] active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden tracking-wide"
                 >
-                  <Landmark className="w-5 h-5 text-[#FFE8B8] relative z-10" />
                   <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                     عن المسجد
                   </span>
@@ -740,9 +742,8 @@ export default function Home() {
                   <a
                     href="#about"
                     onClick={(e) => scrollToAbout(e, false)}
-                    className="relative group inline-flex min-h-12 py-2.5 items-center justify-center gap-3 rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-9 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
+                    className="relative group inline-flex min-h-12 py-2.5 items-center justify-center rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-8 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
                   >
-                    <Landmark className="w-6 h-6 text-[#FFE8B8] relative z-10" />
                     <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
                       عن المسجد
                     </span>
