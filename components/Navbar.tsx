@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MapPin } from "lucide-react";
 import QuickBookingModal from "./QuickBookingModal";
 
 interface NavbarProps {
@@ -25,23 +26,8 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
       <header className="sticky top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#060D1A] via-[#060D1A]/95 to-[#060D1A]/70 backdrop-blur-md text-[#FAF7F0] transition-all duration-300">
         <div className="w-full px-4 sm:px-8 lg:px-14 pt-4 sm:pt-5 pb-2 lg:py-4">
           <div className="w-full grid grid-cols-3 items-center">
-            {/* 1. Right: Mosque Logo */}
-            <div className="flex items-center justify-start">
-              <Link
-                href="/"
-                className="group flex items-center transition-all active:scale-95 shrink-0"
-                aria-label="جامع الحق"
-              >
-                <img
-                  src="/logo-gold.png"
-                  alt="جامع الحق"
-                  className="h-24 sm:h-28 md:h-36 lg:h-52 w-auto max-h-[90px] sm:max-h-[110px] md:max-h-[140px] lg:max-h-[200px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
-                />
-              </Link>
-            </div>
-
-            {/* 2. Middle / Center: المجلس */}
-            <div className="flex items-center justify-center text-center">
+            {/* 1. Right: المجلس */}
+            <div className="flex items-center justify-start text-right">
               <Link
                 href="/booking"
                 className="py-1.5 sm:py-2 px-2 sm:px-4 text-base sm:text-xl lg:text-2xl font-sans font-black transition-all drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] whitespace-nowrap group"
@@ -55,6 +41,25 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
                 >
                   المجلس
                 </span>
+              </Link>
+            </div>
+
+            {/* 2. Middle / Center: Mosque Logo & Location */}
+            <div className="flex flex-col items-center justify-center text-center">
+              <Link
+                href="/"
+                className="group flex flex-col items-center justify-center transition-all active:scale-95 shrink-0"
+                aria-label="جامع الحق"
+              >
+                <img
+                  src="/logo-gold.png"
+                  alt="جامع الحق"
+                  className="h-28 sm:h-36 md:h-48 lg:h-64 w-auto max-h-[115px] sm:max-h-[145px] md:max-h-[200px] lg:max-h-[270px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.65)] group-hover:scale-105 transition-all duration-300"
+                />
+                <div className="flex items-center justify-center gap-1.5 mt-1 sm:mt-1.5 text-xs sm:text-sm lg:text-base font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                  <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4.5 lg:h-4.5 text-[#D4AF85] shrink-0" />
+                  <span>الموالح الجنوبية - السيب</span>
+                </div>
               </Link>
             </div>
 

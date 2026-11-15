@@ -387,32 +387,13 @@ export default function Home() {
             }`}
           >
             <div className="w-full grid grid-cols-3 items-center">
-              {/* Right: Mosque Logo */}
-              <div className="flex items-center justify-start">
-                <Link
-                  href="/"
-                  style={{
-                    opacity: headerExtrasOpacity,
-                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-                  }}
-                  className="group flex items-center transition-all active:scale-95 shrink-0"
-                  aria-label="جامع الحق"
-                >
-                  <img
-                    src="/logo-gold.png"
-                    alt="جامع الحق"
-                    className="h-24 sm:h-28 w-auto max-h-[90px] sm:max-h-[110px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
-                  />
-                </Link>
-              </div>
-
-              {/* Center: المجلس */}
+              {/* Right: المجلس */}
               <div
                 style={{
                   opacity: mobileNavOpacity,
                   pointerEvents: mobileNavOpacity > 0.2 ? "auto" : "none",
                 }}
-                className="flex items-center justify-center text-center"
+                className="flex items-center justify-start text-right"
               >
                 <Link
                   href="/booking"
@@ -421,6 +402,30 @@ export default function Home() {
                   <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
                     المجلس
                   </span>
+                </Link>
+              </div>
+
+              {/* Center: Mosque Logo & Location */}
+              <div className="flex flex-col items-center justify-center text-center">
+                <Link
+                  href="/"
+                  style={{
+                    opacity: headerExtrasOpacity,
+                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
+                  }}
+                  className="group flex flex-col items-center justify-center transition-all active:scale-95 shrink-0"
+                  aria-label="جامع الحق"
+                >
+                  <img
+                    src="/logo-gold.png"
+                    alt="جامع الحق"
+                    className="h-28 sm:h-36 w-auto max-h-[115px] sm:max-h-[145px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all"
+                  />
+                  {/* Location Tag */}
+                  <div className="flex items-center justify-center gap-1 mt-1 text-xs sm:text-sm font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                    <MapPin className="w-3.5 h-3.5 text-[#D4AF85] shrink-0" />
+                    <span>الموالح الجنوبية - السيب</span>
+                  </div>
                 </Link>
               </div>
 
@@ -451,19 +456,6 @@ export default function Home() {
             }`}
           >
             <div className="w-fit mr-1 sm:mr-3 ml-auto flex flex-col items-center text-center gap-2.5 -mt-6 sm:-mt-4">
-              {/* Main Mosque Name: Ornate golden calligraphy matching reference */}
-              <img
-                src="/hero-calligraphy-gold.png"
-                alt="جامع الحق"
-                className="w-[195px] sm:w-[240px] h-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]"
-              />
-
-              {/* Location Tag */}
-              <div className="flex items-center justify-center gap-1.5 text-sm sm:text-base font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-                <MapPin className="w-4 h-4 text-[#D4AF85] shrink-0" />
-                <span>الموالح الجنوبية - السيب</span>
-              </div>
-
               {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
               <div className="self-start mr-1 flex flex-wrap items-center justify-center gap-2 mt-1.5">
                 <a
@@ -672,32 +664,13 @@ export default function Home() {
             }`}
           >
             <div className="w-full grid grid-cols-3 items-center min-h-[96px]">
-              {/* 1. Right: Mosque Logo */}
-              <div className="flex items-center justify-start">
-                <Link
-                  href="/"
-                  style={{
-                    opacity: headerExtrasOpacity,
-                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
-                  }}
-                  className="group flex items-center transition-all active:scale-95 shrink-0"
-                  aria-label="جامع الحق"
-                >
-                  <img
-                    src="/logo-gold.png"
-                    alt="جامع الحق"
-                    className="h-32 sm:h-40 lg:h-52 w-auto max-h-[180px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.6)] group-hover:scale-105 transition-all duration-300"
-                  />
-                </Link>
-              </div>
-
-              {/* 2. Center: المجلس */}
+              {/* 1. Right: المجلس */}
               <div
                 style={{
                   opacity: navOpacity,
                   pointerEvents: navOpacity > 0.2 ? "auto" : "none",
                 }}
-                className="flex items-center justify-center text-center"
+                className="flex items-center justify-start text-right"
               >
                 <Link
                   href="/booking"
@@ -706,6 +679,30 @@ export default function Home() {
                   <span className="transition-all duration-200 group-hover:bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] group-hover:bg-clip-text group-hover:text-transparent">
                     المجلس
                   </span>
+                </Link>
+              </div>
+
+              {/* 2. Center: Mosque Logo & Location */}
+              <div className="flex flex-col items-center justify-center text-center">
+                <Link
+                  href="/"
+                  style={{
+                    opacity: headerExtrasOpacity,
+                    pointerEvents: headerExtrasOpacity > 0.2 ? "auto" : "none",
+                  }}
+                  className="group flex flex-col items-center justify-center transition-all active:scale-95 shrink-0"
+                  aria-label="جامع الحق"
+                >
+                  <img
+                    src="/logo-gold.png"
+                    alt="جامع الحق"
+                    className="h-44 sm:h-56 lg:h-64 xl:h-72 w-auto max-h-[220px] sm:max-h-[250px] lg:max-h-[290px] xl:max-h-[320px] object-contain drop-shadow-[0_4px_32px_rgba(212,175,133,0.7)] group-hover:scale-105 transition-all duration-300"
+                  />
+                  {/* Location Tag */}
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5 text-sm sm:text-base lg:text-lg font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                    <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-5 lg:h-5 text-[#D4AF85] shrink-0" />
+                    <span>الموالح الجنوبية - السيب</span>
+                  </div>
                 </Link>
               </div>
 
@@ -735,22 +732,9 @@ export default function Home() {
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            {/* Main Hero Elements: جامع الحق + الموقع + الأزرار (moved down for laptop view to fill screen proportionally) */}
+            {/* Main Hero Elements: الأزرار (moved down for laptop view to fill screen proportionally) */}
             <div className="flex flex-col items-start gap-3 text-right mt-auto mb-auto lg:translate-y-4 xl:translate-y-6">
               <div className="flex flex-col items-center gap-4">
-                {/* Title: Ornate golden calligraphy matching reference */}
-                <img
-                  src="/hero-calligraphy-gold.png"
-                  alt="جامع الحق"
-                  className="w-[290px] lg:w-[350px] xl:w-[380px] h-auto object-contain drop-shadow-[0_6px_22px_rgba(0,0,0,0.6)]"
-                />
-
-                {/* Location Tag */}
-                <div className="flex items-center justify-center gap-2 text-base lg:text-xl font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-                  <MapPin className="w-5 h-5 text-[#D4AF85] shrink-0" />
-                  <span>الموالح الجنوبية - السيب</span>
-                </div>
-
                 {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
                 <div className="self-start mr-3 lg:mr-5 flex items-center gap-4 mt-2">
                   <a
