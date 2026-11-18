@@ -37,6 +37,7 @@ import {
   DollarSign,
   Layers,
   Printer,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -128,10 +129,11 @@ export default function AdminBookingsPage() {
   const [activeTab, setActiveTab] = useState<"ALL" | "UPCOMING" | "PAST">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "katbketab" | "3aza">("ALL");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "CANCELLED">("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING_APPROVAL" | "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "CANCELLED">("ALL");
 
   // Selected Booking details modal
   const [selectedBookingModal, setSelectedBookingModal] = useState<BookingResponse | null>(null);
+  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
 
   // Hall Settings state
   const [hall, setHall] = useState<HallResponse | null>(null);
@@ -485,6 +487,13 @@ export default function AdminBookingsPage() {
   // Status badge helper
   const renderStatusBadge = (status: string) => {
     switch (status) {
+      case "PENDING_APPROVAL":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/25 text-amber-200 border border-amber-400/50 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
+            <span>بانتظار الاعتماد (إيصال مرفق)</span>
+          </span>
+        );
       case "CONFIRMED":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
@@ -992,6 +1001,7 @@ export default function AdminBookingsPage() {
                     className="px-3.5 py-2 rounded-xl bg-white/[0.08] border border-white/25 text-xs text-white focus:outline-none focus:border-[#D4AF85] transition"
                   >
                     <option value="ALL" className="bg-[#050A14]">جميع الحالات</option>
+                    <option value="PENDING_APPROVAL" className="bg-[#050A14]">بانتظار الاعتماد (إيصال مرفق)</option>
                     <option value="CONFIRMED" className="bg-[#050A14]">مؤكد (CONFIRMED)</option>
                     <option value="PENDING_PAYMENT" className="bg-[#050A14]">بانتظار الدفع (PENDING)</option>
                     <option value="COMPLETED" className="bg-[#050A14]">منتهي (COMPLETED)</option>
@@ -1043,6 +1053,7 @@ export default function AdminBookingsPage() {
                         <th className="py-3 px-3">المناسبة</th>
                         <th className="py-3 px-3">تاريخ الفعالية</th>
                         <th className="py-3 px-3">الساعات والمبلغ</th>
+                        <th className="py-3 px-3 text-center">إيصال الدفع</th>
                         <th className="py-3 px-3">الحالة</th>
                         <th className="py-3 px-3 text-center">الإجراءات</th>
                       </tr>
@@ -1098,6 +1109,20 @@ export default function AdminBookingsPage() {
                                 ({b.startHour}:00 - {b.endHour}:00 • {b.durationHours} س/يوم)
                               </span>
                               <span className="block font-bold text-[#FFE8B8] mt-0.5">{b.totalAmount} {b.currency || "ر.ع"}</span>
+                            </td>
+                            <td className="py-3.5 px-3 text-center">
+                              {b.paymentReceiptImageUrl ? (
+                                <button
+                                  onClick={() => setSelectedLightboxImage(b.paymentReceiptImageUrl!)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-[11px] font-bold transition cursor-pointer"
+                                  title="معاينة إيصال السداد المرفق"
+                                >
+                                  <ImageIcon className="w-3.5 h-3.5 text-amber-300" />
+                                  <span>معاينة الإيصال</span>
+                                </button>
+                              ) : (
+                                <span className="text-[#8EA3BF] text-[11px]">—</span>
+                              )}
                             </td>
                             <td className="py-3.5 px-3">
                               {renderStatusBadge(b.status)}
@@ -1481,14 +1506,6 @@ export default function AdminBookingsPage() {
                     {selectedBookingModal.totalAmount} {selectedBookingModal.currency || "ر.ع"}
                   </span>
                 </div>
-                {selectedBookingModal.paypalOrderId && (
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-[#8EA3BF]">رقم عملية PayPal:</span>
-                    <span className="font-bold text-emerald-300 font-mono text-[11px] dir-ltr">
-                      {selectedBookingModal.paypalOrderId}
-                    </span>
-                  </div>
-                )}
                 {selectedBookingModal.notes && (
                   <div className="pt-1">
                     <span className="text-[#8EA3BF] block mb-1">الملاحظات:</span>
@@ -1497,39 +1514,119 @@ export default function AdminBookingsPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Attached Payment Receipt Image */}
+                {selectedBookingModal.paymentReceiptImageUrl && (
+                  <div className="mt-3 pt-3 border-t border-white/15 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-amber-400" />
+                        <span>إيصال / إشعار السداد المرفق:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLightboxImage(selectedBookingModal.paymentReceiptImageUrl!)}
+                        className="text-[11px] text-[#FFE8B8] hover:underline flex items-center gap-1"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>تكبير الصورة</span>
+                      </button>
+                    </div>
+                    <div
+                      onClick={() => setSelectedLightboxImage(selectedBookingModal.paymentReceiptImageUrl!)}
+                      className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-black/50 max-h-72 flex items-center justify-center p-2 cursor-pointer hover:border-[#D4AF85] transition group shadow-lg"
+                    >
+                      <img
+                        src={selectedBookingModal.paymentReceiptImageUrl}
+                        alt="إيصال السداد المرفق"
+                        className="max-h-64 max-w-full rounded-xl object-contain transition duration-200 group-hover:scale-[1.02]"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+                        <Maximize2 className="w-4 h-4 text-[#FFE8B8]" />
+                        <span>انقر لعرض الإيصال بالحجم الكامل</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Status change in modal */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <div className="flex items-center gap-1.5">
+              {/* Admin Actions: Accept, Cancel, Print */}
+              <div className="pt-2 border-t border-white/15 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Accept Order Button */}
+                    <button
+                      onClick={() => handleStatusChange(selectedBookingModal.id, "CONFIRMED")}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg transition cursor-pointer ${
+                        selectedBookingModal.status === "CONFIRMED"
+                          ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white active:scale-95"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{selectedBookingModal.status === "CONFIRMED" ? "الحجز معتمد (مؤكد)" : "قبول واعتماد الطلب (CONFIRMED)"}</span>
+                    </button>
+
+                    {/* Cancel Order Button */}
+                    <button
+                      onClick={() => handleStatusChange(selectedBookingModal.id, "CANCELLED")}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                        selectedBookingModal.status === "CANCELLED"
+                          ? "bg-rose-500/25 text-rose-300 border border-rose-500/40"
+                          : "bg-rose-600/80 hover:bg-rose-600 text-white active:scale-95"
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                      <span>إلغاء الطلب (CANCELLED)</span>
+                    </button>
+
+                    {/* Complete Button */}
+                    {selectedBookingModal.status === "CONFIRMED" && (
+                      <button
+                        onClick={() => handleStatusChange(selectedBookingModal.id, "COMPLETED")}
+                        className="px-3 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition cursor-pointer"
+                      >
+                        إكمال الفعالية
+                      </button>
+                    )}
+                  </div>
+
                   <button
-                    onClick={() => handleStatusChange(selectedBookingModal.id, "CONFIRMED")}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 transition cursor-pointer"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF85] to-[#FFE8B8] text-[#0A1628] font-black text-xs transition cursor-pointer shadow-md hover:scale-[1.02]"
                   >
-                    تأكيد
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange(selectedBookingModal.id, "COMPLETED")}
-                    className="px-3 py-1.5 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-xs font-bold border border-slate-500/30 transition cursor-pointer"
-                  >
-                    إكمال
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange(selectedBookingModal.id, "CANCELLED")}
-                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 transition cursor-pointer"
-                  >
-                    إلغاء
+                    <Printer className="w-4 h-4 text-[#0A1628]" />
+                    <span>طباعة السند</span>
                   </button>
                 </div>
-
-                <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4AF85] to-[#FFE8B8] text-[#0A1628] font-bold text-xs transition cursor-pointer"
-                >
-                  <Printer className="w-4 h-4 text-[#0A1628]" />
-                  <span>طباعة السند</span>
-                </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lightbox Modal for Full Receipt View */}
+        {selectedLightboxImage && (
+          <div
+            onClick={() => setSelectedLightboxImage(null)}
+            className="fixed inset-0 z-[60] bg-black/92 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200"
+          >
+            <button
+              onClick={() => setSelectedLightboxImage(null)}
+              className="absolute top-4 left-4 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white transition cursor-pointer z-10"
+              title="إغلاق"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="relative max-w-4xl max-h-[85vh] flex flex-col items-center">
+              <img
+                src={selectedLightboxImage}
+                alt="إيصال السداد بالحجم الكامل"
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-full max-h-[82vh] rounded-2xl object-contain border border-white/20 shadow-2xl"
+              />
+              <span className="mt-3 text-xs text-[#DCE6F2] bg-black/60 px-4 py-1.5 rounded-full border border-white/10">
+                إيصال سداد الرسوم المرفق من صاحب الحجز
+              </span>
             </div>
           </div>
         )}

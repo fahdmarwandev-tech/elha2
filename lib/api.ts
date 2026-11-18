@@ -604,6 +604,7 @@ export interface CreateBookingRequest {
   startHour: number;
   endHour: number;
   notes?: string;
+  paymentReceiptImageUrl?: string;
 }
 
 export interface BookingResponse {
@@ -632,7 +633,9 @@ export interface BookingResponse {
   totalAmount: number;
   currency: string;
   notes?: string;
-  status: "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | string;
+  status: "PENDING_PAYMENT" | "PENDING_APPROVAL" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | string;
+  orderStatus?: string;
+  paymentReceiptImageUrl?: string;
   paymentExpiresAt?: string;
   paymentId?: number;
   paypalOrderId?: string;
@@ -806,6 +809,8 @@ interface SharedHallReservationRecord {
   currency?: string;
   notes?: string;
   status: string;
+  orderStatus?: string;
+  paymentReceiptImageUrl?: string;
   createdAt?: string;
   expiresAt?: number;
 }
@@ -931,6 +936,8 @@ function bookingResponseToSharedRecord(b: BookingResponse, fallbackOrderId?: str
     currency: b.currency || "ر.ع",
     notes: b.notes,
     status: b.status || "CONFIRMED",
+    orderStatus: b.orderStatus || b.status || "CONFIRMED",
+    paymentReceiptImageUrl: b.paymentReceiptImageUrl,
     createdAt: b.createdAt || new Date().toISOString(),
     expiresAt:
       b.status === "PENDING_PAYMENT"
@@ -961,6 +968,8 @@ function normalizeBookingResponse(b: BookingResponse): BookingResponse {
     endHour,
     durationHours: b.durationHours || Math.max(1, endHour - startHour),
     formattedTimeRange: buildFormattedTimeRange(isAza, startHour, endHour),
+    orderStatus: b.orderStatus || b.status,
+    paymentReceiptImageUrl: b.paymentReceiptImageUrl,
   };
 }
 
@@ -1260,6 +1269,8 @@ export async function getAllBookingsAdmin(
           currency: r.currency || "ر.ع",
           notes: r.notes,
           status: r.status || "CONFIRMED",
+          orderStatus: r.orderStatus || r.status || "CONFIRMED",
+          paymentReceiptImageUrl: r.paymentReceiptImageUrl,
           paypalOrderId: r.paypalOrderId,
           createdAt: r.createdAt || new Date().toISOString(),
         })
@@ -1294,6 +1305,63 @@ export async function deleteBooking(id: number): Promise<void> {
   });
   const remaining = loadSharedHallReservations().filter((r) => r.id !== id);
   saveSharedHallReservations(remaining);
+}
+
+export async function uploadPaymentReceiptFile(
+  file: File,
+  bookingId?: number,
+  bookingCode?: string
+): Promise<{ imageUrl: string; booking?: BookingResponse }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let path = "/api/v1/bookings/upload-receipt";
+  if (bookingId) {
+    path = `/api/v1/bookings/${bookingId}/receipt`;
+  } else if (bookingCode) {
+    path = `/api/v1/bookings/code/${encodeURIComponent(bookingCode)}/receipt`;
+  }
+
+  const token = await getValidAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const endpoint = `${getApiBaseUrl()}${path}`;
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new ApiError(
+        data?.message || data?.error || `فشل رفع إيصال الدفع (${response.status})`,
+        response.status,
+        data
+      );
+    }
+    if (bookingId || bookingCode) {
+      const b = normalizeBookingResponse(data as BookingResponse);
+      upsertSharedHallReservation(bookingResponseToSharedRecord(b));
+      return { imageUrl: b.paymentReceiptImageUrl || "", booking: b };
+    }
+    return { imageUrl: data?.imageUrl || "" };
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status !== 0) {
+      throw err;
+    }
+    // Fallback: convert file to Base64 data URL so local/offline preview still works cleanly
+    const base64Url = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string) || "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+    return { imageUrl: base64Url };
+  }
 }
 
 // PayPal Payments

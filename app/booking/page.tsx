@@ -25,13 +25,16 @@ import {
   Printer,
   AlertCircle,
   Sun,
+  Upload,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import {
   getHalls,
   getHallAvailability,
   getPrayerTimes,
   createBooking,
-  capturePayPalOrder,
+  uploadPaymentReceiptFile,
   getStoredUser,
   HallResponse,
   HourlyAvailabilityResponse,
@@ -164,9 +167,12 @@ export default function BookingPage() {
     email?: string;
     phone?: string;
   }>({});
-  const [pendingInitiation, setPendingInitiation] = useState<BookingInitiationResponse | null>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<BookingResponse | null>(null);
-  const [isCapturingPayment, setIsCapturingPayment] = useState(false);
+
+  // Payment Proof / Receipt Upload States
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
   const monthNames = [
     "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -551,6 +557,23 @@ export default function BookingPage() {
     e.currentTarget.style.setProperty("--my", `${y}px`);
   };
 
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("يرجى اختيار ملف صورة صالح (JPG, PNG, WebP) لإيصال السداد.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage("حجم الصورة كبير جداً، الحد الأقصى 10 ميجابايت.");
+      return;
+    }
+    setReceiptFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setReceiptPreviewUrl(objectUrl);
+    setErrorMessage(null);
+  };
+
   // Handle Booking Form Submit
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -611,11 +634,27 @@ export default function BookingPage() {
       return;
     }
 
+    if (!receiptFile && !receiptPreviewUrl) {
+      setErrorMessage("يرجى إرفاق صورة إشعار أو إيصال سداد المبلغ عبر التحويل البنكي للمتابعة.");
+      const el = document.getElementById("booking-field-receipt");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+
     const eventDate = selectedDates[0].iso;
     const endDate = selectedDates[selectedDates.length - 1].iso;
 
     try {
       setIsSubmitting(true);
+      let uploadedReceiptUrl: string | undefined = undefined;
+      if (receiptFile) {
+        setIsUploadingReceipt(true);
+        const uploadRes = await uploadPaymentReceiptFile(receiptFile);
+        uploadedReceiptUrl = uploadRes.imageUrl;
+      }
+
       const res = await createBooking({
         hallId: activeHall.id,
         fullName: fullName.trim(),
@@ -630,9 +669,10 @@ export default function BookingPage() {
         startHour,
         endHour,
         notes: notes.trim() || undefined,
+        paymentReceiptImageUrl: uploadedReceiptUrl,
       });
 
-      setPendingInitiation(res);
+      setConfirmedBooking(res.booking);
       refreshAvailability();
       window.scrollTo({ top: 150, behavior: "smooth" });
     } catch (err: unknown) {
@@ -640,24 +680,7 @@ export default function BookingPage() {
       setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Handle Mock or Live PayPal capture
-  const handleCapturePayPal = async () => {
-    if (!pendingInitiation) return;
-    try {
-      setIsCapturingPayment(true);
-      const confirmed = await capturePayPalOrder(pendingInitiation.paypalOrderId);
-      setConfirmedBooking(confirmed);
-      setPendingInitiation(null);
-      refreshAvailability();
-      window.scrollTo({ top: 100, behavior: "smooth" });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "فشل تأكيد عملية الدفع عبر بايبال.";
-      setErrorMessage(msg);
-    } finally {
-      setIsCapturingPayment(false);
+      setIsUploadingReceipt(false);
     }
   };
 
@@ -708,109 +731,41 @@ export default function BookingPage() {
           </div>
         )}
 
-        {/* STEP A: PayPal Payment Gateway Modal / Confirmation */}
-        {pendingInitiation && (
-          <div data-glass-card="true" className="glass-card max-w-2xl mx-auto bg-slate-950/40 backdrop-blur-xl border border-white/25 rounded-3xl p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] text-center space-y-6 relative overflow-hidden">
-            <div className="w-16 h-16 rounded-full bg-[#D4AF85]/20 border-2 border-[#FFE8B8] text-[#FFE8B8] flex items-center justify-center mx-auto shadow-lg">
-              <CreditCard className="w-8 h-8 text-[#FFE8B8]" />
-            </div>
-
-            <div>
-              <span className="px-3.5 py-1 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                بانتظار سداد رسوم الحجز (PayPal)
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#FFF2D2] mt-3">
-                تأكيد حجز المجلس عبر PayPal
-              </h2>
-              <p className="text-xs text-[#DCE6F2] mt-1">
-                رقم الحجز المرجعي: <strong className="text-white font-mono">{pendingInitiation.booking.code}</strong>
-              </p>
-            </div>
-
-            <div className="bg-white/[0.06] border border-white/20 rounded-2xl p-5 text-right text-xs space-y-3">
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">القاعة والمناسبة:</span>
-                <span className="font-bold text-white">
-                  {pendingInitiation.booking.hallName} • {bookingType === "katbketab" ? "عقد قران" : "مجلس عزاء (3 أيام)"}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">التاريخ المحدد:</span>
-                <span className="font-bold text-white">
-                  {pendingInitiation.booking.endDate && pendingInitiation.booking.endDate !== pendingInitiation.booking.eventDate
-                    ? `من ${pendingInitiation.booking.eventDate} إلى ${pendingInitiation.booking.endDate} (${pendingInitiation.booking.daysCount || 3} أيام)`
-                    : pendingInitiation.booking.eventDate}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">التوقيت اليومي:</span>
-                <span className="font-bold text-[#FFE8B8]">
-                  من {formatShortHour(pendingInitiation.booking.startHour)} حتى {formatShortHour(pendingInitiation.booking.endHour)}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">فاصل التجهيز المخصص تلقائياً:</span>
-                <span className="font-bold text-[#FFE8B8]">
-                  {pendingInitiation.booking.appliedBufferHours} ساعة قبل وبعد الحجز
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#8EA3BF]">إجمالي الرسوم المستحقة:</span>
-                <span className="font-black text-emerald-400 font-mono text-base">
-                  {pendingInitiation.booking.totalAmount} {pendingInitiation.booking.currency || "ر.ع"}
-                </span>
-              </div>
-            </div>
-
-            {/* PayPal Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleCapturePayPal}
-                disabled={isCapturingPayment}
-                className="w-full py-4 rounded-full bg-gradient-to-r from-[#D4AF85] via-[#FFE8B8] to-[#C59B63] text-[#0A1628] font-black text-sm shadow-[0_8px_25px_rgba(212,175,133,0.4)] hover:scale-[1.01] active:scale-95 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isCapturingPayment ? (
-                  <span>جاري تسجيل وتأكيد الدفع عبر PayPal...</span>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 text-[#0A1628]" />
-                    <span>سداد الرسوم وتأكيد الحجز فورياً (Sandbox Capture)</span>
-                  </>
-                )}
-              </button>
-
-              {pendingInitiation.approvalUrl && (
-                <a
-                  href={pendingInitiation.approvalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block w-full py-3 rounded-full bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-xs font-bold transition"
-                >
-                  فتح بوابة الدفع عبر موقع PayPal المباشر ↗
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* STEP B: CONFIRMED BOOKING VOUCHER (DAR-XXXXXX) */}
+        {/* STEP B: CONFIRMED OR PENDING APPROVAL VOUCHER (DAR-XXXXXX) */}
         {confirmedBooking && (
           <div data-glass-card="true" className="glass-card max-w-2xl mx-auto bg-slate-950/40 backdrop-blur-xl border border-white/25 rounded-3xl p-6 sm:p-10 text-center shadow-[0_25px_60px_rgba(0,0,0,0.5)] relative overflow-hidden space-y-6">
-            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center mx-auto shadow-lg animate-bounce">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-            </div>
+            {confirmedBooking.status === "PENDING_APPROVAL" ? (
+              <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                <Clock className="w-10 h-10 text-amber-400" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center mx-auto shadow-lg animate-bounce">
+                <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+              </div>
+            )}
 
             <div>
-              <span className="text-xs font-bold px-3.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
-                الحجز مؤكد ومسجل رسمياً (CONFIRMED)
-              </span>
+              {confirmedBooking.status === "PENDING_APPROVAL" ? (
+                <span className="text-xs font-bold px-3.5 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/40">
+                  تم استلام الطلب وبانتظار اعتماد الإدارة (PENDING_APPROVAL)
+                </span>
+              ) : (
+                <span className="text-xs font-bold px-3.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
+                  الحجز مؤكد ومسجل رسمياً (CONFIRMED)
+                </span>
+              )}
+
               <h2 className="text-2xl sm:text-3xl font-black text-[#FFF2D2] mt-3">
-                {confirmedBooking.bookingType === "katbketab"
+                {confirmedBooking.status === "PENDING_APPROVAL"
+                  ? "تم استلام طلب الحجز وإيصال السداد بنجاح"
+                  : confirmedBooking.bookingType === "katbketab"
                   ? "بارك الله لكما وبارك عليكما وجمع بينكما في خير"
                   : "عظم الله أجركم وأحسن عزاءكم ورحم ميتكم"}
               </h2>
               <p className="text-[#DCE6F2] text-xs sm:text-sm mt-1">
-                تم اعتماد وتأكيد حجزكم في مجلس جامع الحق وتم إرسال تفاصيل السند إلى بريدك الإلكتروني:
+                {confirmedBooking.status === "PENDING_APPROVAL"
+                  ? "طلبكم قيد مراجعة وتدقيق إدارة المجلس، وسيتم اعتماد الحجز والتواصل معكم بعد مراجعة إيصال السداد."
+                  : "تم اعتماد وتأكيد حجزكم في مجلس جامع الحق وتم إرسال تفاصيل السند إلى بريدك الإلكتروني:"}
                 <strong className="block text-[#FFE8B8] font-mono text-sm mt-1 dir-ltr">{confirmedBooking.email}</strong>
               </p>
             </div>
@@ -822,9 +777,15 @@ export default function BookingPage() {
                   <span className="text-[#8EA3BF] block text-[10px]">كود السند المرجعي</span>
                   <span className="text-xl font-mono font-bold text-white">{confirmedBooking.code}</span>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  الحالة: مؤكد CONFIRMED
-                </span>
+                {confirmedBooking.status === "PENDING_APPROVAL" ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    الحالة: بانتظار الاعتماد
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    الحالة: مؤكد CONFIRMED
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-between border-b border-white/10 pb-2">
@@ -863,12 +824,41 @@ export default function BookingPage() {
                   {confirmedBooking.appliedBufferHours} ساعة مخصصة تلقائياً قبل وبعد الحجز
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-[#8EA3BF]">المبلغ الإجمالي المدفوع:</span>
+              <div className="flex justify-between items-center pt-1 border-b border-white/10 pb-2">
+                <span className="text-[#8EA3BF]">المبلغ الإجمالي:</span>
                 <span className="font-black text-emerald-400 font-mono text-base">
                   {confirmedBooking.totalAmount} {confirmedBooking.currency || "ر.ع"}
                 </span>
               </div>
+
+              {/* Attached Payment Receipt Preview in Voucher */}
+              {confirmedBooking.paymentReceiptImageUrl && (
+                <div className="pt-2 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-300 font-bold flex items-center gap-1.5 text-xs">
+                      <ImageIcon className="w-4 h-4 text-amber-400" />
+                      <span>إيصال السداد المرفق:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLightboxImage(confirmedBooking.paymentReceiptImageUrl!)}
+                      className="text-[11px] text-[#FFE8B8] hover:underline"
+                    >
+                      معاينة الإيصال مكبراً
+                    </button>
+                  </div>
+                  <div
+                    onClick={() => setSelectedLightboxImage(confirmedBooking.paymentReceiptImageUrl!)}
+                    className="relative rounded-xl overflow-hidden border border-white/20 bg-black/40 max-h-52 flex items-center justify-center p-2 cursor-pointer hover:border-[#D4AF85] transition"
+                  >
+                    <img
+                      src={confirmedBooking.paymentReceiptImageUrl}
+                      alt="إيصال السداد"
+                      className="max-h-48 max-w-full rounded-lg object-contain"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Print Voucher & Reset Buttons */}
@@ -884,7 +874,6 @@ export default function BookingPage() {
               <button
                 onClick={() => {
                   setConfirmedBooking(null);
-                  setPendingInitiation(null);
                   refreshAvailability();
                 }}
                 className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs transition cursor-pointer"
@@ -896,7 +885,7 @@ export default function BookingPage() {
         )}
 
         {/* STEP C: ACTIVE RESERVATION WIZARD */}
-        {!pendingInitiation && !confirmedBooking && (
+        {!confirmedBooking && (
           <div className="space-y-8 sm:space-y-10">
             {/* Step 1 & Step 2 Side-by-Side: Symmetrical Equal-Size Boxes on Laptop View */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-8 xl:gap-10 items-stretch">
@@ -1510,6 +1499,106 @@ export default function BookingPage() {
                     </div>
                   </div>
 
+                  {/* Payment Proof / Bank Transfer Section */}
+                  <div id="booking-field-receipt" className="p-4 sm:p-5 rounded-2xl bg-white/[0.05] border border-white/20 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-[#FFE8B8]" />
+                        <span className="text-xs sm:text-sm font-bold text-white">سداد رسوم الحجز (تحويل بنكي)</span>
+                      </div>
+                      <span className="text-[11px] text-[#8EA3BF]">
+                        المبلغ المطلوب: <strong className="text-emerald-400 font-mono text-sm">{totalPrice} {activeHall.currency || "ر.ع"}</strong>
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {/* Bank Account Info Card */}
+                      <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 text-xs text-[#DCE6F2] space-y-1.5">
+                        <div className="flex justify-between items-center text-amber-300 font-bold">
+                          <span>بيانات الحساب البنكي لمجلس جامع الحق:</span>
+                          <span className="text-[11px] bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">بنك مسقط</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[#8EA3BF]">اسم الحساب:</span>
+                          <span className="font-bold text-white">مجلس جامع الحق - الموالح الجنوبية</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[#8EA3BF]">رقم الحساب:</span>
+                          <span className="font-mono font-bold text-[#FFE8B8] dir-ltr">0315-01234567-001</span>
+                        </div>
+                      </div>
+
+                      {/* Upload Box */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#FFE8B8] mb-1.5">
+                          إرفاق صورة إشعار أو إيصال التحويل البنكي *
+                        </label>
+                        {receiptPreviewUrl ? (
+                          <div className="relative rounded-2xl border border-amber-400/40 bg-black/40 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={receiptPreviewUrl}
+                                alt="معاينة إيصال التحويل"
+                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-white/20 cursor-pointer hover:opacity-80 transition"
+                                onClick={() => setSelectedLightboxImage(receiptPreviewUrl)}
+                              />
+                              <div className="text-right">
+                                <span className="text-xs font-bold text-white block">تم اختيار إيصال السداد</span>
+                                <span className="text-[11px] text-[#8EA3BF] block mt-0.5 font-mono">
+                                  {receiptFile?.name || "receipt.jpg"}
+                                </span>
+                                <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1 font-bold">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>جاهز للإرسال مع الطلب للاعتماد</span>
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer border border-white/20">
+                                تغيير الصورة
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleReceiptFileChange}
+                                  className="hidden"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReceiptFile(null);
+                                  setReceiptPreviewUrl(null);
+                                }}
+                                className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition cursor-pointer"
+                                title="إزالة الإيصال"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/25 hover:border-[#D4AF85] rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] transition cursor-pointer group text-center">
+                            <div className="w-12 h-12 rounded-full bg-white/10 group-hover:bg-[#D4AF85]/20 flex items-center justify-center text-[#FFE8B8] mb-2.5 transition">
+                              <Upload className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs font-bold text-white group-hover:text-[#FFE8B8] transition">
+                              انقر هنا لاختيار أو رفع صورة إشعار التحويل البنكي
+                            </span>
+                            <span className="text-[10px] text-[#8EA3BF] mt-1">
+                              صيغ الصور المدعومة: JPG, PNG, WebP (الحد الأقصى: 10 ميجابايت)
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleReceiptFileChange}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Inline Error Alert if any error */}
                   {errorMessage && (
                     <div className="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200 shadow-lg">
@@ -1529,12 +1618,19 @@ export default function BookingPage() {
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingReceipt}
                     onMouseMove={handleButtonMouseMove}
                     className="relative group overflow-hidden w-full py-4 rounded-full bg-gradient-to-r from-[#D4AF85]/90 via-[#FFE8B8]/95 to-[#C59B63]/90 text-[#0A1628] text-sm sm:text-base font-black border border-white shadow-lg hover:scale-[1.01] active:scale-95 transition-all duration-300 cursor-pointer disabled:opacity-50"
                   >
-                    <span className="relative z-10">
-                      {isSubmitting ? "جاري تسجيل الحجز..." : "تأكيد وتسجيل الحجز ومتابعة الدفع عبر PayPal"}
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      {isSubmitting || isUploadingReceipt ? (
+                        <span>{isUploadingReceipt ? "جاري رفع إيصال السداد..." : "جاري تسجيل الحجز..."}</span>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-[#0A1628]" />
+                          <span>إرسال طلب الحجز وإيصال السداد للاعتماد</span>
+                        </>
+                      )}
                     </span>
                   </button>
                 </form>
