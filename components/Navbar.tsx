@@ -54,7 +54,7 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
                 <img
                   src="/logo-gold.png"
                   alt="جامع الحق"
-                  className="h-28 sm:h-36 md:h-48 lg:h-64 w-auto max-h-[115px] sm:max-h-[145px] md:max-h-[200px] lg:max-h-[270px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.65)] group-hover:scale-105 transition-all duration-300"
+                  className="h-28 sm:h-32 lg:h-36 xl:h-40 w-auto max-h-[110px] lg:max-h-[135px] xl:max-h-[145px] object-contain drop-shadow-[0_4px_30px_rgba(212,175,133,0.65)] group-hover:scale-105 transition-all duration-300"
                 />
                 <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-1 sm:mt-1.5 text-[11px] sm:text-sm lg:text-base font-bold whitespace-nowrap bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
                   <MapPin className="w-3 h-3 sm:w-4 sm:h-4 lg:w-4.5 lg:h-4.5 text-[#D4AF85] shrink-0" />

@@ -698,11 +698,11 @@ export default function Home() {
                   <img
                     src="/logo-gold.png"
                     alt="جامع الحق"
-                    className="h-44 sm:h-56 lg:h-64 xl:h-72 w-auto max-h-[220px] sm:max-h-[250px] lg:max-h-[290px] xl:max-h-[320px] object-contain drop-shadow-[0_4px_32px_rgba(212,175,133,0.7)] group-hover:scale-105 transition-all duration-300"
+                    className="h-28 sm:h-32 lg:h-36 xl:h-40 w-auto max-h-[110px] lg:max-h-[135px] xl:max-h-[145px] object-contain drop-shadow-[0_4px_28px_rgba(212,175,133,0.65)] group-hover:scale-105 transition-all duration-300"
                   />
                   {/* Location Tag */}
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5 text-sm sm:text-base lg:text-lg font-bold bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-                    <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-5 lg:h-5 text-[#D4AF85] shrink-0" />
+                  <div className="flex items-center justify-center gap-1.5 mt-1 text-xs lg:text-sm font-bold whitespace-nowrap bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#C59B63_100%)] bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                    <MapPin className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[#D4AF85] shrink-0" />
                     <span>الموالح الجنوبية - السيب</span>
                   </div>
                 </Link>
@@ -730,54 +730,53 @@ export default function Home() {
 
           {/* Desktop Hero Content: INSIDE the video frame on the right side */}
           <div
-            className={`relative z-20 ml-auto flex flex-1 w-[55%] min-h-screen flex-col justify-between pr-6 lg:pr-10 pl-10 pt-32 lg:pt-40 xl:pt-44 pb-8 lg:pb-12 transition-all duration-1000 ease-out ${
+            className={`relative z-20 ml-auto flex flex-1 w-[55%] min-h-screen flex-col justify-center pr-8 lg:pr-14 pl-10 pt-28 pb-24 transition-all duration-1000 ease-out ${
               videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
             }`}
           >
-            {/* Main Hero Elements: الأزرار (moved down for laptop view to fill screen proportionally) */}
-            <div className="flex flex-col items-start gap-3 text-right mt-auto mb-auto lg:translate-y-4 xl:translate-y-6">
-              <div className="flex flex-col items-center gap-4">
-                {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
-                <div className="self-start mr-3 lg:mr-5 flex items-center gap-4 mt-2">
-                  <a
-                    href="#about"
-                    onClick={(e) => scrollToAbout(e, false)}
-                    className="relative group inline-flex min-h-12 py-2.5 items-center justify-center rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-8 text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
-                  >
-                    <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-                      عن المسجد
-                    </span>
-                  </a>
-                </div>
-              </div>
+            {/* CTA Button: Dark blue gradient with golden border and golden gradient text */}
+            <div className="flex flex-col items-start gap-3 text-right">
+              <a
+                href="#about"
+                onClick={(e) => scrollToAbout(e, false)}
+                className="relative group inline-flex min-h-12 py-2.5 items-center justify-center rounded-full bg-[linear-gradient(to_left,#050B14_0%,#0A1628_30%,#122849_65%,#1E447B_100%)] hover:bg-[linear-gradient(to_left,#081120_0%,#0E203A_30%,#183561_65%,#265394_100%)] px-8 text-xl lg:text-2xl border border-[#D4AF85]/80 hover:border-[#FFF0C8] shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),0_0_20px_rgba(212,175,133,0.35),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.95),0_0_28px_rgba(212,175,133,0.55)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 cursor-pointer tracking-wide"
+              >
+                <span className="relative z-10 bg-[linear-gradient(to_left,#D4AF85_0%,#FFF2D2_50%,#B88E58_100%)] bg-clip-text text-transparent font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                  عن المسجد
+                </span>
+              </a>
             </div>
+          </div>
 
-            {/* 3 Bottom Feature Badges: Frameless on laptop view & anchored at the bottom */}
-            <div className="w-full pt-4">
-              <div className="grid w-full grid-cols-3 gap-6">
-                {[
-                  { icon: HeartHandshake, title: "صدقة جارية", detail: "الأجر المستدام" },
-                  { icon: BookOpen, title: "علم ونور", detail: "لبناء جيل واعٍ" },
-                  { icon: Users, title: "مجتمع متعاون", detail: "معًا نصنع الأثر" },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex min-w-0 flex-col items-center gap-3 text-center lg:flex-row lg:text-right"
-                  >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black/35 backdrop-blur-sm text-[#D4AF85] shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
-                      <item.icon className="h-5 w-5 text-[#D4AF85]" />
+          {/* 3 Bottom Feature Badges: Balanced full-width strip anchored across the bottom of the hero */}
+          <div
+            className={`absolute bottom-6 sm:bottom-8 inset-x-0 z-20 w-full px-6 lg:px-14 pointer-events-auto transition-all duration-1000 ease-out ${
+              videoEnded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+            }`}
+          >
+            <div className="grid w-full grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {[
+                { icon: HeartHandshake, title: "صدقة جارية", detail: "الأجر المستدام" },
+                { icon: BookOpen, title: "علم ونور", detail: "لبناء جيل واعٍ" },
+                { icon: Users, title: "مجتمع متعاون", detail: "معًا نصنع الأثر" },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="flex min-w-0 flex-col items-center gap-3 text-center sm:flex-row sm:text-right justify-center"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black/45 backdrop-blur-md border border-white/10 text-[#D4AF85] shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                    <item.icon className="h-5 w-5 text-[#D4AF85]" />
+                  </span>
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-sm lg:text-base font-bold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] whitespace-nowrap">
+                      {item.title}
                     </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-base font-bold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
-                        {item.title}
-                      </span>
-                      <span className="text-xs text-[#D4AF85] font-medium drop-shadow-sm">
-                        {item.detail}
-                      </span>
+                    <span className="text-[11px] lg:text-xs text-[#D4AF85] font-medium drop-shadow-sm whitespace-nowrap">
+                      {item.detail}
                     </span>
-                  </div>
-                ))}
-              </div>
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
