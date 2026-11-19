@@ -672,6 +672,10 @@ export default function BookingPage() {
         paymentReceiptImageUrl: uploadedReceiptUrl,
       });
 
+      if (res?.booking && uploadedReceiptUrl && !res.booking.paymentReceiptImageUrl) {
+        res.booking.paymentReceiptImageUrl = uploadedReceiptUrl;
+      }
+
       setConfirmedBooking(res.booking);
       refreshAvailability();
       window.scrollTo({ top: 150, behavior: "smooth" });

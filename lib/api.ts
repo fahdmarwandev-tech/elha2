@@ -890,7 +890,11 @@ function upsertSharedHallReservation(rec: SharedHallReservationRecord): void {
       (rec.paypalOrderId && item.paypalOrderId === rec.paypalOrderId)
   );
   if (idx !== -1) {
-    list[idx] = { ...list[idx], ...rec };
+    list[idx] = {
+      ...list[idx],
+      ...rec,
+      paymentReceiptImageUrl: rec.paymentReceiptImageUrl || list[idx].paymentReceiptImageUrl,
+    };
   } else {
     list.push(rec);
   }
@@ -1195,6 +1199,8 @@ export async function createBooking(
           ? res.booking.endDate
           : endIso,
       daysCount: isAza ? 3 : res.booking.daysCount || 1,
+      paymentReceiptImageUrl:
+        res.booking.paymentReceiptImageUrl || data.paymentReceiptImageUrl,
     });
     res.booking = patchedBooking;
     upsertSharedHallReservation(
@@ -1209,7 +1215,18 @@ export async function getBookingByCode(code: string): Promise<BookingResponse> {
   const b = await request<BookingResponse>(
     `/api/v1/bookings/code/${encodeURIComponent(code)}`
   );
-  return b ? normalizeBookingResponse(b) : b;
+  if (!b) return b;
+  const normalized = normalizeBookingResponse(b);
+  const localRecords = loadSharedHallReservations();
+  const localMatch = localRecords.find(
+    (r) =>
+      (r.code && r.code === normalized.code) ||
+      (r.id && r.id === normalized.id)
+  );
+  if (!normalized.paymentReceiptImageUrl && localMatch?.paymentReceiptImageUrl) {
+    normalized.paymentReceiptImageUrl = localMatch.paymentReceiptImageUrl;
+  }
+  return normalized;
 }
 
 export async function getAllBookingsAdmin(
@@ -1224,13 +1241,25 @@ export async function getAllBookingsAdmin(
   }
   const queryString = params.toString() ? `?${params.toString()}` : "";
   const list = await requestWithAuth<BookingResponse[]>(`/api/v1/bookings${queryString}`);
-  const normalizedList = (list || []).map((b) => normalizeBookingResponse(b));
+  const localRecords = loadSharedHallReservations();
+  const normalizedList = (list || []).map((b) => {
+    const norm = normalizeBookingResponse(b);
+    const localMatch = localRecords.find(
+      (r) =>
+        (r.id && r.id === norm.id) ||
+        (r.code && r.code === norm.code) ||
+        (norm.eventDate === r.eventDate && norm.startHour === r.startHour && norm.endHour === r.endHour)
+    );
+    if (!norm.paymentReceiptImageUrl && localMatch?.paymentReceiptImageUrl) {
+      norm.paymentReceiptImageUrl = localMatch.paymentReceiptImageUrl;
+    }
+    return norm;
+  });
   normalizedList.forEach((b) => {
     upsertSharedHallReservation(bookingResponseToSharedRecord(b));
   });
 
   // Also merge any active local shared-hall reservations not yet in normalizedList
-  const localRecords = loadSharedHallReservations();
   for (const r of localRecords) {
     if (status && status !== "ALL" && r.status !== status) continue;
     const exists = normalizedList.some(

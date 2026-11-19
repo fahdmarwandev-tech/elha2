@@ -1516,7 +1516,7 @@ export default function AdminBookingsPage() {
                 )}
 
                 {/* Attached Payment Receipt Image */}
-                {selectedBookingModal.paymentReceiptImageUrl && (
+                {selectedBookingModal.paymentReceiptImageUrl ? (
                   <div className="mt-3 pt-3 border-t border-white/15 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
@@ -1526,7 +1526,7 @@ export default function AdminBookingsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedLightboxImage(selectedBookingModal.paymentReceiptImageUrl!)}
-                        className="text-[11px] text-[#FFE8B8] hover:underline flex items-center gap-1"
+                        className="text-[11px] text-[#FFE8B8] hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <Maximize2 className="w-3.5 h-3.5" />
                         <span>تكبير الصورة</span>
@@ -1546,6 +1546,14 @@ export default function AdminBookingsPage() {
                         <span>انقر لعرض الإيصال بالحجم الكامل</span>
                       </div>
                     </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-[#8EA3BF] bg-white/[0.03] p-2.5 rounded-xl border border-white/10">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-slate-400" />
+                      <span>إيصال السداد المرفق:</span>
+                    </span>
+                    <span className="text-amber-300/80 font-medium">لم يتم إرفاق إيصال سداد لهذا الحجز</span>
                   </div>
                 )}
               </div>
