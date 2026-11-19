@@ -950,6 +950,25 @@ function bookingResponseToSharedRecord(b: BookingResponse, fallbackOrderId?: str
   };
 }
 
+function resolveReceiptImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:")
+  ) {
+    return trimmed;
+  }
+  const base = getApiBaseUrl();
+  if (base && trimmed.startsWith("/")) {
+    return `${base}${trimmed}`;
+  }
+  return trimmed;
+}
+
 function normalizeBookingResponse(b: BookingResponse): BookingResponse {
   const isAza = isAzaBookingType(b.bookingType);
   const effectiveEnd =
@@ -973,7 +992,7 @@ function normalizeBookingResponse(b: BookingResponse): BookingResponse {
     durationHours: b.durationHours || Math.max(1, endHour - startHour),
     formattedTimeRange: buildFormattedTimeRange(isAza, startHour, endHour),
     orderStatus: b.orderStatus || b.status,
-    paymentReceiptImageUrl: b.paymentReceiptImageUrl,
+    paymentReceiptImageUrl: resolveReceiptImageUrl(b.paymentReceiptImageUrl),
   };
 }
 
@@ -1344,7 +1363,45 @@ export async function uploadPaymentReceiptFile(
   const toBase64 = (f: File): Promise<string> =>
     new Promise<string>((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
+      reader.onload = () => {
+        const rawDataUrl = (reader.result as string) || "";
+        if (typeof window === "undefined" || !rawDataUrl) {
+          resolve(rawDataUrl);
+          return;
+        }
+        const img = new window.Image();
+        img.onload = () => {
+          try {
+            const maxDim = 1000;
+            let width = img.width || 800;
+            let height = img.height || 800;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressed = canvas.toDataURL("image/jpeg", 0.78);
+              resolve(compressed.length < rawDataUrl.length ? compressed : rawDataUrl);
+              return;
+            }
+          } catch {
+            // fallback to rawDataUrl
+          }
+          resolve(rawDataUrl);
+        };
+        img.onerror = () => resolve(rawDataUrl);
+        img.src = rawDataUrl;
+      };
       reader.onerror = () => resolve("");
       reader.readAsDataURL(f);
     });
@@ -1380,7 +1437,7 @@ export async function uploadPaymentReceiptFile(
         upsertSharedHallReservation(bookingResponseToSharedRecord(b));
         return { imageUrl: b.paymentReceiptImageUrl || "", booking: b };
       }
-      const resolvedUrl = data?.imageUrl || data?.url || data?.receiptUrl;
+      const resolvedUrl = resolveReceiptImageUrl(data?.imageUrl || data?.url || data?.receiptUrl);
       if (resolvedUrl) {
         return { imageUrl: resolvedUrl };
       }
