@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin } from "lucide-react";
-import QuickBookingModal from "./QuickBookingModal";
 
 interface NavbarProps {
   onReplay?: () => void;
@@ -13,8 +12,6 @@ interface NavbarProps {
 
 export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
   const pathname = usePathname();
-  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
-  const [modalInitialType, setModalInitialType] = useState<"3aza" | "katbketab">("katbketab");
 
   const navLinks = [
     { name: "المجلس", href: "/booking" },
@@ -96,13 +93,6 @@ export default function Navbar({ onReplay, showReplay = false }: NavbarProps) {
         {/* Soft feather gradient: seamless velvety fade from dark navbar into background photo */}
         <div className="absolute top-full inset-x-0 h-16 sm:h-24 bg-gradient-to-b from-[#060D1A]/70 via-[#060D1A]/20 to-transparent pointer-events-none" />
       </header>
-
-      {/* Quick Booking Modal */}
-      <QuickBookingModal
-        isOpen={calendarModalOpen}
-        onClose={() => setCalendarModalOpen(false)}
-        initialType={modalInitialType}
-      />
     </>
   );
 }

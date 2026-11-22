@@ -26,34 +26,11 @@ import {
 import Link from "next/link";
 
 export interface StaffMember {
-  id: string | number;
+  id: number;
   fullName: string;
   email: string;
   createdAt: string;
 }
-
-const STORAGE_KEY = "dar_monasbat_staff_members";
-
-const DEFAULT_STAFF: StaffMember[] = [
-  {
-    id: "staff-1",
-    fullName: "مدير النظام",
-    email: "admin@game3alhaq.com",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "staff-2",
-    fullName: "مسؤول الحجوزات",
-    email: "bookings@game3alhaq.com",
-    createdAt: "2024-02-15",
-  },
-  {
-    id: "staff-3",
-    fullName: "المنسق الإعلامي",
-    email: "media@game3alhaq.com",
-    createdAt: "2024-03-10",
-  },
-];
 
 export default function AdminStaffPage() {
   const router = useRouter();
@@ -63,6 +40,7 @@ export default function AdminStaffPage() {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Simple Form Fields (Name + Email only)
   const [nameInput, setNameInput] = useState("");
@@ -75,7 +53,7 @@ export default function AdminStaffPage() {
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Delete Confirmation State
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // 1. Authorization check
   useEffect(() => {
@@ -86,48 +64,34 @@ export default function AdminStaffPage() {
     }
   }, [router]);
 
-  // 2. Load staff from backend database (Option 1) with fallback
+  // 2. Load staff strictly from backend database (single source of truth for notification emails)
   const fetchStaff = async () => {
     try {
       setIsLoading(true);
+      setLoadError("");
       const data = await getStaffMembers();
-      if (Array.isArray(data) && data.length > 0) {
-        setStaffList(
-          data.map((item) => ({
-            id: item.id,
-            fullName: item.fullName,
-            email: item.email,
-            createdAt: item.createdAt ? item.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-          }))
-        );
-        return;
-      }
-      // If DB empty, fallback to localStorage
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setStaffList(JSON.parse(stored));
-      } else {
-        setStaffList(DEFAULT_STAFF);
-      }
-    } catch {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          setStaffList(JSON.parse(stored));
-        } catch {
-          setStaffList(DEFAULT_STAFF);
-        }
-      } else {
-        setStaffList(DEFAULT_STAFF);
-      }
+      setStaffList(
+        (data || []).map((item) => ({
+          id: item.id,
+          fullName: item.fullName,
+          email: item.email,
+          createdAt: item.createdAt ? item.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+        }))
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : "تعذر تحميل قائمة بريد الموظفين من الخادم";
+      setLoadError(msg);
+      setStaffList([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (isAuthorized) {
+      fetchStaff();
+    }
+  }, [isAuthorized]);
 
   // Add staff member (Name + Email only - saved in DB)
   const handleAddStaff = async (e: React.FormEvent) => {
@@ -174,15 +138,10 @@ export default function AdminStaffPage() {
         createdAt: created.createdAt ? created.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
       };
 
-      const updated = [newMember, ...staffList];
-      setStaffList(updated);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch {}
-
+      setStaffList((prev) => [newMember, ...prev]);
       setNameInput("");
       setEmailInput("");
-      setFormSuccess(`تمت إضافة (${cleanName}) بنجاح وحفظه في قاعدة البيانات`);
+      setFormSuccess(`تمت إضافة (${cleanName}) بنجاح — سيستلم إشعارات طلبات الحجز الجديدة تلقائياً`);
 
       setTimeout(() => {
         setFormSuccess("");
@@ -196,20 +155,17 @@ export default function AdminStaffPage() {
   };
 
   // Delete staff member
-  const handleDelete = async (id: string | number) => {
+  const handleDelete = async (id: number) => {
     try {
-      if (typeof id === "number" || !isNaN(Number(id))) {
-        await deleteStaffMember(Number(id));
-      }
-    } catch (e) {
-      console.warn("Delete DB error:", e);
+      setFormError("");
+      await deleteStaffMember(id);
+      setStaffList((prev) => prev.filter((s) => s.id !== id));
+      setDeleteConfirmId(null);
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : "تعذر حذف الموظف من قاعدة البيانات، يرجى المحاولة لاحقاً";
+      setFormError(msg);
+      setDeleteConfirmId(null);
     }
-    const updated = staffList.filter((s) => s.id !== id);
-    setStaffList(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
-    setDeleteConfirmId(null);
   };
 
   // Copy email
@@ -375,7 +331,18 @@ export default function AdminStaffPage() {
             </span>
           </div>
 
-          {filteredStaff.length === 0 ? (
+          {loadError && (
+            <div className="m-4 p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{loadError}</span>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="py-12 px-4 text-center text-xs text-[#8EA3BF]">
+              جاري تحميل قائمة بريد الموظفين من قاعدة البيانات...
+            </div>
+          ) : filteredStaff.length === 0 ? (
             <div className="py-12 px-4 text-center">
               <div className="w-12 h-12 rounded-full bg-[#050C18] border border-[#1E3A63] flex items-center justify-center text-[#8EA3BF] mx-auto mb-3">
                 <Users className="w-6 h-6 text-[#D4AF85]/60" />

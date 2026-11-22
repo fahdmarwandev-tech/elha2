@@ -21,7 +21,7 @@ import {
   Camera,
   Maximize2,
   X,
-  CreditCard,
+  QrCode,
   Printer,
   AlertCircle,
   Sun,
@@ -35,11 +35,11 @@ import {
   getPrayerTimes,
   createBooking,
   uploadPaymentReceiptFile,
+  resolveReceiptImageUrl,
   getStoredUser,
   HallResponse,
   HourlyAvailabilityResponse,
   BookingResponse,
-  BookingInitiationResponse,
   DayAvailabilityResponse,
 } from "@/lib/api";
 
@@ -326,15 +326,15 @@ export default function BookingPage() {
   const maxAllowedEndHour = bookingType === "3aza" ? maghribHour : 24;
 
   // Compute status of each visible hour (minAllowedStartHour .. maxAllowedEndHour - 1) across all selectedDates
-  // Because there is only 1 shared hall, any reservation (katbketab or 3aza) blocks the hours for both.
+  // Because there is only 1 shared hall, any reservation (confirmed or pending, katbketab or 3aza) locks the hours.
   const visibleHourSlots = useMemo(() => {
     const slots: {
       hour: number;
-      status: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT";
+      status: "AVAILABLE" | "PENDING" | "BOOKED" | "BUFFER" | "BLACKOUT";
     }[] = [];
 
     for (let h = minAllowedStartHour; h < maxAllowedEndHour; h++) {
-      let combinedStatus: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT" = "AVAILABLE";
+      let combinedStatus: "AVAILABLE" | "PENDING" | "BOOKED" | "BUFFER" | "BLACKOUT" = "AVAILABLE";
 
       for (const sd of selectedDates) {
         const dayAvail = availabilityByIsoDate.get(sd.iso);
@@ -347,6 +347,9 @@ export default function BookingPage() {
         if (slotObj && slotObj.status !== "AVAILABLE") {
           if (slotObj.status === "BOOKED") {
             combinedStatus = "BOOKED";
+            break;
+          } else if (slotObj.status === "PENDING") {
+            combinedStatus = "PENDING";
             break;
           } else if (slotObj.status === "BLACKOUT") {
             combinedStatus = "BLACKOUT";
@@ -557,16 +560,27 @@ export default function BookingPage() {
     e.currentTarget.style.setProperty("--my", `${y}px`);
   };
 
+  const clearReceiptSelection = () => {
+    if (receiptPreviewUrl && receiptPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(receiptPreviewUrl);
+    }
+    setReceiptFile(null);
+    setReceiptPreviewUrl(null);
+  };
+
   const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setErrorMessage("يرجى اختيار ملف صورة صالح (JPG, PNG, WebP) لإيصال السداد.");
+    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type.toLowerCase())) {
+      setErrorMessage("يرجى اختيار ملف صورة صالح (JPG, PNG, WebP) لإيصال التحويل.");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
       setErrorMessage("حجم الصورة كبير جداً، الحد الأقصى 10 ميجابايت.");
       return;
+    }
+    if (receiptPreviewUrl && receiptPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(receiptPreviewUrl);
     }
     setReceiptFile(file);
     const objectUrl = URL.createObjectURL(file);
@@ -673,15 +687,18 @@ export default function BookingPage() {
       });
 
       if (res?.booking && uploadedReceiptUrl && !res.booking.paymentReceiptImageUrl) {
-        res.booking.paymentReceiptImageUrl = uploadedReceiptUrl;
+        res.booking.paymentReceiptImageUrl = resolveReceiptImageUrl(uploadedReceiptUrl);
       }
 
       setConfirmedBooking(res.booking);
+      clearReceiptSelection();
+      setNotes("");
       refreshAvailability();
       window.scrollTo({ top: 150, behavior: "smooth" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل تسجيل الحجز، يرجى مراجعة البيانات والمحاولة مجدداً.";
       setErrorMessage(msg);
+      refreshAvailability();
     } finally {
       setIsSubmitting(false);
       setIsUploadingReceipt(false);
@@ -817,9 +834,11 @@ export default function BookingPage() {
                 </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="text-[#8EA3BF]">الساعات المحجوزة يومياً:</span>
+                <span className="text-[#8EA3BF]">
+                  {confirmedBooking.bookingType === "3aza" ? "الساعات المحجوزة يومياً:" : "الساعات المحجوزة:"}
+                </span>
                 <span className="font-bold text-white">
-                  من {formatShortHour(confirmedBooking.startHour)} حتى {formatShortHour(confirmedBooking.endHour)} ({confirmedBooking.durationHours} ساعات يومياً)
+                  من {formatShortHour(confirmedBooking.startHour)} حتى {formatShortHour(confirmedBooking.endHour)} ({confirmedBooking.durationHours} ساعات{confirmedBooking.bookingType === "3aza" ? " يومياً" : ""})
                 </span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
@@ -878,6 +897,8 @@ export default function BookingPage() {
               <button
                 onClick={() => {
                   setConfirmedBooking(null);
+                  clearReceiptSelection();
+                  setNotes("");
                   refreshAvailability();
                 }}
                 className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs transition cursor-pointer"
@@ -1153,7 +1174,14 @@ export default function BookingPage() {
 
                         let subLabel = `إلى ${formatShortHour(hour + 1)}`;
                         if (!isAvailable) {
-                          subLabel = status === "BUFFER" ? "تجهيز" : status === "BLACKOUT" ? "مغلق" : "محجوز";
+                          subLabel =
+                            status === "BUFFER"
+                              ? "تجهيز"
+                              : status === "BLACKOUT"
+                              ? "مغلق"
+                              : status === "PENDING"
+                              ? "قيد المراجعة"
+                              : "محجوز";
                         } else if (isSelected) {
                           if (isSingleHour) {
                             subLabel = isPickingEndHour ? "نقطة البدء" : "ساعة واحدة";
@@ -1179,7 +1207,9 @@ export default function BookingPage() {
                               isSelected
                                 ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-[1.03] z-10"
                                 : !isAvailable
-                                ? status === "BUFFER"
+                                ? status === "PENDING"
+                                  ? "bg-amber-500/15 text-amber-200/70 cursor-not-allowed border border-amber-400/35"
+                                  : status === "BUFFER"
                                   ? "bg-amber-950/30 text-amber-300/40 cursor-not-allowed line-through border border-amber-500/20"
                                   : "bg-black/40 text-white/30 cursor-not-allowed line-through border border-white/5"
                                 : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
@@ -1203,18 +1233,6 @@ export default function BookingPage() {
                         );
                       })}
                     </div>
-
-                    {/* Turnaround Buffer Notice Requirement */}
-                    <div className="p-3.5 rounded-2xl bg-[#D4AF85]/10 border border-[#D4AF85]/30 text-xs text-[#FFE8B8] space-y-1">
-                      <div className="flex items-center gap-2 font-bold">
-                        <Sparkles className="w-4 h-4 text-[#FFE8B8] shrink-0" />
-                        <span>تجهيز واستراحة تلقائية (Buffer):</span>
-                      </div>
-                      <p className="text-[11px] text-[#DCE6F2] leading-relaxed">
-                        ملاحظة: يتم تخصيص وقت استراحة وفاصل تجهيز (بفر) تلقائي قبل وبعد الحجز لضمان النظافة والترتيب
-                        ({activeHall.bufferHours || 1} ساعة تلقائياً).
-                      </p>
-                    </div>
                   </div>
 
                   {/* Dynamic Price & Duration Calculation */}
@@ -1224,7 +1242,7 @@ export default function BookingPage() {
                         {bookingType === "3aza" ? "الفترة اليومية (لمدة 3 أيام متتالية):" : "إجمالي مدة الحجز:"}
                       </span>
                       <span className="text-xs sm:text-sm font-bold text-white block">
-                        {dailyDurationText} يومياً (من {formatShortHour(startHour)} إلى {formatShortHour(endHour)})
+                        {dailyDurationText}{bookingType === "3aza" ? " يومياً" : ""} (من {formatShortHour(startHour)} إلى {formatShortHour(endHour)})
                       </span>
                       {bookingType === "3aza" && (
                         <span className="text-[11px] text-[#FFE8B8] font-semibold block">
@@ -1314,7 +1332,7 @@ export default function BookingPage() {
                       </span>
                     </h2>
                     <p className="text-xs text-[#8EA3BF] mt-1">
-                      الخطوة النهائية لتسجيل الحجز والانتقال لبوابة السداد
+                      الخطوة النهائية: التحويل عبر رمز QR وإرفاق لقطة شاشة لإثبات التحويل
                     </p>
                   </div>
                   <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
@@ -1476,9 +1494,9 @@ export default function BookingPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>الساعات المحجوزة يومياً:</span>
+                      <span>{bookingType === "3aza" ? "الساعات المحجوزة يومياً:" : "الساعات المحجوزة:"}</span>
                       <span className="font-bold text-[#FFE8B8]">
-                        من {formatShortHour(startHour)} إلى {formatShortHour(endHour)} ({dailyDurationText} يومياً)
+                        من {formatShortHour(startHour)} إلى {formatShortHour(endHour)} ({dailyDurationText}{bookingType === "3aza" ? " يومياً" : ""})
                       </span>
                     </div>
                     {bookingType === "3aza" && (
@@ -1503,39 +1521,61 @@ export default function BookingPage() {
                     </div>
                   </div>
 
-                  {/* Payment Proof / Bank Transfer Section */}
+                  {/* Payment Proof / QR Code Transfer Section */}
                   <div id="booking-field-receipt" className="p-4 sm:p-5 rounded-2xl bg-white/[0.05] border border-white/20 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-[#FFE8B8]" />
-                        <span className="text-xs sm:text-sm font-bold text-white">سداد رسوم الحجز (تحويل بنكي)</span>
+                        <QrCode className="w-5 h-5 text-[#FFE8B8]" />
+                        <span className="text-xs sm:text-sm font-bold text-white">سداد رسوم الحجز عبر رمز QR وإثبات التحويل</span>
                       </div>
                       <span className="text-[11px] text-[#8EA3BF]">
-                        المبلغ المطلوب: <strong className="text-emerald-400 font-mono text-sm">{totalPrice} {activeHall.currency || "ر.ع"}</strong>
+                        المبلغ المطلوب تحويله: <strong className="text-emerald-400 font-mono text-sm">{totalPrice} {activeHall.currency || "ر.ع"}</strong>
                       </span>
                     </div>
 
-                    <div className="space-y-3 pt-1">
-                      {/* Bank Account Info Card */}
-                      <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 text-xs text-[#DCE6F2] space-y-1.5">
-                        <div className="flex justify-between items-center text-amber-300 font-bold">
-                          <span>بيانات الحساب البنكي لمجلس جامع الحق:</span>
-                          <span className="text-[11px] bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">بنك مسقط</span>
+                    <div className="space-y-4 pt-1">
+                      {/* QR Code Transfer Card */}
+                      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-[#0A1628]/80 to-[#060D1A]/90 border border-[#D4AF85]/40 flex flex-col sm:flex-row items-center gap-5">
+                        <div
+                          onClick={() => setSelectedLightboxImage("/payment-qr.jpg")}
+                          className="relative group w-44 sm:w-48 shrink-0 rounded-2xl overflow-hidden bg-white p-2 border-2 border-[#D4AF85]/70 shadow-[0_10px_30px_rgba(0,0,0,0.45)] cursor-pointer hover:scale-[1.02] transition"
+                          title="انقر لتكبير رمز QR"
+                        >
+                          <img
+                            src="/payment-qr.jpg"
+                            alt="رمز QR للتحويل البنكي"
+                            className="w-full aspect-square object-contain rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                            <Maximize2 className="w-4 h-4 text-[#FFE8B8]" />
+                            <span>تكبير الرمز</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-[#8EA3BF]">اسم الحساب:</span>
-                          <span className="font-bold text-white">مجلس جامع الحق - الموالح الجنوبية</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-[#8EA3BF]">رقم الحساب:</span>
-                          <span className="font-mono font-bold text-[#FFE8B8] dir-ltr">0315-01234567-001</span>
+
+                        <div className="flex-1 text-right space-y-2.5 text-xs text-[#DCE6F2]">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF85]/20 border border-[#D4AF85]/40 text-[#FFE8B8] font-bold text-[11px]">
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>خطوات إتمام الحجز</span>
+                          </div>
+                          <ol className="space-y-1.5 list-decimal list-inside text-[#DCE6F2] leading-relaxed">
+                            <li>
+                              امسح رمز <strong className="text-[#FFE8B8]">QR</strong> المجاور وقم بتحويل مبلغ{" "}
+                              <strong className="text-emerald-400 font-mono">{totalPrice} {activeHall.currency || "ر.ع"}</strong>.
+                            </li>
+                            <li>
+                              التقط <strong className="text-white">لقطة شاشة (Screenshot)</strong> لإيصال أو إشعار التحويل البنكي.
+                            </li>
+                            <li>
+                              أرفق صورة الإيصال بالأسفل وأرسل الطلب — سيتم <strong className="text-amber-300">حجز الموعد مؤقتاً (قيد المراجعة)</strong> وإشعار إدارة الجامع للاعتماد.
+                            </li>
+                          </ol>
                         </div>
                       </div>
 
                       {/* Upload Box */}
                       <div>
                         <label className="block text-xs font-bold text-[#FFE8B8] mb-1.5">
-                          إرفاق صورة إشعار أو إيصال التحويل البنكي *
+                          إرفاق لقطة شاشة لإثبات التحويل *
                         </label>
                         {receiptPreviewUrl ? (
                           <div className="relative rounded-2xl border border-amber-400/40 bg-black/40 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
@@ -1547,7 +1587,7 @@ export default function BookingPage() {
                                 onClick={() => setSelectedLightboxImage(receiptPreviewUrl)}
                               />
                               <div className="text-right">
-                                <span className="text-xs font-bold text-white block">تم اختيار إيصال السداد</span>
+                                <span className="text-xs font-bold text-white block">تم اختيار إثبات التحويل</span>
                                 <span className="text-[11px] text-[#8EA3BF] block mt-0.5 font-mono">
                                   {receiptFile?.name || "receipt.jpg"}
                                 </span>
@@ -1562,17 +1602,14 @@ export default function BookingPage() {
                                 تغيير الصورة
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/png,image/jpeg,image/webp"
                                   onChange={handleReceiptFileChange}
                                   className="hidden"
                                 />
                               </label>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setReceiptFile(null);
-                                  setReceiptPreviewUrl(null);
-                                }}
+                                onClick={clearReceiptSelection}
                                 className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition cursor-pointer"
                                 title="إزالة الإيصال"
                               >
@@ -1586,14 +1623,14 @@ export default function BookingPage() {
                               <Upload className="w-6 h-6" />
                             </div>
                             <span className="text-xs font-bold text-white group-hover:text-[#FFE8B8] transition">
-                              انقر هنا لاختيار أو رفع صورة إشعار التحويل البنكي
+                              انقر هنا لإرفاق لقطة شاشة إثبات التحويل
                             </span>
                             <span className="text-[10px] text-[#8EA3BF] mt-1">
                               صيغ الصور المدعومة: JPG, PNG, WebP (الحد الأقصى: 10 ميجابايت)
                             </span>
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/png,image/jpeg,image/webp"
                               onChange={handleReceiptFileChange}
                               className="hidden"
                             />

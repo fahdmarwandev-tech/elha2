@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import QuickBookingModal from "@/components/QuickBookingModal";
 import AboutMosque from "@/components/AboutMosque";
 import { getPrayerTimes } from "@/lib/api";
 
@@ -60,8 +59,6 @@ function MosqueDomeIcon({ className = "w-6 h-6" }: { className?: string }) {
 export default function Home() {
   const [activeTab, setActiveTab] = useState("الرئيسية");
   const [videoEnded, setVideoEnded] = useState(false);
-  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
-  const [bookingModalType, setBookingModalType] = useState<"3aza" | "katbketab">("katbketab");
   const [scrollY, setScrollY] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -71,11 +68,6 @@ export default function Home() {
 
   const desktopVideoRef = useRef<HTMLVideoElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
-
-  const openCalendarFor = (type: "3aza" | "katbketab") => {
-    setBookingModalType(type);
-    setCalendarModalOpen(true);
-  };
 
   const handleVideoPlaying = () => {
     videoLoadedRef.current = true;
@@ -1127,13 +1119,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* Quick Booking Modal with Calendar */}
-      <QuickBookingModal
-        isOpen={calendarModalOpen}
-        onClose={() => setCalendarModalOpen(false)}
-        initialType={bookingModalType}
-      />
     </>
   );
 }

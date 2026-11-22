@@ -544,7 +544,8 @@ export interface UpdateHallConfigRequest {
 export interface HourSlotStatus {
   hour: number;
   formattedHour: string;
-  status: "AVAILABLE" | "BOOKED" | "BUFFER" | "BLACKOUT" | string;
+  status: "AVAILABLE" | "PENDING" | "BOOKED" | "BUFFER" | "BLACKOUT" | string;
+  bookingStatus?: string;
   bookingType?: string;
   eventLabel?: string;
   bookingCode?: string;
@@ -633,20 +634,14 @@ export interface BookingResponse {
   totalAmount: number;
   currency: string;
   notes?: string;
-  status: "PENDING_PAYMENT" | "PENDING_APPROVAL" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | string;
+  status: "PENDING_APPROVAL" | "CONFIRMED" | "REJECTED" | "COMPLETED" | "CANCELLED" | string;
   orderStatus?: string;
   paymentReceiptImageUrl?: string;
-  paymentExpiresAt?: string;
-  paymentId?: number;
-  paypalOrderId?: string;
-  paymentStatus?: string;
   createdAt: string;
 }
 
 export interface BookingInitiationResponse {
   booking: BookingResponse;
-  paypalOrderId: string;
-  approvalUrl: string;
 }
 
 export interface BlackoutResponse {
@@ -776,45 +771,8 @@ export async function updateHall(
 }
 
 // ==========================================
-// Shared Single-Hall Reservation Cache & Sync
-// Ensures any reservation (katbketab or 3aza) on the 1 shared hall immediately
-// blocks overlapping hours for both katbketab and 3aza across all covered days.
+// Booking & Availability Helpers (Backend as Single Source of Truth)
 // ==========================================
-const SHARED_HALL_BOOKINGS_KEY = "dar_monasbat_shared_hall_bookings";
-
-interface SharedHallReservationRecord {
-  id?: number;
-  code?: string;
-  paypalOrderId?: string;
-  hallId: number;
-  hallName?: string;
-  fullName?: string;
-  nationalId?: string;
-  phone?: string;
-  secondaryPhone?: string;
-  email?: string;
-  bookingType: string;
-  eventLabel?: string;
-  eventDate: string; // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
-  reservedDates?: string[];
-  daysCount: number;
-  startHour: number;
-  endHour: number;
-  durationHours?: number;
-  formattedTimeRange?: string;
-  bufferHours: number;
-  hourlyRate?: number;
-  totalAmount?: number;
-  currency?: string;
-  notes?: string;
-  status: string;
-  orderStatus?: string;
-  paymentReceiptImageUrl?: string;
-  createdAt?: string;
-  expiresAt?: number;
-}
-
 function isAzaBookingType(bt?: string): boolean {
   if (!bt) return false;
   const norm = bt.trim().toLowerCase();
@@ -855,102 +813,7 @@ function buildFormattedTimeRange(isAza: boolean, startHour: number, endHour: num
   return `من ${formatHourAr(startHour)} إلى ${formatHourAr(endHour)}`;
 }
 
-function loadSharedHallReservations(): SharedHallReservationRecord[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(SHARED_HALL_BOOKINGS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as SharedHallReservationRecord[];
-    const now = Date.now();
-    return parsed.filter((r) => {
-      if (r.status === "CANCELLED" || r.status === "EXPIRED") return false;
-      if (r.status === "PENDING_PAYMENT" && r.expiresAt && r.expiresAt < now) return false;
-      return true;
-    });
-  } catch {
-    return [];
-  }
-}
-
-function saveSharedHallReservations(records: SharedHallReservationRecord[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(SHARED_HALL_BOOKINGS_KEY, JSON.stringify(records));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function upsertSharedHallReservation(rec: SharedHallReservationRecord): void {
-  const list = loadSharedHallReservations();
-  const idx = list.findIndex(
-    (item) =>
-      (rec.id && item.id === rec.id) ||
-      (rec.code && item.code === rec.code) ||
-      (rec.paypalOrderId && item.paypalOrderId === rec.paypalOrderId)
-  );
-  if (idx !== -1) {
-    list[idx] = {
-      ...list[idx],
-      ...rec,
-      paymentReceiptImageUrl: rec.paymentReceiptImageUrl || list[idx].paymentReceiptImageUrl,
-    };
-  } else {
-    list.push(rec);
-  }
-  saveSharedHallReservations(list);
-}
-
-function bookingResponseToSharedRecord(b: BookingResponse, fallbackOrderId?: string): SharedHallReservationRecord {
-  const isAza = isAzaBookingType(b.bookingType);
-  const effectiveEnd =
-    b.endDate && b.endDate > b.eventDate
-      ? b.endDate
-      : isAza
-      ? addDaysToIso(b.eventDate, 2)
-      : b.eventDate;
-  const reservedDates = buildReservedDatesRange(b.eventDate, effectiveEnd);
-  const startHour = b.startHour ?? (isAza ? 12 : 18);
-  const endHour = b.endHour ?? (isAza ? 18 : 22);
-  const durationHours = b.durationHours || Math.max(1, endHour - startHour);
-  return {
-    id: b.id,
-    code: b.code,
-    paypalOrderId: b.paypalOrderId || fallbackOrderId,
-    hallId: b.hallId || 1,
-    hallName: b.hallName || "قاعة المجلس العام",
-    fullName: b.fullName,
-    nationalId: b.nationalId,
-    phone: b.phone,
-    secondaryPhone: b.secondaryPhone,
-    email: b.email,
-    bookingType: isAza ? "3aza" : "katbketab",
-    eventLabel: isAza ? "عزاء (3 أيام)" : "عقد قران",
-    eventDate: b.eventDate,
-    endDate: effectiveEnd,
-    reservedDates,
-    daysCount: isAza ? 3 : Math.max(1, reservedDates.length),
-    startHour,
-    endHour,
-    durationHours,
-    formattedTimeRange: buildFormattedTimeRange(isAza, startHour, endHour),
-    bufferHours: b.appliedBufferHours ?? 1,
-    hourlyRate: b.hourlyRate,
-    totalAmount: b.totalAmount,
-    currency: b.currency || "ر.ع",
-    notes: b.notes,
-    status: b.status || "CONFIRMED",
-    orderStatus: b.orderStatus || b.status || "CONFIRMED",
-    paymentReceiptImageUrl: b.paymentReceiptImageUrl,
-    createdAt: b.createdAt || new Date().toISOString(),
-    expiresAt:
-      b.status === "PENDING_PAYMENT"
-        ? Date.now() + 15 * 60 * 1000
-        : undefined,
-  };
-}
-
-function resolveReceiptImageUrl(url?: string): string | undefined {
+export function resolveReceiptImageUrl(url?: string): string | undefined {
   if (!url) return undefined;
   const trimmed = url.trim();
   if (!trimmed) return undefined;
@@ -996,7 +859,7 @@ function normalizeBookingResponse(b: BookingResponse): BookingResponse {
   };
 }
 
-function normalizeAndMergeAvailability(
+function normalizeAvailabilityResponse(
   raw: HourlyAvailabilityResponse,
   hallId: number,
   year: number,
@@ -1007,10 +870,6 @@ function normalizeAndMergeAvailability(
   const rawDaysByNum = new Map<number, DayAvailabilityResponse>();
   (raw.days || []).forEach((d) => rawDaysByNum.set(d.dayNumber, d));
 
-  const localReservations = loadSharedHallReservations().filter(
-    (r) => !r.hallId || r.hallId === hallId
-  );
-
   const normalizedDays: DayAvailabilityResponse[] = [];
   for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
     const isoDate = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
@@ -1020,108 +879,21 @@ function normalizeAndMergeAvailability(
       existingHoursMap.set(h.hour, h);
     });
 
-    // If backend previously started at openHour=13 and hour 13 is BOOKED, mark hour 12 as BUFFER
-    if (
-      !existingHoursMap.has(12) &&
-      existingHoursMap.get(13)?.status === "BOOKED" &&
-      buffer >= 1
-    ) {
-      const slot13 = existingHoursMap.get(13);
-      for (let b = 1; b <= buffer; b++) {
-        if (13 - b >= 0) {
-          existingHoursMap.set(13 - b, {
-            hour: 13 - b,
-            formattedHour: formatHourAr(13 - b),
-            status: "BUFFER",
-            bookingType: slot13?.bookingType,
-            eventLabel: slot13?.eventLabel,
-            bookingCode: slot13?.bookingCode,
-          });
-        }
-      }
-    }
-
-    // Find all local reservations covering isoDate
-    const dayLocalReservations = localReservations.filter(
-      (r) => r.eventDate <= isoDate && r.endDate >= isoDate
-    );
-
-    // Build combined day reservation summaries (backend + local)
-    const daySummaries: DayReservationSummary[] = [...(existingDay?.reservations || [])];
-    for (const r of dayLocalReservations) {
-      const alreadyExists = daySummaries.some(
-        (s) =>
-          (r.code && s.code === r.code) ||
-          (r.id && s.bookingId === r.id) ||
-          (s.eventDate === r.eventDate && s.startHour === r.startHour && s.endHour === r.endHour)
-      );
-      if (!alreadyExists) {
-        const isAza = isAzaBookingType(r.bookingType);
-        const reservedDates = r.reservedDates || buildReservedDatesRange(r.eventDate, r.endDate);
-        const dayIdx = Math.max(1, reservedDates.indexOf(isoDate) + 1);
-        daySummaries.push({
-          bookingId: r.id,
-          code: r.code,
-          fullName: r.fullName,
-          bookingType: isAza ? "3aza" : "katbketab",
-          eventLabel: isAza ? "عزاء (3 أيام)" : "عقد قران",
-          eventDate: r.eventDate,
-          endDate: r.endDate,
-          reservedDates,
-          daysCount: isAza ? 3 : Math.max(1, reservedDates.length),
-          dayIndex: dayIdx,
-          startHour: r.startHour,
-          endHour: r.endHour,
-          formattedTimeRange:
-            r.formattedTimeRange || buildFormattedTimeRange(isAza, r.startHour, r.endHour),
-          status: r.status || "CONFIRMED",
-        });
-      }
-    }
-
     const hours: HourSlotStatus[] = [];
     for (let h = 0; h < 24; h++) {
       const existingSlot = existingHoursMap.get(h);
       let status = existingSlot?.status || "AVAILABLE";
-      let bookingType = existingSlot?.bookingType;
-      let eventLabel = existingSlot?.eventLabel;
-      let bookingCode = existingSlot?.bookingCode;
-
       if (existingDay?.status === "FULLY_BOOKED" && (existingDay.hours || []).length === 0) {
         status = "BLACKOUT";
       }
-
-      // Overlay shared hall reservations (both katbketab and 3-day 3aza)
-      for (const r of dayLocalReservations) {
-        const isAza = isAzaBookingType(r.bookingType);
-        if (h >= r.startHour && h < r.endHour) {
-          status = "BOOKED";
-          bookingType = isAza ? "3aza" : "katbketab";
-          eventLabel = isAza ? "عزاء" : "عقد قران";
-          bookingCode = r.code;
-          break;
-        }
-        const rBuf = r.bufferHours ?? buffer;
-        if (
-          status === "AVAILABLE" &&
-          rBuf > 0 &&
-          ((h >= r.startHour - rBuf && h < r.startHour) ||
-            (h >= r.endHour && h < r.endHour + rBuf))
-        ) {
-          status = "BUFFER";
-          bookingType = isAza ? "3aza" : "katbketab";
-          eventLabel = isAza ? "عزاء" : "عقد قران";
-          bookingCode = r.code;
-        }
-      }
-
       hours.push({
         hour: h,
-        formattedHour: formatHourAr(h),
+        formattedHour: existingSlot?.formattedHour || formatHourAr(h),
         status,
-        bookingType,
-        eventLabel,
-        bookingCode,
+        bookingStatus: existingSlot?.bookingStatus,
+        bookingType: existingSlot?.bookingType,
+        eventLabel: existingSlot?.eventLabel,
+        bookingCode: existingSlot?.bookingCode,
       });
     }
 
@@ -1138,7 +910,7 @@ function normalizeAndMergeAvailability(
       dayNumber: dayNum,
       status: dayStatus,
       hours,
-      reservations: daySummaries,
+      reservations: existingDay?.reservations || [],
     });
   }
 
@@ -1148,8 +920,8 @@ function normalizeAndMergeAvailability(
     year,
     month,
     bufferHours: buffer,
-    openHour: 0,
-    closeHour: 24,
+    openHour: raw.openHour ?? 0,
+    closeHour: raw.closeHour ?? 24,
     dhuhrHour: raw.dhuhrHour ?? 12,
     dhuhrTime: raw.dhuhrTime ?? "12:15",
     maghribHour: raw.maghribHour ?? 18,
@@ -1158,16 +930,18 @@ function normalizeAndMergeAvailability(
   };
 }
 
-// Availability
+// Availability (includes auth header when signed in so admins receive reservation summaries)
 export async function getHallAvailability(
   hallId: number,
   year: number,
   month: number
 ): Promise<HourlyAvailabilityResponse> {
-  const raw = await request<HourlyAvailabilityResponse>(
-    `/api/v1/bookings/availability?hallId=${hallId}&year=${year}&month=${month}`
-  );
-  return normalizeAndMergeAvailability(raw, hallId, year, month);
+  const path = `/api/v1/bookings/availability?hallId=${hallId}&year=${year}&month=${month}`;
+  const hasSession = typeof window !== "undefined" && !!localStorage.getItem(ACCESS_TOKEN_KEY);
+  const raw = hasSession
+    ? await requestWithAuth<HourlyAvailabilityResponse>(path)
+    : await request<HourlyAvailabilityResponse>(path);
+  return normalizeAvailabilityResponse(raw, hallId, year, month);
 }
 
 // Bookings
@@ -1182,24 +956,6 @@ export async function createBooking(
     ? data.endDate
     : data.eventDate;
 
-  // Validate against shared 1-hall reservations (katbketab and 3aza share the same hall)
-  const existingReservations = loadSharedHallReservations().filter(
-    (r) => !r.hallId || r.hallId === data.hallId
-  );
-  for (let dIso = startIso; dIso <= endIso; dIso = addDaysToIso(dIso, 1)) {
-    for (const r of existingReservations) {
-      if (r.eventDate <= dIso && r.endDate >= dIso) {
-        const buf = r.bufferHours ?? 1;
-        if (data.startHour < r.endHour + buf && data.endHour + buf > r.startHour) {
-          throw new ApiError(
-            `القاعة محجوزة بالفعل في تاريخ (${dIso}) خلال هذا التوقيت — توجد قاعة واحدة فقط مشتركة لعقد القران والعزاء.`,
-            409
-          );
-        }
-      }
-    }
-  }
-
   const res = await requestWithAuth<BookingInitiationResponse>("/api/v1/bookings", {
     method: "POST",
     body: JSON.stringify({
@@ -1210,7 +966,7 @@ export async function createBooking(
   });
 
   if (res?.booking) {
-    const patchedBooking = normalizeBookingResponse({
+    res.booking = normalizeBookingResponse({
       ...res.booking,
       eventDate: res.booking.eventDate || startIso,
       endDate:
@@ -1221,10 +977,6 @@ export async function createBooking(
       paymentReceiptImageUrl:
         res.booking.paymentReceiptImageUrl || data.paymentReceiptImageUrl,
     });
-    res.booking = patchedBooking;
-    upsertSharedHallReservation(
-      bookingResponseToSharedRecord(patchedBooking, res.paypalOrderId)
-    );
   }
 
   return res;
@@ -1235,17 +987,7 @@ export async function getBookingByCode(code: string): Promise<BookingResponse> {
     `/api/v1/bookings/code/${encodeURIComponent(code)}`
   );
   if (!b) return b;
-  const normalized = normalizeBookingResponse(b);
-  const localRecords = loadSharedHallReservations();
-  const localMatch = localRecords.find(
-    (r) =>
-      (r.code && r.code === normalized.code) ||
-      (r.id && r.id === normalized.id)
-  );
-  if (!normalized.paymentReceiptImageUrl && localMatch?.paymentReceiptImageUrl) {
-    normalized.paymentReceiptImageUrl = localMatch.paymentReceiptImageUrl;
-  }
-  return normalized;
+  return normalizeBookingResponse(b);
 }
 
 export async function getAllBookingsAdmin(
@@ -1260,99 +1002,33 @@ export async function getAllBookingsAdmin(
   }
   const queryString = params.toString() ? `?${params.toString()}` : "";
   const list = await requestWithAuth<BookingResponse[]>(`/api/v1/bookings${queryString}`);
-  const localRecords = loadSharedHallReservations();
-  const normalizedList = (list || []).map((b) => {
-    const norm = normalizeBookingResponse(b);
-    const localMatch = localRecords.find(
-      (r) =>
-        (r.id && r.id === norm.id) ||
-        (r.code && r.code === norm.code) ||
-        (norm.eventDate === r.eventDate && norm.startHour === r.startHour && norm.endHour === r.endHour)
-    );
-    if (!norm.paymentReceiptImageUrl && localMatch?.paymentReceiptImageUrl) {
-      norm.paymentReceiptImageUrl = localMatch.paymentReceiptImageUrl;
-    }
-    return norm;
-  });
-  normalizedList.forEach((b) => {
-    upsertSharedHallReservation(bookingResponseToSharedRecord(b));
-  });
-
-  // Also merge any active local shared-hall reservations not yet in normalizedList
-  for (const r of localRecords) {
-    if (status && status !== "ALL" && r.status !== status) continue;
-    const exists = normalizedList.some(
-      (b) =>
-        (r.id && b.id === r.id) ||
-        (r.code && b.code === r.code) ||
-        (b.eventDate === r.eventDate && b.startHour === r.startHour && b.endHour === r.endHour)
-    );
-    if (!exists) {
-      normalizedList.push(
-        normalizeBookingResponse({
-          id: r.id || Math.floor(Math.random() * 100000),
-          code: r.code || "DAR-LOCAL",
-          hallId: r.hallId || 1,
-          hallName: r.hallName || "قاعة المجلس العام",
-          fullName: r.fullName || "حجز مسجل",
-          nationalId: r.nationalId || "-",
-          phone: r.phone || "-",
-          secondaryPhone: r.secondaryPhone,
-          email: r.email || "-",
-          bookingType: r.bookingType,
-          eventLabel: r.eventLabel,
-          eventDate: r.eventDate,
-          endDate: r.endDate,
-          reservedDates: r.reservedDates,
-          daysCount: r.daysCount,
-          startHour: r.startHour,
-          endHour: r.endHour,
-          durationHours: r.durationHours || Math.max(1, r.endHour - r.startHour),
-          formattedTimeRange: r.formattedTimeRange,
-          appliedBufferHours: r.bufferHours ?? 1,
-          hourlyRate: r.hourlyRate || 25,
-          totalAmount:
-            r.totalAmount ||
-            Math.max(1, r.endHour - r.startHour) * r.daysCount * (r.hourlyRate || 25),
-          currency: r.currency || "ر.ع",
-          notes: r.notes,
-          status: r.status || "CONFIRMED",
-          orderStatus: r.orderStatus || r.status || "CONFIRMED",
-          paymentReceiptImageUrl: r.paymentReceiptImageUrl,
-          paypalOrderId: r.paypalOrderId,
-          createdAt: r.createdAt || new Date().toISOString(),
-        })
-      );
-    }
-  }
-
-  return normalizedList;
+  return (list || []).map(normalizeBookingResponse);
 }
 
 export async function updateBookingStatus(
   id: number,
-  status: string
+  status: string,
+  rejectionReason?: string
 ): Promise<BookingResponse> {
   const updated = await requestWithAuth<BookingResponse>(
-    `/api/v1/bookings/${id}/status?status=${encodeURIComponent(status)}`,
+    `/api/v1/bookings/${id}/status`,
     {
       method: "PUT",
+      body: JSON.stringify({
+        status,
+        ...(rejectionReason && rejectionReason.trim()
+          ? { rejectionReason: rejectionReason.trim() }
+          : {}),
+      }),
     }
   );
-  if (updated) {
-    const normalized = normalizeBookingResponse(updated);
-    upsertSharedHallReservation(bookingResponseToSharedRecord(normalized));
-    return normalized;
-  }
-  return updated;
+  return updated ? normalizeBookingResponse(updated) : updated;
 }
 
 export async function deleteBooking(id: number): Promise<void> {
   await requestWithAuth<void>(`/api/v1/bookings/${id}`, {
     method: "DELETE",
   });
-  const remaining = loadSharedHallReservations().filter((r) => r.id !== id);
-  saveSharedHallReservations(remaining);
 }
 
 export async function uploadPaymentReceiptFile(
@@ -1434,64 +1110,31 @@ export async function uploadPaymentReceiptFile(
     if (response.ok) {
       if (bookingId || bookingCode) {
         const b = normalizeBookingResponse(data as BookingResponse);
-        upsertSharedHallReservation(bookingResponseToSharedRecord(b));
         return { imageUrl: b.paymentReceiptImageUrl || "", booking: b };
       }
-      const resolvedUrl = resolveReceiptImageUrl(data?.imageUrl || data?.url || data?.receiptUrl);
-      if (resolvedUrl) {
-        return { imageUrl: resolvedUrl };
+      const rawUrl = (data?.imageUrl || data?.url || data?.receiptUrl || "").trim();
+      if (rawUrl) {
+        return { imageUrl: rawUrl };
       }
     }
 
-    // If server responded with 401/403 (unauthenticated guest), 404, or 500:
-    // Seamlessly fall back to Base64 image URL so the guest/user is NEVER blocked from uploading proof and completing the booking!
-    console.warn(`[Receipt] Server upload responded ${response.status}, falling back to Base64 data URL`);
+    if (response.status === 400) {
+      throw new ApiError(
+        data?.message || "صيغة أو حجم إيصال التحويل غير صالح",
+        response.status,
+        data
+      );
+    }
+
+    console.warn(`[Receipt] Server upload responded ${response.status}, falling back to compressed Base64 data URL`);
     const base64Url = await toBase64(file);
     return { imageUrl: base64Url };
   } catch (err: unknown) {
-    console.warn("[Receipt] Network exception during upload, falling back to Base64 data URL:", err);
+    if (err instanceof ApiError) throw err;
+    console.warn("[Receipt] Network exception during upload, falling back to compressed Base64 data URL:", err);
     const base64Url = await toBase64(file);
     return { imageUrl: base64Url };
   }
-}
-
-// PayPal Payments
-export async function createPayPalOrder(
-  bookingId: number
-): Promise<BookingInitiationResponse> {
-  return request<BookingInitiationResponse>(
-    `/api/v1/payments/paypal/order/${bookingId}`,
-    {
-      method: "POST",
-    }
-  );
-}
-
-export async function capturePayPalOrder(
-  orderId: string
-): Promise<BookingResponse> {
-  const confirmed = await request<BookingResponse>(
-    `/api/v1/payments/paypal/capture/${encodeURIComponent(orderId)}`,
-    {
-      method: "POST",
-    }
-  );
-  if (confirmed) {
-    const isAza = isAzaBookingType(confirmed.bookingType);
-    const patched: BookingResponse = {
-      ...confirmed,
-      endDate:
-        confirmed.endDate && confirmed.endDate >= confirmed.eventDate
-          ? confirmed.endDate
-          : isAza
-          ? addDaysToIso(confirmed.eventDate, 2)
-          : confirmed.eventDate,
-      daysCount: isAza ? 3 : confirmed.daysCount || 1,
-    };
-    upsertSharedHallReservation(bookingResponseToSharedRecord(patched, orderId));
-    return patched;
-  }
-  return confirmed;
 }
 
 // Blackouts
@@ -1619,7 +1262,7 @@ export interface CreateStaffEmailRequest {
 }
 
 export async function getStaffMembers(): Promise<StaffEmailResponse[]> {
-  const res = await request<StaffEmailResponse[]>("/api/v1/staff");
+  const res = await requestWithAuth<StaffEmailResponse[]>("/api/v1/staff");
   return res || [];
 }
 

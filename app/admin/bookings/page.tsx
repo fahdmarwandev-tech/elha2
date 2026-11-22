@@ -129,11 +129,14 @@ export default function AdminBookingsPage() {
   const [activeTab, setActiveTab] = useState<"ALL" | "UPCOMING" | "PAST">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "katbketab" | "3aza">("ALL");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING_APPROVAL" | "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "CANCELLED">("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING_APPROVAL" | "CONFIRMED" | "REJECTED" | "COMPLETED" | "CANCELLED">("ALL");
 
-  // Selected Booking details modal
+  // Selected Booking details modal & Reject reason modal
   const [selectedBookingModal, setSelectedBookingModal] = useState<BookingResponse | null>(null);
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
+  const [rejectTargetBooking, setRejectTargetBooking] = useState<BookingResponse | null>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState("");
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
 
   // Hall Settings state
   const [hall, setHall] = useState<HallResponse | null>(null);
@@ -160,11 +163,11 @@ export default function AdminBookingsPage() {
   });
   const [creatingBlackout, setCreatingBlackout] = useState(false);
 
-  // Fetch live bookings
+  // Fetch all live bookings (table filters are applied client-side so calendar & KPIs stay accurate)
   const loadBookings = async () => {
     try {
       setLoadingBookings(true);
-      const data = await getAllBookingsAdmin(filterStatus !== "ALL" ? filterStatus : undefined);
+      const data = await getAllBookingsAdmin();
       setBookings(data || []);
     } catch (err: unknown) {
       console.warn("Could not load admin bookings:", err);
@@ -225,26 +228,47 @@ export default function AdminBookingsPage() {
     loadBookings();
     loadHall();
     loadBlackouts();
-  }, [filterStatus]);
+  }, []);
 
   useEffect(() => {
     loadAvailability(hall?.id || 1, currentYear, currentMonth);
   }, [hall?.id, currentYear, currentMonth, bookings.length]);
 
   // Handle status update
-  const handleStatusChange = async (id: number, newStatus: string) => {
+  const handleStatusChange = async (id: number, newStatus: string, rejectionReason?: string) => {
     try {
-      const updated = await updateBookingStatus(id, newStatus);
+      setUpdatingStatusId(id);
+      const updated = await updateBookingStatus(id, newStatus, rejectionReason);
       setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
       if (selectedBookingModal?.id === id) {
         setSelectedBookingModal(updated);
       }
       loadAvailability(hall?.id || 1, currentYear, currentMonth);
-      setStatusMessage({ type: "success", text: `تم تحديث حالة الحجز إلى: ${newStatus}` });
+      const statusLabels: Record<string, string> = {
+        CONFIRMED: "تم تأكيد واعتماد الحجز وإرسال بريد التأكيد للعميل",
+        REJECTED: "تم رفض الطلب وإتاحة الموعد مجدداً وإرسال بريد إشعار للعميل",
+        COMPLETED: "تم تعيين الحجز كمكتمل",
+        CANCELLED: "تم إلغاء الحجز وإتاحة الموعد مجدداً",
+      };
+      setStatusMessage({
+        type: "success",
+        text: statusLabels[newStatus] || `تم تحديث حالة الحجز إلى: ${newStatus}`,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "فشل تحديث حالة الحجز";
       setStatusMessage({ type: "error", text: msg });
+    } finally {
+      setUpdatingStatusId(null);
     }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectTargetBooking) return;
+    const targetId = rejectTargetBooking.id;
+    const reason = rejectionReasonInput.trim() || undefined;
+    setRejectTargetBooking(null);
+    setRejectionReasonInput("");
+    await handleStatusChange(targetId, "REJECTED", reason);
   };
 
   // Handle delete booking
@@ -362,7 +386,7 @@ export default function AdminBookingsPage() {
     const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
 
     bookings.forEach((b) => {
-      if (!b.eventDate || b.status === "CANCELLED" || b.status === "EXPIRED") return;
+      if (!b.eventDate || b.status === "CANCELLED" || b.status === "REJECTED" || b.status === "EXPIRED") return;
       const dates = getBookingReservedDates(b);
       dates.forEach((iso) => {
         if (iso.startsWith(monthPrefix)) {
@@ -477,11 +501,12 @@ export default function AdminBookingsPage() {
   const stats = useMemo(() => {
     const total = bookings.length;
     const confirmed = bookings.filter((b) => b.status === "CONFIRMED").length;
-    const pending = bookings.filter((b) => b.status === "PENDING_PAYMENT").length;
+    const pending = bookings.filter((b) => b.status === "PENDING_APPROVAL").length;
+    const rejected = bookings.filter((b) => b.status === "REJECTED").length;
     const completed = bookings.filter((b) => b.status === "COMPLETED").length;
     const katbCount = bookings.filter((b) => b.bookingType === "katbketab").length;
     const azaCount = bookings.filter((b) => b.bookingType === "3aza").length;
-    return { total, confirmed, pending, completed, katbCount, azaCount };
+    return { total, confirmed, pending, rejected, completed, katbCount, azaCount };
   }, [bookings]);
 
   // Status badge helper
@@ -490,8 +515,8 @@ export default function AdminBookingsPage() {
       case "PENDING_APPROVAL":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/25 text-amber-200 border border-amber-400/50 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
-            <span>بانتظار الاعتماد (إيصال مرفق)</span>
+            <Clock className="w-3.5 h-3.5 text-amber-300" />
+            <span>قيد المراجعة (معلق)</span>
           </span>
         );
       case "CONFIRMED":
@@ -501,18 +526,18 @@ export default function AdminBookingsPage() {
             <span>مؤكد</span>
           </span>
         );
+      case "REJECTED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+            <Ban className="w-3.5 h-3.5" />
+            <span>مرفوض</span>
+          </span>
+        );
       case "COMPLETED":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-300 border border-slate-500/30">
             <Clock className="w-3.5 h-3.5" />
             <span>منتهي ومكتمل</span>
-          </span>
-        );
-      case "PENDING_PAYMENT":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>بانتظار الدفع</span>
           </span>
         );
       case "CANCELLED":
@@ -671,10 +696,26 @@ export default function AdminBookingsPage() {
         {adminSection === "BOOKINGS" && (
           <div className="space-y-8">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
               <div className="p-4 rounded-2xl bg-slate-950/40 backdrop-blur-xl border border-white/15">
                 <span className="text-[11px] font-semibold text-[#8EA3BF] block mb-1">إجمالي الحجوزات</span>
                 <span className="text-2xl font-black text-[#FFF2D2] font-mono">{stats.total}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterStatus(filterStatus === "PENDING_APPROVAL" ? "ALL" : "PENDING_APPROVAL")}
+                className={`p-4 rounded-2xl text-right backdrop-blur-xl border transition cursor-pointer ${
+                  stats.pending > 0
+                    ? "bg-amber-500/20 border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.18)]"
+                    : "bg-amber-950/20 border-amber-500/25"
+                }`}
+              >
+                <span className="text-[11px] font-bold text-amber-200 block mb-1">بانتظار الاعتماد (معلق)</span>
+                <span className="text-2xl font-black text-amber-300 font-mono">{stats.pending}</span>
+              </button>
+              <div className="p-4 rounded-2xl bg-emerald-950/30 backdrop-blur-xl border border-emerald-500/30">
+                <span className="text-[11px] font-semibold text-emerald-300/90 block mb-1">مؤكدة</span>
+                <span className="text-2xl font-black text-emerald-300 font-mono">{stats.confirmed}</span>
               </div>
               <div className="p-4 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/15">
                 <span className="text-[11px] font-semibold text-[#8EA3BF] block mb-1">المكتملة</span>
@@ -757,6 +798,8 @@ export default function AdminBookingsPage() {
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
                     const dayBookings = bookingsByDay.get(day) || [];
+                    const hasPending = dayBookings.some((b) => b.status === "PENDING_APPROVAL");
+                    const hasConfirmed = dayBookings.some((b) => b.status === "CONFIRMED" || b.status === "COMPLETED");
                     const isBooked = dayBookings.length > 0;
                     const isSelected = selectedDay === day;
 
@@ -768,14 +811,19 @@ export default function AdminBookingsPage() {
                         className={`relative group overflow-hidden h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
                           isSelected
                             ? "bg-gradient-to-br from-[#D4AF85]/60 via-white/30 to-[#122849]/75 border-2 border-[#FFF0C8] text-[#FFF9E6] shadow-lg scale-105 z-10"
-                            : isBooked
-                            ? "bg-amber-400/[0.15] text-[#FFF3D6] border border-amber-300/40 hover:bg-amber-400/[0.25]"
+                            : hasPending
+                            ? "bg-amber-400/[0.22] text-amber-100 border border-amber-400/70 hover:bg-amber-400/[0.32]"
+                            : hasConfirmed || isBooked
+                            ? "bg-emerald-500/[0.16] text-emerald-100 border border-emerald-400/45 hover:bg-emerald-500/[0.26]"
                             : "bg-white/[0.08] hover:bg-white/[0.2] text-white border border-white/20"
                         }`}
                       >
                         <span className="relative z-10 leading-none">{day}</span>
-                        {isBooked && !isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                        {!isSelected && hasPending && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse absolute bottom-1.5 shadow-[0_0_8px_rgba(251,191,36,0.95)]" />
+                        )}
+                        {!isSelected && !hasPending && (hasConfirmed || isBooked) && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute bottom-1.5 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
                         )}
                       </button>
                     );
@@ -793,8 +841,12 @@ export default function AdminBookingsPage() {
                     <span>متاح</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-amber-400/30 border border-amber-300" />
-                    <span>محجوز</span>
+                    <span className="w-3 h-3 rounded-full bg-amber-400/40 border border-amber-300" />
+                    <span className="text-amber-200 font-semibold">معلق (بانتظار الاعتماد)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-emerald-400/35 border border-emerald-400" />
+                    <span className="text-emerald-200">مؤكد / محجوز</span>
                   </span>
                 </div>
               </div>
@@ -851,7 +903,7 @@ export default function AdminBookingsPage() {
                               {/* Time reserved */}
                               <div className="p-2.5 rounded-xl bg-black/30 border border-white/10 text-xs space-y-1">
                                 <div className="flex items-center justify-between text-[#FFF2D2] font-bold">
-                                  <span>التوقيت المحجوز يومياً:</span>
+                                  <span>{isAza ? "التوقيت المحجوز يومياً:" : "التوقيت المحجوز:"}</span>
                                   <span className="text-[#FFE8B8]">
                                     {isAza
                                       ? "من 12:00 ظهراً (الظهر) إلى 06:00 مساءً (المغرب)"
@@ -859,7 +911,7 @@ export default function AdminBookingsPage() {
                                   </span>
                                 </div>
                                 <div className="text-[11px] text-[#8EA3BF] font-mono">
-                                  الساعات: {b.startHour}:00 - {b.endHour}:00 ({b.durationHours} ساعات يومياً) • التجهيز: {b.appliedBufferHours || 1} ساعة
+                                  الساعات: {b.startHour}:00 - {b.endHour}:00 ({b.durationHours} ساعات{isAza ? " يومياً" : ""}) • التجهيز: {b.appliedBufferHours || 1} ساعة
                                 </div>
                               </div>
 
@@ -899,24 +951,39 @@ export default function AdminBookingsPage() {
                           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
                             {b.status !== "CONFIRMED" && (
                               <button
+                                disabled={updatingStatusId === b.id}
                                 onClick={() => handleStatusChange(b.id, "CONFIRMED")}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 transition cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 transition cursor-pointer disabled:opacity-50"
                               >
-                                تأكيد الحجز
+                                قبول وتأكيد
                               </button>
                             )}
-                            {b.status !== "COMPLETED" && (
+                            {b.status === "PENDING_APPROVAL" && (
                               <button
+                                disabled={updatingStatusId === b.id}
+                                onClick={() => {
+                                  setRejectTargetBooking(b);
+                                  setRejectionReasonInput("");
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-bold border border-rose-500/40 transition cursor-pointer disabled:opacity-50"
+                              >
+                                رفض الطلب
+                              </button>
+                            )}
+                            {b.status === "CONFIRMED" && (
+                              <button
+                                disabled={updatingStatusId === b.id}
                                 onClick={() => handleStatusChange(b.id, "COMPLETED")}
-                                className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-[11px] font-bold border border-slate-500/30 transition cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 text-[11px] font-bold border border-slate-500/30 transition cursor-pointer disabled:opacity-50"
                               >
                                 إكمال
                               </button>
                             )}
-                            {b.status !== "CANCELLED" && (
+                            {b.status !== "CANCELLED" && b.status !== "REJECTED" && b.status !== "PENDING_APPROVAL" && (
                               <button
+                                disabled={updatingStatusId === b.id}
                                 onClick={() => handleStatusChange(b.id, "CANCELLED")}
-                                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-bold border border-rose-500/30 transition cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-bold border border-rose-500/30 transition cursor-pointer disabled:opacity-50"
                               >
                                 إلغاء
                               </button>
@@ -925,7 +992,7 @@ export default function AdminBookingsPage() {
                               onClick={() => setSelectedBookingModal(b)}
                               className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold border border-white/20 transition cursor-pointer mr-auto"
                             >
-                              التفاصيل
+                              التفاصيل والإيصال
                             </button>
                             <button
                               onClick={() => handleDeleteBooking(b.id)}
@@ -949,27 +1016,37 @@ export default function AdminBookingsPage() {
                     </span>
                     <div className="grid grid-cols-6 gap-1">
                       {selectedDayAvailability.hours.map((slot) => {
+                        const isPending = slot.status === "PENDING";
                         const isBooked = slot.status === "BOOKED";
                         const isBuffer = slot.status === "BUFFER";
+                        const isBlackout = slot.status === "BLACKOUT";
                         return (
                           <div
                             key={slot.hour}
                             className={`px-1 py-1 rounded text-center text-[10px] font-mono border ${
-                              isBooked
+                              isPending
+                                ? "bg-amber-500/30 text-amber-100 border-amber-400/70 font-bold"
+                                : isBooked
                                 ? slot.bookingType === "3aza"
                                   ? "bg-sky-500/30 text-sky-200 border-sky-400/50 font-bold"
-                                  : "bg-rose-500/30 text-rose-200 border-rose-400/50 font-bold"
+                                  : "bg-emerald-500/30 text-emerald-100 border-emerald-400/50 font-bold"
                                 : isBuffer
-                                ? "bg-amber-500/25 text-amber-200 border-amber-400/40"
+                                ? "bg-slate-500/25 text-slate-300 border-slate-400/30"
+                                : isBlackout
+                                ? "bg-rose-950/40 text-rose-300/60 border-rose-500/30"
                                 : "bg-white/[0.04] text-white/50 border-white/10"
                             }`}
                           >
                             <div>{slot.hour}:00</div>
                             <div className="text-[8px] truncate">
-                              {isBooked
-                                ? slot.eventLabel || "محجوز"
+                              {isPending
+                                ? "معلق"
+                                : isBooked
+                                ? slot.eventLabel || "مؤكد"
                                 : isBuffer
                                 ? "تجهيز"
+                                : isBlackout
+                                ? "مغلق"
                                 : "متاح"}
                             </div>
                           </div>
@@ -1001,9 +1078,9 @@ export default function AdminBookingsPage() {
                     className="px-3.5 py-2 rounded-xl bg-white/[0.08] border border-white/25 text-xs text-white focus:outline-none focus:border-[#D4AF85] transition"
                   >
                     <option value="ALL" className="bg-[#050A14]">جميع الحالات</option>
-                    <option value="PENDING_APPROVAL" className="bg-[#050A14]">بانتظار الاعتماد (إيصال مرفق)</option>
+                    <option value="PENDING_APPROVAL" className="bg-[#050A14]">قيد المراجعة / معلق (PENDING)</option>
                     <option value="CONFIRMED" className="bg-[#050A14]">مؤكد (CONFIRMED)</option>
-                    <option value="PENDING_PAYMENT" className="bg-[#050A14]">بانتظار الدفع (PENDING)</option>
+                    <option value="REJECTED" className="bg-[#050A14]">مرفوض (REJECTED)</option>
                     <option value="COMPLETED" className="bg-[#050A14]">منتهي (COMPLETED)</option>
                     <option value="CANCELLED" className="bg-[#050A14]">ملغى (CANCELLED)</option>
                   </select>
@@ -1106,7 +1183,7 @@ export default function AdminBookingsPage() {
                                   : `من ${formatHourShortAr(b.startHour)} إلى ${formatHourShortAr(b.endHour)}`}
                               </span>
                               <span className="block text-[10px] font-mono text-[#8EA3BF]">
-                                ({b.startHour}:00 - {b.endHour}:00 • {b.durationHours} س/يوم)
+                                ({b.startHour}:00 - {b.endHour}:00 • {b.durationHours} {isAza ? "س/يوم" : "ساعات"})
                               </span>
                               <span className="block font-bold text-[#FFE8B8] mt-0.5">{b.totalAmount} {b.currency || "ر.ع"}</span>
                             </td>
@@ -1129,6 +1206,29 @@ export default function AdminBookingsPage() {
                             </td>
                             <td className="py-3.5 px-3 text-center">
                               <div className="flex items-center justify-center gap-1.5">
+                                {b.status === "PENDING_APPROVAL" && (
+                                  <>
+                                    <button
+                                      disabled={updatingStatusId === b.id}
+                                      onClick={() => handleStatusChange(b.id, "CONFIRMED")}
+                                      className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 border border-emerald-500/35 transition cursor-pointer disabled:opacity-50"
+                                      title="قبول وتأكيد الحجز"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      disabled={updatingStatusId === b.id}
+                                      onClick={() => {
+                                        setRejectTargetBooking(b);
+                                        setRejectionReasonInput("");
+                                      }}
+                                      className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 text-rose-300 border border-rose-500/35 transition cursor-pointer disabled:opacity-50"
+                                      title="رفض الطلب"
+                                    >
+                                      <Ban className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
                                 <button
                                   onClick={() => setSelectedBookingModal(b)}
                                   className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
@@ -1487,7 +1587,9 @@ export default function AdminBookingsPage() {
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="text-[#8EA3BF]">التوقيت اليومي المحجوز:</span>
+                  <span className="text-[#8EA3BF]">
+                    {isAzaType(selectedBookingModal.bookingType) ? "التوقيت اليومي المحجوز:" : "التوقيت المحجوز:"}
+                  </span>
                   <span className="font-bold text-white">
                     {isAzaType(selectedBookingModal.bookingType)
                       ? `من 12:00 ظهراً (الظهر) إلى 06:00 مساءً (المغرب) — (${selectedBookingModal.startHour}:00 - ${selectedBookingModal.endHour}:00)`
@@ -1558,14 +1660,15 @@ export default function AdminBookingsPage() {
                 )}
               </div>
 
-              {/* Admin Actions: Accept, Cancel, Print */}
+              {/* Admin Actions: Confirm, Reject, Complete, Cancel, Print */}
               <div className="pt-2 border-t border-white/15 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Accept Order Button */}
+                    {/* Accept / Confirm Order Button */}
                     <button
+                      disabled={updatingStatusId === selectedBookingModal.id || selectedBookingModal.status === "CONFIRMED"}
                       onClick={() => handleStatusChange(selectedBookingModal.id, "CONFIRMED")}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg transition cursor-pointer disabled:opacity-60 ${
                         selectedBookingModal.status === "CONFIRMED"
                           ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
                           : "bg-emerald-600 hover:bg-emerald-500 text-white active:scale-95"
@@ -1575,24 +1678,43 @@ export default function AdminBookingsPage() {
                       <span>{selectedBookingModal.status === "CONFIRMED" ? "الحجز معتمد (مؤكد)" : "قبول واعتماد الطلب (CONFIRMED)"}</span>
                     </button>
 
-                    {/* Cancel Order Button */}
-                    <button
-                      onClick={() => handleStatusChange(selectedBookingModal.id, "CANCELLED")}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
-                        selectedBookingModal.status === "CANCELLED"
-                          ? "bg-rose-500/25 text-rose-300 border border-rose-500/40"
-                          : "bg-rose-600/80 hover:bg-rose-600 text-white active:scale-95"
-                      }`}
-                    >
-                      <X className="w-4 h-4" />
-                      <span>إلغاء الطلب (CANCELLED)</span>
-                    </button>
+                    {/* Reject Order Button */}
+                    {selectedBookingModal.status !== "CONFIRMED" && selectedBookingModal.status !== "COMPLETED" && (
+                      <button
+                        disabled={updatingStatusId === selectedBookingModal.id || selectedBookingModal.status === "REJECTED"}
+                        onClick={() => {
+                          setRejectTargetBooking(selectedBookingModal);
+                          setRejectionReasonInput("");
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer disabled:opacity-60 ${
+                          selectedBookingModal.status === "REJECTED"
+                            ? "bg-rose-500/25 text-rose-300 border border-rose-500/40"
+                            : "bg-rose-600 hover:bg-rose-500 text-white active:scale-95"
+                        }`}
+                      >
+                        <Ban className="w-4 h-4" />
+                        <span>{selectedBookingModal.status === "REJECTED" ? "الطلب مرفوض (REJECTED)" : "رفض الطلب (REJECTED)"}</span>
+                      </button>
+                    )}
+
+                    {/* Cancel Confirmed Order Button */}
+                    {selectedBookingModal.status === "CONFIRMED" && (
+                      <button
+                        disabled={updatingStatusId === selectedBookingModal.id}
+                        onClick={() => handleStatusChange(selectedBookingModal.id, "CANCELLED")}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-rose-600/80 hover:bg-rose-600 text-white active:scale-95 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <X className="w-4 h-4" />
+                        <span>إلغاء الحجز</span>
+                      </button>
+                    )}
 
                     {/* Complete Button */}
                     {selectedBookingModal.status === "CONFIRMED" && (
                       <button
+                        disabled={updatingStatusId === selectedBookingModal.id}
                         onClick={() => handleStatusChange(selectedBookingModal.id, "COMPLETED")}
-                        className="px-3 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition cursor-pointer"
+                        className="px-3 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
                       >
                         إكمال الفعالية
                       </button>
@@ -1607,6 +1729,66 @@ export default function AdminBookingsPage() {
                     <span>طباعة السند</span>
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Reject Booking with Optional Reason (sent to user via email) */}
+        {rejectTargetBooking && (
+          <div
+            onClick={() => setRejectTargetBooking(null)}
+            className="fixed inset-0 z-[55] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-rose-500/50 rounded-3xl p-6 shadow-2xl text-right space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
+                  <Ban className="w-5 h-5 text-rose-400" />
+                  <span>تأكيد رفض طلب الحجز ({rejectTargetBooking.code})</span>
+                </div>
+                <button
+                  onClick={() => setRejectTargetBooking(null)}
+                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-[#DCE6F2] leading-relaxed">
+                عند رفض الطلب، سيتم <strong className="text-amber-300">تحرير الموعد مجدداً للحجز</strong> وإرسال بريد إلكتروني إلى صاحب الطلب (<span className="font-mono text-[#FFE8B8]">{rejectTargetBooking.email}</span>) لإبلاغه بالرفض.
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-[#FFE8B8] mb-1.5">
+                  سبب الرفض أو ملاحظة للعميل (اختياري — يظهر في البريد الإلكتروني)
+                </label>
+                <textarea
+                  rows={3}
+                  value={rejectionReasonInput}
+                  onChange={(e) => setRejectionReasonInput(e.target.value)}
+                  placeholder="مثال: إيصال التحويل غير واضح، أو لم يصل المبلغ المطلوب..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/20 text-white text-xs focus:outline-none focus:border-rose-400 transition resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRejectTargetBooking(null)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  تراجع
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReject}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg transition cursor-pointer"
+                >
+                  تأكيد الرفض وإرسال البريد
+                </button>
               </div>
             </div>
           </div>
