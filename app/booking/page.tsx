@@ -22,7 +22,6 @@ import {
   Maximize2,
   X,
   QrCode,
-  Printer,
   AlertCircle,
   Sun,
   Upload,
@@ -75,8 +74,8 @@ export default function BookingPage() {
     name: "قاعة المجلس العام",
     slug: "main-majlis-hall",
     description: "قاعة المجلس العام مجهزة بالكامل لكافة مناسبات عقد القران ومجالس العزاء",
-    capacity: 500,
-    hourlyRate: 25,
+    capacity: 700,
+    hourlyRate: 20,
     currency: "ر.ع",
     bufferHours: 1,
     openHour: 0,
@@ -538,7 +537,7 @@ export default function BookingPage() {
   // Dynamic calculation of duration and price
   const dailyDurationHours = Math.max(1, endHour - startHour);
   const totalDurationHours = Math.max(1, dailyDurationHours * daysCount);
-  const totalPrice = totalDurationHours * (activeHall.hourlyRate || 25);
+  const totalPrice = totalDurationHours * (activeHall.hourlyRate || 20);
 
   const dailyDurationText =
     dailyDurationHours === 1
@@ -884,16 +883,8 @@ export default function BookingPage() {
               )}
             </div>
 
-            {/* Print Voucher & Reset Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => window.print()}
-                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#D4AF85] via-[#FFE8B8] to-[#C59B63] text-[#0A1628] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg hover:scale-[1.01] active:scale-95 transition cursor-pointer"
-              >
-                <Printer className="w-4 h-4 text-[#0A1628]" />
-                <span>طباعة / تحميل سند الحجز الرسمي</span>
-              </button>
-
+            {/* New Booking Button */}
+            <div className="flex justify-center">
               <button
                 onClick={() => {
                   setConfirmedBooking(null);
@@ -901,7 +892,7 @@ export default function BookingPage() {
                   setNotes("");
                   refreshAvailability();
                 }}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-[#FFF2D2] border border-white/30 font-bold text-xs transition cursor-pointer"
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#D4AF85] via-[#FFE8B8] to-[#C59B63] text-[#0A1628] font-black text-xs sm:text-sm shadow-lg hover:scale-[1.01] active:scale-95 transition cursor-pointer"
               >
                 تسجيل حجز جديد
               </button>

@@ -125,11 +125,13 @@ export default function AdminBookingsPage() {
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDate() || 8);
   const [monthAvailability, setMonthAvailability] = useState<HourlyAvailabilityResponse | null>(null);
 
-  // Filters
-  const [activeTab, setActiveTab] = useState<"ALL" | "UPCOMING" | "PAST">("ALL");
+  // Filters (default: upcoming reservations that have not happened yet)
+  const [activeTab, setActiveTab] = useState<"UPCOMING" | "ALL" | "PAST">("UPCOMING");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "katbketab" | "3aza">("ALL");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING_APPROVAL" | "CONFIRMED" | "REJECTED" | "COMPLETED" | "CANCELLED">("ALL");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Selected Booking details modal & Reject reason modal
   const [selectedBookingModal, setSelectedBookingModal] = useState<BookingResponse | null>(null);
@@ -144,8 +146,8 @@ export default function AdminBookingsPage() {
   const [savingHall, setSavingHall] = useState(false);
   const [hallForm, setHallForm] = useState({
     name: "قاعة المجلس العام",
-    capacity: 500,
-    hourlyRate: 25,
+    capacity: 700,
+    hourlyRate: 20,
     bufferHours: 1,
     openHour: 0,
     closeHour: 24,
@@ -186,8 +188,8 @@ export default function AdminBookingsPage() {
         setHall(primary);
         setHallForm({
           name: primary.name || "قاعة المجلس العام",
-          capacity: primary.capacity || 500,
-          hourlyRate: primary.hourlyRate || 25,
+          capacity: primary.capacity || 700,
+          hourlyRate: primary.hourlyRate || 20,
           bufferHours: primary.bufferHours !== undefined ? primary.bufferHours : 1,
           openHour: primary.openHour !== undefined ? primary.openHour : 0,
           closeHour: primary.closeHour !== undefined ? primary.closeHour : 24,
@@ -438,8 +440,8 @@ export default function AdminBookingsPage() {
             durationHours: duration,
             formattedTimeRange: r.formattedTimeRange,
             appliedBufferHours: monthAvailability.bufferHours || 1,
-            hourlyRate: hall?.hourlyRate || 25,
-            totalAmount: duration * daysCnt * (hall?.hourlyRate || 25),
+            hourlyRate: hall?.hourlyRate || 20,
+            totalAmount: duration * daysCnt * (hall?.hourlyRate || 20),
             currency: hall?.currency || "ر.ع",
             status: r.status || "CONFIRMED",
             createdAt: new Date().toISOString(),
@@ -468,13 +470,32 @@ export default function AdminBookingsPage() {
     return set;
   }, [selectedDayBookings]);
 
-  // Table Filtered Bookings
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Table Filtered Bookings (sorted by newest request first)
+  const { todayStr, currentHourNow } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return { todayStr: `${y}-${m}-${d}`, currentHourNow: now.getHours() };
+  }, []);
+
+  const isBookingUpcoming = (b: BookingResponse): boolean => {
+    if (b.status === "COMPLETED") return false;
+    const effectiveEndDate =
+      b.endDate && b.endDate >= b.eventDate ? b.endDate : b.eventDate;
+    if (!effectiveEndDate) return true;
+    if (effectiveEndDate > todayStr) return true;
+    if (effectiveEndDate < todayStr) return false;
+    // Same day: upcoming if the reservation hasn't ended yet
+    return (b.endHour ?? 24) > currentHourNow;
+  };
+
   const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
+    const matched = bookings.filter((b) => {
+      const upcoming = isBookingUpcoming(b);
       // Tab filter
-      if (activeTab === "UPCOMING" && (b.eventDate < todayStr || b.status === "COMPLETED")) return false;
-      if (activeTab === "PAST" && (b.eventDate >= todayStr && b.status !== "COMPLETED")) return false;
+      if (activeTab === "UPCOMING" && !upcoming) return false;
+      if (activeTab === "PAST" && upcoming) return false;
 
       // Type filter
       if (filterType !== "ALL" && b.bookingType !== filterType) return false;
@@ -495,7 +516,27 @@ export default function AdminBookingsPage() {
 
       return true;
     });
-  }, [bookings, activeTab, filterType, filterStatus, searchQuery, todayStr]);
+
+    // Sort by newest request first (createdAt DESC, then id DESC)
+    return matched.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || 0) - (a.id || 0);
+    });
+  }, [bookings, activeTab, filterType, filterStatus, searchQuery, todayStr, currentHourNow]);
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedBookings = useMemo(() => {
+    const startIdx = (safeCurrentPage - 1) * pageSize;
+    return filteredBookings.slice(startIdx, startIdx + pageSize);
+  }, [filteredBookings, safeCurrentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, filterType, filterStatus, searchQuery, pageSize]);
 
   // Statistics KPIs
   const stats = useMemo(() => {
@@ -545,6 +586,13 @@ export default function AdminBookingsPage() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
             <X className="w-3.5 h-3.5" />
             <span>ملغى</span>
+          </span>
+        );
+      case "EXPIRED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-600/20 text-slate-300 border border-slate-500/35">
+            <Clock className="w-3.5 h-3.5" />
+            <span>منتهي الصلاحية</span>
           </span>
         );
       default:
@@ -1060,14 +1108,58 @@ export default function AdminBookingsPage() {
 
             {/* Bookings Table with Search and Status Filter */}
             <div className="bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[28px] p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.45)] space-y-5">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/15 pb-4">
-                <div>
-                  <h3 className="text-xl font-bold font-sans text-white">
-                    قائمة جميع الحجوزات ({filteredBookings.length})
-                  </h3>
-                  <p className="text-xs text-[#8EA3BF] mt-0.5">
-                    بحث وتصفية وتعديل حالات الحجوزات وإصدار السندات
-                  </p>
+              <div className="flex flex-col gap-4 border-b border-white/15 pb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold font-sans text-white">
+                      {activeTab === "UPCOMING"
+                        ? "الحجوزات القادمة"
+                        : activeTab === "PAST"
+                        ? "الحجوزات السابقة"
+                        : "قائمة جميع الحجوزات"}{" "}
+                      ({filteredBookings.length})
+                    </h3>
+                    <p className="text-xs text-[#8EA3BF] mt-0.5">
+                      مرتّبة من الأحدث طلباً إلى الأقدم • بحث وتصفية واعتماد أو رفض الحجوزات
+                    </p>
+                  </div>
+
+                  {/* Timeframe Tabs: Upcoming (Default) / All / Past */}
+                  <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.06] border border-white/15 self-start md:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("UPCOMING")}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        activeTab === "UPCOMING"
+                          ? "bg-gradient-to-r from-[#D4AF85]/45 to-[#1E447B]/70 text-[#FFF9E6] border border-[#FFF0C8]/60 shadow"
+                          : "text-[#8EA3BF] hover:text-white"
+                      }`}
+                    >
+                      القادمة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("ALL")}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        activeTab === "ALL"
+                          ? "bg-gradient-to-r from-[#D4AF85]/45 to-[#1E447B]/70 text-[#FFF9E6] border border-[#FFF0C8]/60 shadow"
+                          : "text-[#8EA3BF] hover:text-white"
+                      }`}
+                    >
+                      الكل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("PAST")}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        activeTab === "PAST"
+                          ? "bg-gradient-to-r from-[#D4AF85]/45 to-[#1E447B]/70 text-[#FFF9E6] border border-[#FFF0C8]/60 shadow"
+                          : "text-[#8EA3BF] hover:text-white"
+                      }`}
+                    >
+                      السابقة
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -1096,8 +1188,20 @@ export default function AdminBookingsPage() {
                     <option value="3aza" className="bg-[#050A14]">مجلس عزاء</option>
                   </select>
 
+                  {/* Page Size Selector */}
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="px-3 py-2 rounded-xl bg-white/[0.08] border border-white/25 text-xs text-white focus:outline-none focus:border-[#D4AF85] transition"
+                    title="عدد الصفوف في الصفحة"
+                  >
+                    <option value={10} className="bg-[#050A14]">10 لكل صفحة</option>
+                    <option value={20} className="bg-[#050A14]">20 لكل صفحة</option>
+                    <option value={50} className="bg-[#050A14]">50 لكل صفحة</option>
+                  </select>
+
                   {/* Search Input */}
-                  <div className="relative">
+                  <div className="relative mr-auto">
                     <Search className="w-4 h-4 text-[#D4AF85] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
@@ -1136,7 +1240,7 @@ export default function AdminBookingsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
-                      {filteredBookings.map((b) => {
+                      {paginatedBookings.map((b) => {
                         const isAza = isAzaType(b.bookingType);
                         const reservedDates = getBookingReservedDates(b);
                         return (
@@ -1250,6 +1354,84 @@ export default function AdminBookingsPage() {
                       })}
                     </tbody>
                   </table>
+
+                  {/* Pagination Footer */}
+                  <div className="mt-4 pt-4 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#8EA3BF]">
+                    <div>
+                      عرض{" "}
+                      <span className="font-mono font-bold text-white">
+                        {(safeCurrentPage - 1) * pageSize + 1}
+                      </span>{" "}
+                      إلى{" "}
+                      <span className="font-mono font-bold text-white">
+                        {Math.min(safeCurrentPage * pageSize, filteredBookings.length)}
+                      </span>{" "}
+                      من أصل{" "}
+                      <span className="font-mono font-bold text-[#FFE8B8]">
+                        {filteredBookings.length}
+                      </span>{" "}
+                      حجز
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={safeCurrentPage <= 1}
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 text-white font-bold transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                          <span>السابق</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                            .filter(
+                              (page) =>
+                                page === 1 ||
+                                page === totalPages ||
+                                Math.abs(page - safeCurrentPage) <= 1
+                            )
+                            .reduce<(number | "ellipsis")[]>((acc, page, i, arr) => {
+                              if (i > 0 && page - arr[i - 1] > 1) acc.push("ellipsis");
+                              acc.push(page);
+                              return acc;
+                            }, [])
+                            .map((item, idx) =>
+                              item === "ellipsis" ? (
+                                <span key={`ellipsis-${idx}`} className="px-1.5 text-white/40">
+                                  ...
+                                </span>
+                              ) : (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => setCurrentPage(item)}
+                                  className={`min-w-[30px] h-[30px] px-2 rounded-lg font-mono font-bold transition cursor-pointer ${
+                                    item === safeCurrentPage
+                                      ? "bg-[#D4AF85] text-[#0A1628] border border-[#FFF0C8]"
+                                      : "bg-white/[0.06] hover:bg-white/[0.16] text-white/80 border border-white/15"
+                                  }`}
+                                >
+                                  {item}
+                                </button>
+                              )
+                            )}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={safeCurrentPage >= totalPages}
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 text-white font-bold transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                        >
+                          <span>التالي</span>
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
