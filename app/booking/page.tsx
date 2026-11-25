@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import MajlisShaderBackground from "@/components/MajlisShaderBackground";
 import {
@@ -113,41 +113,95 @@ export default function BookingPage() {
   const [endHour, setEndHour] = useState<number>(22);
   const [isPickingEndHour, setIsPickingEndHour] = useState<boolean>(false);
 
-  // Gallery
+  // Gallery featuring the newly attached portrait facility photos (optimized for portrait cards on phone & laptop)
   const [galleryImages] = useState([
     {
       id: "1",
-      src: "/majlis-entrance.jpg",
-      title: "مدخل وبوابة مجلس جامع الحق الرئيسية",
-      subtitle: "الواجهة المعمارية الإسلامية الفاخرة والأعمدة الرخامية",
+      src: "/facilities/portrait/admin.jpg",
+      title: "مدخل ومكتب الإدارة والواجهة الشامخة",
+      subtitle: "الواجهة المعمارية الإسلامية والمدخل والدرج الدائري الفاخر",
     },
     {
       id: "2",
-      src: "/majlis-interior.jpg",
-      title: "قاعة المجلس العام والجدار التذكاري",
-      subtitle: "اللوحات التذكارية والجلسة الملكية الفاخرة",
+      src: "/facilities/portrait/kitchen.jpg",
+      title: "مطبخ المجلس العام وتجهيزات الضيافة",
+      subtitle: "أفران الحلوى العمانية وأحدث معدات الطهي والإعاشة الفندقية",
     },
     {
       id: "3",
-      src: "/majlis-hall.jpg",
-      title: "بهو القاعة والإنارة والزخارف",
-      subtitle: "الأسقف المزخرفة والتجهيزات الفندقية الكاملة",
+      src: "/facilities/portrait/ablution.jpg",
+      title: "ميضأة ومرافق الجامع الحديثة",
+      subtitle: "أرقى تشطيبات الرخام والأروقة الحجرية المجهزة لراحة الزوار",
     },
     {
       id: "4",
-      src: "/majlis-courtyard.jpg",
-      title: "الساحة الخارجية ومرافق جامع الحق",
-      subtitle: "الساحة الرحبة والمرافق الخارجية المجهزة لراحة الزوار",
+      src: "/facilities/portrait/majlis.jpg",
+      title: "بهو قاعة المجلس العام والزخارف",
+      subtitle: "الأسقف المزخرفة والأعمدة المنقوشة والتجهيزات الفندقية الكاملة",
     },
     {
       id: "5",
-      src: "/majlis-ablution.jpg",
-      title: "ميضأة ومرافق الجامع الحديثة",
-      subtitle: "أرقى تشطيبات الرخام والمرافق الصحية فائقة النظافة",
+      src: "/facilities/portrait/sunset-courtyard.jpg",
+      title: "الصرح الخارجي وإطلالة الغروب الذهبي",
+      subtitle: "الساحة الرحبة والمآذن الشامخة والمظلة المعمارية المضاءة",
+    },
+    {
+      id: "6",
+      src: "/facilities/portrait/prayer-hall.jpg",
+      title: "الجامع والصحن الداخلي والثريا الكبرى",
+      subtitle: "المحراب المرصع بماء الذهب والقبة المركزية والرخام العماني",
+    },
+    {
+      id: "7",
+      src: "/facilities/portrait/women.jpg",
+      title: "قاعة مصلى النساء الموسع",
+      subtitle: "خصوصية كاملة وربط مرئي وصوتي مباشر وتجهيزات متطورة",
     },
   ]);
   const [showGallery, setShowGallery] = useState(true);
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
+  const [hoveredGalleryIndex, setHoveredGalleryIndex] = useState<number | null>(null);
+  const fanStageRef = useRef<HTMLDivElement | null>(null);
+  const [fanProgress, setFanProgress] = useState<number>(0);
+  const [viewportWidth, setViewportWidth] = useState<number>(1200);
+
+  // Scroll-driven split animation: cards start stacked under each other in the center (0) and split into a fan (1) as user scrolls
+  useEffect(() => {
+    let rafId: number | null = null;
+
+    const updateFanOnScroll = () => {
+      const w = window.innerWidth;
+      setViewportWidth(w);
+
+      const el = fanStageRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+
+      // When stage enters lower viewport (rect.top >= vh * 0.78), progress = 0 (all cards stacked under each other).
+      // As user scrolls down so rect.top moves from vh * 0.78 to vh * 0.25, progress smoothly goes 0 -> 1 (cards split & fan out).
+      const startTrigger = vh * 0.78;
+      const endTrigger = vh * 0.25;
+      const raw = (startTrigger - rect.top) / Math.max(1, startTrigger - endTrigger);
+      const clamped = Math.max(0, Math.min(1, raw));
+      const eased = 1 - Math.pow(1 - clamped, 2.6);
+      setFanProgress(eased);
+    };
+
+    const onScrollOrResize = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateFanOnScroll);
+    };
+
+    updateFanOnScroll();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize, { passive: true });
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [showGallery]);
 
   // Client form inputs
   const [fullName, setFullName] = useState("");
@@ -1279,35 +1333,170 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* Gallery Section */}
+            {/* Gallery Section - Lando Norris Style Stack-to-Fan Split on Scroll */}
             {showGallery && (
-              <div data-glass-card="true" className="w-full glass-card bg-slate-950/35 backdrop-blur-xl border border-white/20 rounded-[32px] p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-4">
-                <div className="flex items-center justify-between border-b border-white/15 pb-4">
-                  <h3 className="text-xl sm:text-2xl font-black text-[#FFF2D2] flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-[#D4AF85]" />
-                    <span>معرض صور جامع الحق والمجلس العام</span>
-                  </h3>
-                  <span className="text-xs text-[#8EA3BF]">اسحب أفقياً للتنقل بين الصور</span>
+              <div className="relative w-full rounded-[32px] py-6 px-0 sm:p-10 space-y-6 overflow-visible">
+                {/* Glass Card Box & Border: Visible at top header & bottom caption, transparent in the middle part where the pics are */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 74%, rgba(0,0,0,1) 84%, rgba(0,0,0,1) 100%)",
+                    maskImage:
+                      "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 74%, rgba(0,0,0,1) 84%, rgba(0,0,0,1) 100%)",
+                  }}
+                  className="absolute inset-0 rounded-[32px] bg-slate-950/35 backdrop-blur-xl border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.45)] pointer-events-none z-0"
+                />
+
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/15 pb-4 px-6 sm:px-0 gap-2">
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-[#FFF2D2] flex items-center gap-2">
+                      <Camera className="w-5 h-5 text-[#D4AF85]" />
+                      <span>معرض صور جامع الحق والمجلس العام</span>
+                    </h3>
+                    <p className="text-xs text-[#8EA3BF] mt-1">
+                      استكشف مرافق وصرح المجلس العام (مرّر للأسفل لتفرّق الصور أو انقر لتكبير أي صورة)
+                    </p>
+                  </div>
+                  <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-[#FFE8B8] border border-white/15 font-bold">
+                    {galleryImages.length} لقطات حصرية
+                  </span>
                 </div>
 
-                <div className="scrollport">
-                  {galleryImages.map((img) => (
-                    <div
-                      key={img.id}
-                      onClick={() => setSelectedLightboxImage(img.src)}
-                      className="relative group shrink-0 w-72 sm:w-96 aspect-[16/10] rounded-2xl overflow-hidden border border-white/20 hover:border-[#D4AF85] shadow-lg cursor-pointer transition hover:scale-[1.02]"
-                    >
-                      <img src={img.src} alt={img.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 flex flex-col justify-end">
-                        <span className="text-sm font-bold text-white">{img.title}</span>
-                        <span className="text-xs text-[#D4AF85] mt-1 flex items-center gap-1">
+                {/* Centered Stack-to-Fan Stage (All cards stacked under each other first, then split on scroll) */}
+                <div
+                  ref={fanStageRef}
+                  className="relative w-full h-[285px] sm:h-[460px] md:h-[500px] lg:h-[540px] flex items-start justify-center pt-2 sm:pt-6 overflow-visible select-none"
+                >
+                  {galleryImages.map((img, idx) => {
+                    const total = galleryImages.length;
+                    const mid = (total - 1) / 2;
+                    // In RTL page, negate offset so index 0 fans left and last index fans right symmetrically
+                    const offset = idx - mid;
+                    const absOffset = Math.abs(offset);
+
+                    const isMobile = viewportWidth < 640;
+                    const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
+
+                    const stepX = isMobile
+                      ? Math.min(31, Math.max(22, viewportWidth * 0.076))
+                      : isTablet
+                      ? 66
+                      : 92;
+                    const stepY = isMobile ? 13 : isTablet ? 23 : 26;
+                    const stepRot = isMobile ? 6 : 7;
+
+                    // Target fanned coordinates (when scrolled into view: fanProgress = 1)
+                    const targetX = offset * stepX;
+                    const targetY = Math.pow(absOffset, 1.42) * stepY;
+                    const targetRot = offset * stepRot;
+
+                    // Initial stacked coordinates (when first entering view: fanProgress = 0 -> all directly under each other)
+                    const stackedX = 0;
+                    const stackedY = absOffset * (isMobile ? 2 : 3);
+                    const stackedRot = 0;
+                    const stackedScale = 1 - absOffset * 0.025;
+
+                    // Smoothly interpolate from stacked (0) to split fan (1) as user scrolls
+                    const currentX = stackedX + (targetX - stackedX) * fanProgress;
+                    const currentY = stackedY + (targetY - stackedY) * fanProgress;
+                    const currentRot = stackedRot + (targetRot - stackedRot) * fanProgress;
+                    const currentScale = stackedScale + (1 - stackedScale) * fanProgress;
+
+                    const baseZ = Math.round(35 - absOffset * 4);
+                    const isHovered = hoveredGalleryIndex === idx;
+
+                    const finalX = currentX;
+                    const finalY = isHovered ? currentY - (isMobile ? 16 : 26) : currentY;
+                    const finalRot = isHovered ? currentRot * 0.25 : currentRot;
+                    const finalScale = isHovered ? 1.07 : currentScale;
+
+                    return (
+                      <div
+                        key={img.id}
+                        onMouseEnter={() => setHoveredGalleryIndex(idx)}
+                        onMouseLeave={() => setHoveredGalleryIndex(null)}
+                        onClick={() => {
+                          if (isMobile && hoveredGalleryIndex !== idx) {
+                            setHoveredGalleryIndex(idx);
+                          } else {
+                            setSelectedLightboxImage(img.src);
+                          }
+                        }}
+                        style={{
+                          left: "50%",
+                          top: isMobile ? "10px" : "20px",
+                          transform: `translate3d(calc(-50% + ${finalX.toFixed(1)}px), ${finalY.toFixed(1)}px, 0) rotate(${finalRot.toFixed(2)}deg) scale(${finalScale.toFixed(3)})`,
+                          zIndex: isHovered ? 60 : baseZ,
+                          transformOrigin: "center 85%",
+                          transition:
+                            "transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease, border-color 300ms ease",
+                        }}
+                        className={`absolute w-[34vw] max-w-[136px] min-w-[116px] sm:w-[205px] sm:max-w-none md:w-[225px] lg:w-[245px] aspect-[9/14] rounded-[22px] sm:rounded-[38px] overflow-hidden cursor-pointer shadow-[0_18px_40px_rgba(0,0,0,0.75)] group ${
+                          isHovered
+                            ? "ring-2 ring-[#FFE8B8] shadow-[0_30px_65px_rgba(0,0,0,0.92),0_0_35px_rgba(212,175,133,0.45)]"
+                            : "border border-white/10"
+                        }`}
+                      >
+                        <img
+                          src={img.src}
+                          alt={img.title}
+                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Active Caption & Dot Nav Below Fan */}
+                {(() => {
+                  const centerIndex = Math.floor(galleryImages.length / 2);
+                  const activeIndex = hoveredGalleryIndex !== null ? hoveredGalleryIndex : centerIndex;
+                  const activeItem = galleryImages[activeIndex];
+                  return (
+                    <div className="relative z-10 pt-2 px-6 text-center space-y-3">
+                      <div className="min-h-[52px] flex flex-col items-center justify-center transition-all duration-300">
+                        <h4 className="text-base sm:text-lg font-bold font-aref text-[#FFF2D2]">
+                          {activeItem?.title}
+                        </h4>
+                        <p className="text-xs text-[#8EA3BF] mt-0.5">
+                          {activeItem?.subtitle}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => activeItem && setSelectedLightboxImage(activeItem.src)}
+                          className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#D4AF85] hover:text-[#FFE8B8] transition cursor-pointer"
+                        >
                           <Maximize2 className="w-3.5 h-3.5" />
-                          <span>انقر للتكبير</span>
-                        </span>
+                          <span>عرض الصورة بالحجم الكامل</span>
+                        </button>
+                      </div>
+
+                      {/* Dot Indicators */}
+                      <div className="flex items-center justify-center gap-2">
+                        {galleryImages.map((img, i) => {
+                          const isActive = activeIndex === i;
+                          return (
+                            <button
+                              key={img.id}
+                              type="button"
+                              onClick={() => {
+                                setHoveredGalleryIndex(i);
+                              }}
+                              onMouseEnter={() => setHoveredGalleryIndex(i)}
+                              className={`transition-all duration-300 rounded-full cursor-pointer ${
+                                isActive
+                                  ? "w-8 h-2 bg-gradient-to-r from-[#D4AF85] to-[#FFE8B8] shadow-[0_0_10px_rgba(212,175,133,0.5)]"
+                                  : "w-2 h-2 bg-white/20 hover:bg-white/40"
+                              }`}
+                              title={img.title}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </div>
             )}
 

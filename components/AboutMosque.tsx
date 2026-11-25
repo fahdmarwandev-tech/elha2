@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Landmark,
@@ -17,9 +17,14 @@ import {
   CheckCircle2,
   Clock,
   Volume2,
+  Maximize2,
+  X,
 } from "lucide-react";
 
 export default function AboutMosque({ id = "about" }: { id?: string }) {
+  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+
   const stats = [
     { number: "9,171 م²", label: "المساحة الكلية للأرض", sub: "المنطقة السابعة - الموالح الجنوبية" },
     { number: "1,800+", label: "إجمالي سعة المصلين", sub: "الصحن الداخلي والصرح والمظلة" },
@@ -35,38 +40,97 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
       desc: "يتسع لـ 900 مصلي في الصحن الداخلي و300 بالصرح و500 بالمظلة. يتوسطه عمودان يحملان السقف، وثريا كبرى بقطر 3 أمتار، وقبة مركزية بقطر 5 أمتار. جدرانه مزدانة بالرخام العماني المنقوش بالآيات القرآنية، ومحرابه مرصع بماء الذهب والفسيفساء الإسلامية وبوسطه آية الكرسي.",
       tag: "صرح العبادة الرئيسي",
       icon: Landmark,
+      image: "/facilities/prayer-hall.jpg?v=2",
+      mobileImage: "/facilities/portrait/prayer-hall.jpg?v=2",
     },
     {
       title: "مصلى النساء الموسع",
       desc: "أعيدت توسعته عام 2014م ليتكون من 3 قاعات للصلاة (قاعتان أرضيتان وقاعة علوية) تتسع لـ 180 مصلية، وقاعة مخصصة للنساء ذوات الأعذار الشرعية، مع 6 دورات مياه مكيّفة و7 مغاسل للوضوء، وربط مرئي وصوتي مباشر بالمحراب.",
       tag: "خصوصية وراحة",
       icon: Users,
+      image: "/facilities/facade-canopy.jpg?v=2",
+      mobileImage: "/facilities/portrait/women.jpg?v=2",
     },
     {
       title: "مبنى المجلس العام",
-      desc: "صرح مجتمعي يتسع لنحو 700 شخص بكراسي مريحة. تتوسط صدره خارطة سلطنة عمان وقلاعها وحصونها من مسندم إلى ظفار. يضم مطبخاً كبيراً لخدمات الضيافة والإعاشة وأفران الحلوى العمانية الساخنة، ودور علوي لسكن المعلمين والطلبة. دشّن في 1 مارس 2024م بعقد زواج مبارك.",
+      desc: "صرح مجتمعي يتسع لنحو 700 شخص بكراسي مريحة. تتوسط صدره خارطة سلطنة عمان وقلاعها وحصونها التاريخية من مسندم إلى ظفار، مع دور علوي مخصص لسكن المعلمين والطلبة. دشّن في 1 مارس 2024م بعقد زواج مبارك ليكون مقصداً جامعاً لأفراح ومناسبات المجتمع.",
       tag: "مناسبات وأفراح وعزاء",
       icon: HeartHandshake,
+      image: "/facilities/majlis.jpg?v=2",
+      mobileImage: "/facilities/portrait/majlis.jpg?v=2",
+    },
+    {
+      title: "مطبخ المجلس العام والضيافة",
+      desc: "مطبخ واسع ومتكامل صُمم لخدمة كافة مناسبات المجلس العام، مجهز بأفران الحلوى العمانية الساخنة وأحدث أدوات الطهي والإعاشة لتقديم وجبات الضيافة وإكرام الحضور وضيوف الجامع في كافة الفعاليات والمناسبات.",
+      tag: "خدمات الضيافة والإعاشة",
+      icon: Coffee,
+      image: "/facilities/kitchen.jpg?v=2",
+      mobileImage: "/facilities/portrait/kitchen.jpg?v=2",
     },
     {
       title: "مبنى مكتب الإدارة والمراقبة",
       desc: "افتتح في 24 شعبان 1436هـ (يونيو 2015م) لإدارة شؤون الجامع وتوثيق عقود الاستثمار والمحلات التجارية، ومزود بشاشات متطورة تنقل الصوت والصورة من كاميرات المراقبة، وربط إلكتروني كامل بين المحراب ومصلى النساء والمجلس العام.",
       tag: "إدارة متطورة",
       icon: Building,
+      image: "/facilities/courtyard.jpg?v=2",
+      mobileImage: "/facilities/portrait/admin.jpg?v=2",
+      textPosition: "bottom" as const,
     },
     {
       title: "مبنى الميضأة ودورات المياه للرجال",
       desc: "مبنى مسقف ومكيّف صُمم بعناية لخدمة جموع المصلين، يحتوي على 22 دورة مياه مجهزة و70 مغسلة للوضوء تحيط بالمبنى لضمان انسيابية وسهولة الحركة، بالإضافة إلى مستودعات المواد الصحية.",
       tag: "خدمات متكاملة",
       icon: Sparkles,
+      image: "/facilities/ablution.jpg?v=2",
+      mobileImage: "/facilities/portrait/ablution.jpg?v=2",
     },
     {
       title: "الأنشطة والبرامج الدينية والعلمية",
       desc: "تقام بالجامع صلوات الجمعة والعيدين وصلاة التهجد في أواخر رمضان، ودروس أسبوعية ومحاضرات وندوات لكبار مشايخ العلم والعلماء على مدار العام، ومركز صيفي سنوي للناشئة لمدة شهر كامل.",
       tag: "منارة العلم والمعرفة",
       icon: BookOpen,
+      image: "/facilities/night-courtyard.jpg?v=2",
+      mobileImage: "/facilities/portrait/sunset-courtyard.jpg?v=2",
+      textPosition: "bottom" as const,
     },
   ];
+
+  // Track the active visible slide to trigger smooth fade-in both when scrolling DOWN and scrolling UP
+  useEffect(() => {
+    let rafId: number | null = null;
+
+    const handleScroll = () => {
+      const vh = window.innerHeight;
+      // Use mid-screen threshold so state flips cleanly without jittering at the top edge
+      const threshold = vh * 0.55;
+
+      let current = 0;
+      for (let i = 0; i < facilities.length; i++) {
+        const el = document.getElementById(`facility-${i + 1}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= threshold) {
+          current = i;
+        }
+      }
+
+      setActiveSlideIndex(current);
+    };
+
+    const onScroll = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(handleScroll);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [facilities.length]);
 
   const futureProjects = [
     "إنشاء مدرسة القرآن الكريم من دورين (الدور الأرضي للبنات والعلوي للبنين)",
@@ -79,13 +143,14 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
   return (
     <section
       id={id}
-      className="relative w-full bg-[#050A14] text-[#FAF7F0] border-t border-[#1E3A63]/60 py-16 sm:py-24 px-4 sm:px-6 lg:px-12 overflow-hidden text-right scroll-mt-4 sm:scroll-mt-8"
+      className="relative w-full bg-[#050A14] text-[#FAF7F0] border-t border-[#1E3A63]/60 overflow-visible text-right scroll-mt-4 sm:scroll-mt-8"
     >
       {/* Background Subtle Ambience */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#D4AF85]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#122849]/30 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto space-y-16 sm:space-y-20 relative z-10">
+      {/* Top Narrative & Stats Container (Constrained width) */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 pt-16 sm:pt-24 pb-14 sm:pb-20 space-y-16 sm:space-y-20 relative z-10">
         {/* Header with Smooth Fade-In */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -251,67 +316,121 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
           </motion.div>
         </div>
 
-        {/* Comprehensive Facilities Section (Fade-In on Scroll) */}
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.08 }}
-            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-            className="text-right will-change-[opacity,transform]"
-          >
-            <span className="text-xs font-bold text-[#D4AF85] flex items-center gap-1.5 mb-1">
-              <Building className="w-4 h-4 text-[#D4AF85]" />
-              <span>مرافق متكاملة تخدم رواد الجامع والمجتمع</span>
-            </span>
-            <div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block px-3 pt-1 pb-3 leading-[1.45]">
-                مكونات ومراحل إنجاز مرافق جامع الحق
-              </h3>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {facilities.map((fac, idx) => {
-              const Icon = fac.icon;
-              return (
-                <motion.div
-                  key={fac.title}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.08 }}
-                  transition={{ duration: 0.65, delay: (idx % 3) * 0.04, ease: [0.22, 1, 0.36, 1] }}
-                  className="bg-gradient-to-b from-[#0D1A2D] to-[#070F1E] border border-[#1E3A63]/80 hover:border-[#D4AF85] rounded-3xl p-6 flex flex-col justify-between group transition shadow-lg hover:shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,133,0.2)] will-change-[opacity,transform]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-[#050A14] border border-[#1E3A63] flex items-center justify-center text-[#D4AF85] group-hover:scale-110 transition-transform">
-                        <Icon className="w-6 h-6 text-[#D4AF85]" />
-                      </div>
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#050A14] text-[#D4AF85] border border-[#1E3A63]">
-                        {fac.tag}
-                      </span>
-                    </div>
-
-                    <h4 className="text-lg font-bold font-aref text-[#FAF7F0] group-hover:text-[#FFF2D2] transition-colors mb-2.5">
-                      {fac.title}
-                    </h4>
-
-                    <p className="text-xs text-[#8EA3BF] leading-relaxed mb-4">
-                      {fac.desc}
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t border-[#1E3A63]/60 flex items-center gap-1.5 text-[11px] text-[#D4AF85] font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF85]" />
-                    <span>مجهز وفق أعلى المعايير المعمارية</span>
-                  </div>
-                </motion.div>
-              );
-            })}
+        {/* Facilities Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.08 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="text-right pt-6 border-t border-[#1E3A63]/60 will-change-[opacity,transform]"
+        >
+          <span className="text-xs font-bold text-[#D4AF85] flex items-center gap-1.5 mb-1">
+            <Building className="w-4 h-4 text-[#D4AF85]" />
+            <span>مرافق متكاملة تخدم رواد الجامع والمجتمع</span>
+          </span>
+          <div>
+            <h3 className="text-2xl sm:text-4xl font-extrabold font-aref bg-gradient-to-l from-[#C59B63] via-[#FFE8B8] to-[#D4AF85] bg-clip-text text-transparent inline-block pt-1 pb-2 leading-[1.45]">
+              مكونات ومراحل إنجاز مرافق جامع الحق
+            </h3>
           </div>
-        </div>
+          <p className="text-xs sm:text-sm text-[#8EA3BF] leading-relaxed">
+            انزل للأسفل لاستكشاف مرافق وصروح الجامع المبارك
+          </p>
+        </motion.div>
+      </div>
 
+      {/* Sticky Stacking Deck of Full-Width Edge-to-Edge Sections (like Dialed reference, NOT cards) */}
+      <div className="relative w-full">
+        {facilities.map((fac, idx) => {
+          const isActive = activeSlideIndex === idx;
+          return (
+            <div
+              key={fac.title}
+              id={`facility-${idx + 1}`}
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: idx + 10,
+              }}
+              className={`relative w-full h-screen min-h-[620px] overflow-hidden border-t border-[#D4AF85]/35 shadow-[0_-30px_70px_rgba(0,0,0,0.95)] ${
+                idx !== facilities.length - 1 ? "mb-[35vh] sm:mb-[45vh]" : "mb-0"
+              } will-change-transform bg-[#050A14] flex flex-col justify-between`}
+            >
+              {/* Full Bleed Background Image - Responsive: Portrait on Mobile (< 768px), Landscape on Desktop */}
+              <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+                <source media="(max-width: 768px)" srcSet={fac.mobileImage || fac.image} />
+                <img
+                  src={fac.image}
+                  alt={fac.title}
+                  className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 pointer-events-none select-none"
+                />
+              </picture>
+
+              {/* Pure Neutral Scrim Overlay - enhanced contrast across light stone, marble, and floors without blue tint */}
+              <div
+                className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
+                  fac.textPosition === "bottom"
+                    ? "bg-gradient-to-t from-black/95 via-black/60 to-black/20 sm:bg-gradient-to-l sm:from-black/90 sm:via-black/55 sm:to-black/20"
+                    : "bg-gradient-to-t from-black/90 via-black/55 to-black/25 sm:bg-gradient-to-l sm:from-black/90 sm:via-black/55 sm:to-black/20"
+                }`}
+              />
+
+              {/* Clean Top Spacer without any badge or icons */}
+              <div className="w-full h-12 sm:h-20 pointer-events-none" />
+
+              {/* Main Text Content - Fades in smoothly both when scrolling DOWN and UP with readable typography */}
+              <div
+                style={{
+                  opacity: isActive ? 1 : 0,
+                  transform: isActive ? "translate3d(0, 0, 0)" : "translate3d(0, 24px, 0)",
+                  transition:
+                    "opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                className={`relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 space-y-3 sm:space-y-4 text-right will-change-[opacity,transform] ${
+                  fac.textPosition === "bottom"
+                    ? "my-auto translate-y-12 sm:translate-y-8"
+                    : "my-auto"
+                }`}
+              >
+                <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[#FFE2B0] tracking-wider drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+                  <Sparkles className="w-4 h-4 text-[#D4AF85] drop-shadow-[0_2px_6px_rgba(0,0,0,1)]" />
+                  <span className="bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
+                    صرح جامع الحق المعماري
+                  </span>
+                </div>
+
+                <h4 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-aref text-[#FFF7E6] drop-shadow-[0_3px_18px_rgba(0,0,0,1)] transition-colors leading-[1.3] text-stroke-thin">
+                  {fac.title}
+                </h4>
+
+                <p className="max-w-3xl text-sm sm:text-base md:text-lg lg:text-xl text-[#FFFFFF] leading-loose drop-shadow-[0_2px_12px_rgba(0,0,0,1)] font-medium">
+                  {fac.desc}
+                </p>
+              </div>
+
+              {/* Bottom Features Strip */}
+              <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 pb-8 sm:pb-12 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 text-[#FFE8B8] font-bold">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF85]" />
+                  <span>مجهز وفق أعلى المعايير المعمارية والخدمية</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedLightboxImage(fac.image)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-[#FFE8B8] hover:text-white border border-[#D4AF85]/35 text-xs sm:text-sm font-bold transition cursor-pointer shadow-md"
+                >
+                  <span>عرض الصورة بدقتها الأصلية</span>
+                  <span className="text-base">←</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom Future Projects & Conclusion Container (Constrained width) */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 pt-20 sm:pt-28 pb-16 sm:pb-24 space-y-16 sm:space-y-20 relative z-10 text-right">
         {/* Future Projects Banner (Scroll Fade-In) */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -366,6 +485,35 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
           </span>
         </motion.div>
       </div>
+
+      {/* Lightbox Modal for Facility Photos */}
+      {selectedLightboxImage && (
+        <div
+          onClick={() => setSelectedLightboxImage(null)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-5xl w-full max-h-[90vh] bg-[#0A1628] border border-[#D4AF85]/50 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col items-center"
+          >
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedLightboxImage(null)}
+                className="p-2.5 rounded-full bg-black/70 text-white hover:text-[#FFE8B8] hover:bg-black/90 transition border border-white/20 cursor-pointer shadow-lg"
+                title="إغلاق المعاينة"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <img
+              src={selectedLightboxImage}
+              alt="معاينة المرفق"
+              className="w-full h-auto max-h-[85vh] object-contain select-none"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

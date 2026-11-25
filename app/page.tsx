@@ -294,7 +294,7 @@ export default function Home() {
           Full-screen edge-to-edge. Video plays in background and halts on last frame.
           Navbar is an overlay directly in the video frame at the top.
           ========================================================================= */}
-      <div className="block lg:hidden min-h-screen bg-[#050A14] relative overflow-x-hidden text-right">
+      <div className="block lg:hidden min-h-screen bg-[#050A14] relative overflow-x-clip text-right">
         {/* Fullscreen Mobile Hero Container */}
         <section className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden bg-black">
           {/* Background Video: Edge to edge, plays on load and halts on last frame */}
@@ -573,7 +573,7 @@ export default function Home() {
           - Navbar is directly INSIDE the video frame at the top.
           - When video ends, it pauses on the last frame, and the text fades in.
           ========================================================================= */}
-      <main className="hidden lg:flex flex-col w-full min-h-screen bg-[#050A14] text-[#FAF7F0] overflow-x-hidden">
+      <main className="hidden lg:flex flex-col w-full min-h-screen bg-[#050A14] text-[#FAF7F0] overflow-x-clip">
         {/* Fullscreen Edge-to-Edge Hero Section */}
         <section className="relative w-full min-h-screen flex flex-col justify-between overflow-hidden bg-black">
           {/* Background Video: Edge-to-edge starting at the absolute top (0px) */}
