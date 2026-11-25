@@ -405,20 +405,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               </div>
 
               {/* Bottom Features Strip */}
-              <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 pb-8 sm:pb-12 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+              <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 pb-8 sm:pb-12 border-t border-white/15 flex flex-wrap items-center justify-start gap-3 text-xs sm:text-sm">
                 <div className="flex items-center gap-2 text-[#FFE8B8] font-bold">
                   <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF85]" />
                   <span>مجهز وفق أعلى المعايير المعمارية والخدمية</span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedLightboxImage(fac.image)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-[#FFE8B8] hover:text-white border border-[#D4AF85]/35 text-xs sm:text-sm font-bold transition cursor-pointer shadow-md"
-                >
-                  <span>عرض الصورة بدقتها الأصلية</span>
-                  <span className="text-base">←</span>
-                </button>
               </div>
             </div>
           );
