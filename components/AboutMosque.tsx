@@ -106,9 +106,11 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
 
       let current = 0;
       for (let i = 0; i < facilities.length; i++) {
-        const el = document.getElementById(`facility-${i + 1}`);
+        const el = document.getElementById(`${id}-facility-${i + 1}`);
         if (!el) continue;
         const rect = el.getBoundingClientRect();
+        // Skip hidden instance (e.g. mobile view when on laptop, or desktop view when on mobile)
+        if (rect.height === 0 || rect.width === 0) continue;
         if (rect.top <= threshold) {
           current = i;
         }
@@ -130,7 +132,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [facilities.length]);
+  }, [facilities.length, id]);
 
   const futureProjects = [
     "إنشاء مدرسة القرآن الكريم من دورين (الدور الأرضي للبنات والعلوي للبنين)",
@@ -346,7 +348,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
           return (
             <div
               key={fac.title}
-              id={`facility-${idx + 1}`}
+              id={`${id}-facility-${idx + 1}`}
               style={{
                 position: "sticky",
                 top: 0,
@@ -354,7 +356,7 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
               }}
               className={`relative w-full h-screen min-h-[620px] overflow-hidden border-t border-[#D4AF85]/35 shadow-[0_-30px_70px_rgba(0,0,0,0.95)] ${
                 idx !== facilities.length - 1 ? "mb-[35vh] sm:mb-[45vh]" : "mb-0"
-              } will-change-transform bg-[#050A14] flex flex-col justify-between`}
+              } will-change-transform bg-black flex flex-col justify-between`}
             >
               {/* Full Bleed Background Image - Responsive: Portrait on Mobile (< 768px), Landscape on Desktop */}
               <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
@@ -366,14 +368,8 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
                 />
               </picture>
 
-              {/* Pure Neutral Scrim Overlay - enhanced contrast across light stone, marble, and floors without blue tint */}
-              <div
-                className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-                  fac.textPosition === "bottom"
-                    ? "bg-gradient-to-t from-black/95 via-black/60 to-black/20 sm:bg-gradient-to-l sm:from-black/90 sm:via-black/55 sm:to-black/20"
-                    : "bg-gradient-to-t from-black/90 via-black/55 to-black/25 sm:bg-gradient-to-l sm:from-black/90 sm:via-black/55 sm:to-black/20"
-                }`}
-              />
+              {/* Subtle Bottom-Only Neutral Scrim - NO side gradient on left or right, NO blue tint */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent pointer-events-none" />
 
               {/* Clean Top Spacer without any badge or icons */}
               <div className="w-full h-12 sm:h-20 pointer-events-none" />
