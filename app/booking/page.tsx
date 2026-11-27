@@ -135,7 +135,7 @@ export default function BookingPage() {
     },
     {
       id: "4",
-      src: "/facilities/portrait/majlis.jpg",
+      src: "/facilities/portrait/majlis.jpg?v=3",
       title: "بهو قاعة المجلس العام والزخارف",
       subtitle: "الأسقف المزخرفة والأعمدة المنقوشة والتجهيزات الفندقية الكاملة",
     },
@@ -760,7 +760,7 @@ export default function BookingPage() {
 
   return (
     <div className="relative min-h-screen bg-[#040812] text-[#FAF7F0] flex flex-col font-sans text-right selection:bg-[#D4AF85] selection:text-[#0B1220] overflow-x-hidden">
-      <MajlisShaderBackground imageSrc="/majlis-hall.jpg" />
+      <MajlisShaderBackground imageSrc="/majlis-hall.jpg?v=3" />
       <Navbar />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 sm:pt-12 sm:pb-24 w-full flex-1">

@@ -56,8 +56,8 @@ export default function AboutMosque({ id = "about" }: { id?: string }) {
       desc: "صرح مجتمعي يتسع لنحو 700 شخص بكراسي مريحة. تتوسط صدره خارطة سلطنة عمان وقلاعها وحصونها التاريخية من مسندم إلى ظفار، مع دور علوي مخصص لسكن المعلمين والطلبة. دشّن في 1 مارس 2024م بعقد زواج مبارك ليكون مقصداً جامعاً لأفراح ومناسبات المجتمع.",
       tag: "مناسبات وأفراح وعزاء",
       icon: HeartHandshake,
-      image: "/facilities/majlis.jpg?v=2",
-      mobileImage: "/facilities/portrait/majlis.jpg?v=2",
+      image: "/facilities/majlis.jpg?v=3",
+      mobileImage: "/facilities/portrait/majlis.jpg?v=3",
     },
     {
       title: "مطبخ المجلس العام والضيافة",
